@@ -1,0 +1,26 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "lib": [
+      "es2017",
+      "dom",
+      "WebWorker",
+      "DOM.Iterable"
+    ],
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "module": "esnext",
+    "target": "es2017",
+    "allowJs": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "types": [
+      "@types/node",
+      "@types/webpack-env",
+      "@types/w3c-image-capture",
+      "@types/w3c-web-usb"
+    ],
+    "allowSyntheticDefaultImports": true
+  },
+}

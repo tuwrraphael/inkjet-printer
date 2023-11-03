@@ -1,0 +1,14 @@
+$roboto-font-path: '../node_modules/roboto-fontface/fonts';
+
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular-italic.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold-italic.scss";
+
+body,
+button,
+input,
+ul,
+ol {
+    font-family: 'Roboto', sans-serif;
+}

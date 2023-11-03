@@ -1,0 +1,46 @@
+{
+  "name": "dropwatcher",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.html",
+  "dependencies": {
+    "core-js": "^3.8.1",
+    "roboto-fontface": "^0.10.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@types/node": "^20.8.10",
+    "@types/w3c-image-capture": "^1.0.9",
+    "@types/w3c-web-usb": "^1.0.9",
+    "@types/webpack-env": "^1.16.0",
+    "autoprefixer": "^10.1.0",
+    "babel-loader": "^9.1.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.4.0",
+    "file-loader": "^6.2.0",
+    "html-loader": "^4.2.0",
+    "html-webpack-plugin": "^5.3.1",
+    "license-checker-webpack-plugin": "^0.2.1",
+    "mini-css-extract-plugin": "^2.4.2",
+    "postcss": "^8.2.1",
+    "postcss-loader": "^7.0.1",
+    "sass": "^1.30.0",
+    "sass-loader": "^13.1.0",
+    "ts-loader": "^9.1.1",
+    "typescript": "^5.2.2",
+    "webpack": "^5.11.0",
+    "webpack-bundle-analyzer": "^4.3.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.3.1",
+    "workbox-webpack-plugin": "^7.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "start": "webpack serve --mode development --env development"
+  },
+  "author": "",
+  "license": "MIT"
+}
