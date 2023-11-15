@@ -2,8 +2,7 @@ import "./styles.scss";
 import { process } from "./process";
 import { WebUSBWrapper } from "./webusb";
 
-
-async function start() {
+async function startVideo() {
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: false, video: {
             width: { min: 0, ideal: 1920, max: 1920 },
@@ -58,15 +57,46 @@ async function start() {
     };
     performance.mark("start");
     video.requestVideoFrameCallback(cv);
-    let webusb = new WebUSBWrapper();
+}
+let webusb = new WebUSBWrapper();
+async function startUsb() {
+
     await webusb.connect();
     webusb.addEventListener("data", (e: CustomEvent) => {
         console.log(e.detail);
     });
-    await webusb.send(new Uint8Array([0x01, 0x02, 0x03]));
+}
+
+async function start() {
+    startUsb();
+}
+
+async function sendWebcamReady() {
+    await webusb.send(new Uint8Array(["R".charCodeAt(0)]));
+}
+
+const JETTING_SIGNAL_MODE_FALLING = 2;
+const JETTING_SIGNAL_MODE_RISING = 3;
+
+async function writeConfig() {
+    let cameraReadyDelayTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-camera-ready-delay")).value) *1000)/62.5);
+    let strobeOnTicks: number = ((parseFloat((<HTMLInputElement>document.querySelector("#config-strobe-on")).value) *1000)/62.5)-2;
+    let delayAfterJettingSignalTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-delay-after-jetting-signal")).value)*1000/62.5));
+    console.log(delayAfterJettingSignalTicks);
+    let jettingSignalMode = JETTING_SIGNAL_MODE_RISING;
+    let arr = new Uint8Array(8);
+    let view = new DataView(arr.buffer);
+    view.setUint8(0, "C".charCodeAt(0));
+    view.setUint16(1, delayAfterJettingSignalTicks, true);
+    view.setUint16(3, strobeOnTicks, true);
+    view.setUint8(5, jettingSignalMode);
+    view.setUint16(6, cameraReadyDelayTicks, true);
+    await webusb.send(arr);
 }
 
 document.querySelector("#start-button").addEventListener("click", start);
+document.querySelector("#test-button").addEventListener("click", sendWebcamReady);
+document.querySelector("#write-config").addEventListener("click", writeConfig);
 
 
 
