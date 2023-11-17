@@ -68,22 +68,21 @@ static int update_configuration(uint16_t delay_after_jetting_signal_ticks,
 
 void setup()
 {
-
+  pinMode(JETTING_INT_PIN, INPUT);
+  digitalWrite(10, 0);
+  pinMode(10, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(JETTING_INT_PIN), jetting_interrupt, FALLING);
   while (!Serial)
   {
     ;
   }
   Serial.begin(0);
-  pinMode(JETTING_INT_PIN, INPUT);
-  digitalWrite(10, 0);
-  pinMode(10, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(JETTING_INT_PIN), jetting_interrupt, FALLING);
 
   // use pin 10 = PB6 = OC1B for the strobe output
   OCR1A = 1;
   OCR1B = OCR1A + 1;
   TCNT1 = 0;
-  TCCR1A = (1 << COM1B1) | (1 << COM1B0) | (1 << WGM11) | (1 << WGM10);
+  TCCR1A = (1 << COM1B1) | (1 << COM1B0 ) |  (1 << WGM11) | (1 << WGM10);
   TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS10);
 
   TCNT3 = 0;

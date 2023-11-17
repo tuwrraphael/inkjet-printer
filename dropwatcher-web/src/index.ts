@@ -16,7 +16,7 @@ async function startVideo() {
     await track.applyConstraints({
         advanced: [{
             ...<any>{
-                exposureTime: (<any>track.getCapabilities()).exposureTime.max,
+                exposureTime: 1000,
             },
             ...{
                 exposureMode: "manual",
@@ -51,6 +51,9 @@ async function startVideo() {
         // if (nr < 10) {
         performance.mark("start");
         video.requestVideoFrameCallback(cv);
+        if ((<HTMLInputElement>document.querySelector("#strobe-on")).checked) {
+            await webusb.send(new Uint8Array(["R".charCodeAt(0)]));
+        }
         // } else {
         //     console.log(performance.getEntriesByType("measure").map(m => m.duration));
         // }
@@ -68,7 +71,8 @@ async function startUsb() {
 }
 
 async function start() {
-    startUsb();
+    await startVideo();
+    await startUsb();
 }
 
 async function sendWebcamReady() {
