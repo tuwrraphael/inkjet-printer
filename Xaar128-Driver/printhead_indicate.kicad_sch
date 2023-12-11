@@ -1,0 +1,16 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid f88ece12-9a81-4952-8936-a2b2884f3dcc)
+
+  (paper "A4")
+
+  (title_block
+    (title "Xaar 128 Driver")
+    (date "2023-12-04")
+    (rev "1.0.0")
+  )
+
+  (lib_symbols
+  )
+
+)

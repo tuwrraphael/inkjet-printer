@@ -1,0 +1,28 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid 24b21c3d-1a95-455e-8a11-2d0b3a7bd7f5)
+
+  (paper "A4")
+
+  (lib_symbols
+  )
+
+
+  (text "use isolated dcdc for lv gnd\nfuse!" (at 85.09 53.34 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid 98a5e23e-79c3-4411-b185-ed0d58ee5baf)
+  )
+
+  (hierarchical_label "VPPH" (shape output) (at 34.29 53.34 0) (fields_autoplaced)
+    (effects (font (size 1.27 1.27)) (justify left))
+    (uuid b38bff3f-d82c-49db-85ee-545245eefbd0)
+  )
+  (hierarchical_label "VPP_EN" (shape input) (at 34.29 58.42 0) (fields_autoplaced)
+    (effects (font (size 1.27 1.27)) (justify left))
+    (uuid d44f9ca5-f900-4a51-aec1-f2f516650a6d)
+  )
+  (hierarchical_label "VPPL" (shape output) (at 34.29 55.88 0) (fields_autoplaced)
+    (effects (font (size 1.27 1.27)) (justify left))
+    (uuid f7bcabc4-7ff6-4074-b0d6-fbbb75cd6fbc)
+  )
+)

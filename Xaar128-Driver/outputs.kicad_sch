@@ -1,0 +1,20 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid 65dc952f-5599-493c-bd96-883ef4e90307)
+
+  (paper "A4")
+
+  (lib_symbols
+  )
+
+
+  (text "lvgnd!" (at 58.42 83.82 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid 8095331b-feb8-4656-9b1f-dca6e16d038a)
+  )
+
+  (hierarchical_label "nFire" (shape input) (at 52.07 72.39 0) (fields_autoplaced)
+    (effects (font (size 1.27 1.27)) (justify left))
+    (uuid 8d3a720e-ac31-469c-a1bd-67609653a96a)
+  )
+)
