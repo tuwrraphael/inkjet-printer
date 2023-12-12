@@ -1,4 +1,6 @@
 (sym_lib_table
   (version 7)
   (lib (name "Xaar_Driver")(type "KiCad")(uri "${KIPRJMOD}/Xaar_Driver.kicad_sym")(options "")(descr ""))
+  (lib (name "NUCLEO-H745")(type "KiCad")(uri "${KIPRJMOD}/../symbols/NUCLEO-H745ZI-Q.kicad_sym")(options "")(descr ""))
+  (lib (name "MCP3021")(type "KiCad")(uri "${KIPRJMOD}/../symbols/MCP3021.kicad_sym")(options "")(descr ""))
 )

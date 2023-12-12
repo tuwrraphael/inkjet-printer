@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Custom_LED_THT")(type "KiCad")(uri "${KIPRJMOD}/../footprints/Custom_LED_THT.pretty")(options "")(descr ""))
+  (lib (name "Molex_200528")(type "KiCad")(uri "${KIPRJMOD}/../footprints/Molex_200528.pretty")(options "")(descr ""))
+  (lib (name "NUCLEO-H745")(type "KiCad")(uri "${KIPRJMOD}/../footprints/NUCLEO-H745.pretty")(options "")(descr ""))
+)
