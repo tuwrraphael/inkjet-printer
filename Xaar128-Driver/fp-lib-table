@@ -5,4 +5,5 @@
   (lib (name "NUCLEO-H745")(type "KiCad")(uri "${KIPRJMOD}/../footprints/NUCLEO-H745.pretty")(options "")(descr ""))
   (lib (name "FUSE_646_1_LTF")(type "KiCad")(uri "${KIPRJMOD}/../footprints/FUSE_646_1_LTF.pretty")(options "")(descr ""))
   (lib (name "RS_PRO")(type "KiCad")(uri "${KIPRJMOD}/../footprints/RS_PRO.pretty")(options "")(descr ""))
+  (lib (name "Xaar-Driver")(type "KiCad")(uri "${KIPRJMOD}/Xaar-Driver.pretty")(options "")(descr ""))
 )
