@@ -429,7 +429,7 @@
       },
       {
         "bus_width": 12,
-        "clearance": 0.2,
+        "clearance": 0.6,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
         "diff_pair_width": 0.2,
@@ -439,14 +439,14 @@
         "name": "HP",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgb(255, 11, 167)",
-        "track_width": 0.25,
+        "track_width": 0.5,
         "via_diameter": 0.8,
         "via_drill": 0.4,
         "wire_width": 12
       },
       {
         "bus_width": 12,
-        "clearance": 0.2,
+        "clearance": 0.6,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
         "diff_pair_width": 0.2,
@@ -477,8 +477,6 @@
       "/IO/LED-": "HP",
       "/IO/LED_PWR": "HP",
       "GND1": "HV",
-      "GND24": "HV",
-      "GNDHP": "HP",
       "LEDPWRGND": "HP",
       "Net-(D1-K)": "HV",
       "Net-(D10-A)": "HV",
@@ -493,12 +491,14 @@
       "Net-(D9-A)": "HV",
       "Net-(JP2-A)": "HV",
       "Net-(JP2-B)": "HV",
+      "Net-(NT4-Pad2)": "HV",
       "Net-(R10-Pad2)": "HV",
       "Net-(R27-Pad2)": "HV",
       "Net-(R31-Pad1)": "HV",
       "Net-(R38-Pad1)": "HV",
-      "Net-(R39-Pad1)": "HV",
-      "Net-(R9-Pad2)": "HV"
+      "Net-(R9-Pad2)": "HV",
+      "Net-(U15-IN)": "HV",
+      "Net-(U17A--)": "HV"
     },
     "netclass_patterns": [
       {
