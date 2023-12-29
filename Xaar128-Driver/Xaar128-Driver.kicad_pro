@@ -172,7 +172,8 @@
         }
       ],
       "track_widths": [
-        0.0
+        0.0,
+        0.5
       ],
       "via_dimensions": [
         {
@@ -477,7 +478,6 @@
       "/IO/LED-": "HP",
       "/IO/LED_PWR": "HP",
       "GND1": "HV",
-      "LEDPWRGND": "HP",
       "Net-(D1-K)": "HV",
       "Net-(D10-A)": "HV",
       "Net-(D10-K)": "HV",
