@@ -3127,7 +3127,7 @@
     (property "Value" "1N4007" (at 217.17 43.18 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal" (at 213.36 43.18 0)
+    (property "Footprint" "Diode_THT:D_DO-41_SOD81_P12.70mm_Horizontal" (at 213.36 43.18 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 213.36 43.18 0)
