@@ -1,2 +1,3 @@
 Xaar128-Driver-backups/*.zip
 plots/*
+!plots/*.zip

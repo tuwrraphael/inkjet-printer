@@ -13,22 +13,6 @@
       (effects (font (size 1 1) (thickness 0.15)))
     (tstamp b2c0c7fc-336d-49e3-a8e0-1582e3a92200)
   )
-  (fp_line (start -25.066628 17.78) (end -25.066628 81.248)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 96109509-b7f9-4a2f-8f4e-21bf88ebb3f3))
-  (fp_line (start -25.066628 17.78) (end -18.113628 17.78)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 49f2ffb0-f2b9-4f16-8e33-f6e5fc3aa88d))
-  (fp_line (start -25.066628 81.248) (end -18.113628 81.248)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 95c07f3a-a911-40de-8352-17986440216b))
-  (fp_line (start -18.113628 17.78) (end -18.113628 81.248)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 6101e282-287e-4e92-8239-42fe293471f7))
-  (fp_line (start 20.653343 8.635935) (end 20.653343 81.247961)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 0c676b77-b47b-4667-b012-30b10edf8324))
-  (fp_line (start 20.653343 8.635935) (end 27.606343 8.635935)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 86876706-3a60-4db9-be85-59d471ba9fe9))
-  (fp_line (start 20.653343 81.247961) (end 27.606343 81.247961)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp 4a9fb687-195c-416b-9731-ed59528d03da))
-  (fp_line (start 27.606343 8.635935) (end 27.606343 81.247961)
-    (stroke (width 0.2) (type solid)) (layer "F.SilkS") (tstamp e30e4b82-9eda-4442-bcd5-f021d4d43b5b))
   (fp_line (start -32.789493 96.760483) (end -25.630509 96.760483)
     (stroke (width 0.2) (type solid)) (layer "F.CrtYd") (tstamp 6c2978eb-b736-4e87-93a8-2c831eb80d87))
   (fp_line (start -32.789493 101.359467) (end -32.789493 96.760483)
@@ -587,18 +571,6 @@
   (pad "CN7_15" thru_hole oval (at 22.86 28.96) (size 1.6 1.6) (drill 1) (layers "*.Cu" "*.Mask") (tstamp 2601e40d-8d03-4dff-a84b-8b19439cba96))
   (pad "CN7_17" thru_hole oval (at 22.86 31.5) (size 1.6 1.6) (drill 1) (layers "*.Cu" "*.Mask") (tstamp 75db2ab7-22cd-429b-9f9e-47063844da7a))
   (pad "CN7_19" thru_hole oval (at 22.86 34.04) (size 1.6 1.6) (drill 1) (layers "*.Cu" "*.Mask") (tstamp da37a818-0971-4afc-9db1-a17510b846dd))
-  (group "" (id 17b182fa-5953-4bbe-827a-1ad867654888)
-    (members
-      0c676b77-b47b-4667-b012-30b10edf8324
-      49f2ffb0-f2b9-4f16-8e33-f6e5fc3aa88d
-      4a9fb687-195c-416b-9731-ed59528d03da
-      6101e282-287e-4e92-8239-42fe293471f7
-      86876706-3a60-4db9-be85-59d471ba9fe9
-      95c07f3a-a911-40de-8352-17986440216b
-      96109509-b7f9-4a2f-8f4e-21bf88ebb3f3
-      e30e4b82-9eda-4442-bcd5-f021d4d43b5b
-    )
-  )
   (group "" (id 6fc7cdff-93c9-47f7-b347-e41064ef2295)
     (members
       06788289-0651-48f0-a9a5-08d0660ba2e6
