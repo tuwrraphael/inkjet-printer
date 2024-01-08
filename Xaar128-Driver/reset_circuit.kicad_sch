@@ -2525,7 +2525,7 @@
     (property "Reference" "C7" (at 220.98 19.05 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "  " (at 220.98 21.59 90)
+    (property "Value" "100n >16V Cer" (at 220.98 21.59 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder" (at 224.79 25.7048 0)

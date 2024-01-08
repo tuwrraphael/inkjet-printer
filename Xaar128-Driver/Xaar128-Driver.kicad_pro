@@ -55,10 +55,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        "courtyards_overlap|37039363|149987427|723ad007-7216-42ac-88fe-366f79e62a92|85e41ccf-1dd4-493f-bc6f-d44930b0b361",
-        "text_thickness|154424000|96012000|a2e4ae52-cc5a-419b-928c-558c6148ee9f|00000000-0000-0000-0000-000000000000"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -176,6 +173,8 @@
       ],
       "track_widths": [
         0.0,
+        0.127,
+        0.25,
         0.5
       ],
       "via_dimensions": [
@@ -464,6 +463,23 @@
         "via_diameter": 0.8,
         "via_drill": 0.4,
         "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.127,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "MINI",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgb(17, 255, 236)",
+        "track_width": 0.127,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6
       }
     ],
     "meta": {
@@ -491,8 +507,11 @@
       "Net-(D7-A)": "HP",
       "Net-(D7-K)": "HP",
       "Net-(D9-A)": "HV",
+      "Net-(JP19-A)": "MINI",
       "Net-(JP2-A)": "HV",
       "Net-(JP2-B)": "HV",
+      "Net-(JP20-A)": "MINI",
+      "Net-(NT2-Pad1)": "MINI",
       "Net-(NT4-Pad2)": "HV",
       "Net-(R10-Pad2)": "HV",
       "Net-(R27-Pad2)": "HV",
@@ -500,7 +519,12 @@
       "Net-(R38-Pad1)": "HV",
       "Net-(R9-Pad2)": "HV",
       "Net-(U15-IN)": "HV",
-      "Net-(U17A--)": "HV"
+      "Net-(U17A--)": "HV",
+      "Net-(U22-INT1)": "MINI",
+      "Net-(U22-INT2)": "MINI",
+      "Net-(U22-SDO)": "MINI",
+      "Net-(U22-Vdd)": "MINI",
+      "Net-(U22-~{CS})": "MINI"
     },
     "netclass_patterns": [
       {
@@ -594,6 +618,10 @@
     [
       "48b639c9-d588-4ad3-b95b-9aa4a2d6905e",
       "Regulator"
+    ],
+    [
+      "5c8cd85a-2140-4117-a06a-66b2dfd1d957",
+      "ACC"
     ],
     [
       "d69e07d5-2f9c-4e83-9c1b-3f660b6a4d08",
