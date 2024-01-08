@@ -1,0 +1,38 @@
+Value,Footprint,RSBestNr
+10u >72V E,Capacitor_THT:CP_Radial_D5.0mm_P2.00mm,228-7079
+220u >72V E,Capacitor_THT:CP_Radial_D13.0mm_P5.00mm,711-1734
+1u >72V Cer,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,788-3054
+2.2u >72V E,Capacitor_THT:CP_Radial_D5.0mm_P2.00mm,365-4442
+100n >16V Film,Capacitor_THT:C_Rect_L7.0mm_W3.5mm_P5.00mm,463-1765
+BZX84C10LT1G 10V,Package_TO_SOT_SMD:SOT-23,625-5256
+3.3V,Diode_SMD:D_SOD-123F,792-0936
+BZX84C27LT1G 27V,Package_TO_SOT_SMD:SOT-23,687-8187
+Heatsink,Xaar-Driver:SK68-375-SA,189-8498
+Screw_Terminal_01x02,RS_PRO:897-1051,897-1051 + 897-0998
+SolderJumper_2_Bridged,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,820-6736
+DMN2075U,Package_TO_SOT_SMD:SOT-23,751-4143
+DMG2305UX,Package_TO_SOT_SMD:SOT-23,827-0452
+1.2k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,198-5480
+31.6k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,708-8877
+5.1k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,198-5552
+68k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,566-367
+1.6k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,242-4070
+1k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,678-9875
+5.1k >300mW,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,721-7804
+2k > 700mW,Resistor_SMD:R_2010_5025Metric_Pad1.40x2.65mm_HandSolder,186-6957
+100k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,678-9673
+12k > 200mW,Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder,812-1795
+200,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal,148-332
+4.7k,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,901-3581
+2.2k > 600mW,Resistor_SMD:R_2512_6332Metric_Pad1.40x3.35mm_HandSolder,755-1287
+680,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,679-0627
+6N135,Package_DIP:DIP-8_W7.62mm,691-2316
+74HC173,Package_SO:SO-16_3.9x9.9mm_P1.27mm,483-6443
+NUCLEO-H743ZI2,Xaar-Driver:NUCLEO-H743,193-9787
+74AHCT125,Package_SO:SOIC-14_3.9x8.7mm_P1.27mm,798-8941
+LM317_TO-220,Package_TO_SOT_THT:TO-220-3_Vertical,661-6121
+LTV-356T,Package_SO:SO-4_4.4x3.6mm_P2.54mm,691-2079
+5.1k,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,721-7804
+Conn_02x15_Odd_Even,CONN_9-176140-0:CONN_9-176140-0_TYC,7025214
+0,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,820-6736
+470,Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,566-547

@@ -497,6 +497,9 @@
     (property "Datasheet" "~" (at 106.68 59.69 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "Supplier" "None" (at 106.68 59.69 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (instances
       (project "Xaar128-Driver"
         (path "/f0c82013-03f9-4093-aa02-30b89fd69529/8d2d865b-5c5b-48bf-9eef-a5e158c4d497"
@@ -519,6 +522,9 @@
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 106.68 64.77 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Supplier" "None" (at 106.68 64.77 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (instances
@@ -716,6 +722,9 @@
     (property "Datasheet" "~" (at 106.68 69.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "Supplier" "None" (at 106.68 69.85 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (instances
       (project "Xaar128-Driver"
         (path "/f0c82013-03f9-4093-aa02-30b89fd69529/8d2d865b-5c5b-48bf-9eef-a5e158c4d497"
@@ -770,6 +779,9 @@
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 106.68 54.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Supplier" "None" (at 106.68 54.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (instances
