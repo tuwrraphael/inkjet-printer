@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -69,16 +71,40 @@ void Error_Handler(void);
 #define PH0_MCU_GPIO_Port GPIOH
 #define PH1_MCU_Pin GPIO_PIN_1
 #define PH1_MCU_GPIO_Port GPIOH
+#define RESET_DISABLE_CP_Pin GPIO_PIN_0
+#define RESET_DISABLE_CP_GPIO_Port GPIOC
+#define VPP_ENABLE_CP_Pin GPIO_PIN_1
+#define VPP_ENABLE_CP_GPIO_Port GPIOC
+#define nRESET_MCU_Pin GPIO_PIN_2
+#define nRESET_MCU_GPIO_Port GPIOC
+#define nRESET_FAULT_Pin GPIO_PIN_3
+#define nRESET_FAULT_GPIO_Port GPIOA
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
+#define nRESET_IN_Pin GPIO_PIN_1
+#define nRESET_IN_GPIO_Port GPIOB
+#define READY_Pin GPIO_PIN_11
+#define READY_GPIO_Port GPIOF
+#define nFIRE_Pin GPIO_PIN_11
+#define nFIRE_GPIO_Port GPIOE
+#define STROBE_Pin GPIO_PIN_13
+#define STROBE_GPIO_Port GPIOE
+#define nFAULT_Pin GPIO_PIN_12
+#define nFAULT_GPIO_Port GPIOB
 #define LD3_Pin GPIO_PIN_14
 #define LD3_GPIO_Port GPIOB
+#define PHO_Pin GPIO_PIN_15
+#define PHO_GPIO_Port GPIOB
 #define STLINK_RX_Pin GPIO_PIN_8
 #define STLINK_RX_GPIO_Port GPIOD
 #define STLINK_TX_Pin GPIO_PIN_9
 #define STLINK_TX_GPIO_Port GPIOD
+#define XAAR_CLK_Pin GPIO_PIN_15
+#define XAAR_CLK_GPIO_Port GPIOD
 #define USB_FS_OVCR_Pin GPIO_PIN_7
 #define USB_FS_OVCR_GPIO_Port GPIOG
+#define COMM_ENABLE_Pin GPIO_PIN_6
+#define COMM_ENABLE_GPIO_Port GPIOC
 #define USB_FS_VBUS_Pin GPIO_PIN_9
 #define USB_FS_VBUS_GPIO_Port GPIOA
 #define USB_FS_ID_Pin GPIO_PIN_10
@@ -87,6 +113,10 @@ void Error_Handler(void);
 #define USB_FS_N_GPIO_Port GPIOA
 #define USB_FS_P_Pin GPIO_PIN_12
 #define USB_FS_P_GPIO_Port GPIOA
+#define nSS2_Pin GPIO_PIN_9
+#define nSS2_GPIO_Port GPIOG
+#define VPP_EN_Pin GPIO_PIN_14
+#define VPP_EN_GPIO_Port GPIOG
 #define LD2_Pin GPIO_PIN_1
 #define LD2_GPIO_Port GPIOE
 
