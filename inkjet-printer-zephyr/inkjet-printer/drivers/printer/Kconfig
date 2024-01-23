@@ -1,0 +1,18 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig PRINTER
+	bool "Printer drivers"
+	help
+	  Include printer drivers in system config
+
+if PRINTER
+
+config PRINTER_INIT_PRIORITY
+	int "Printer init priority"
+	default 90
+	help
+	  Printer initialization priority.
+
+rsource "xaar128/Kconfig"
+endif # PRINTER

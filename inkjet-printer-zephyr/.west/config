@@ -1,5 +1,5 @@
 [manifest]
-path = example-application
+path = inkjet-printer
 file = west.yml
 
 [zephyr]

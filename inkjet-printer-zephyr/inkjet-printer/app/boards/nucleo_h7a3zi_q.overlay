@@ -1,0 +1,46 @@
+/ {
+	printhead: printhead {
+		compatible = "xaar,xaar128";
+		clocks = <&pwmclock 0>;
+	};
+
+    pwmclock: pwmclock1 {
+        status = "okay";
+        compatible = "pwm-clock";
+        #clock-cells = <1>;
+        pwms = <&pwm_clk 3 PWM_HZ(1000000) PWM_POLARITY_NORMAL>;
+    };
+};
+
+
+&pll {
+	div-m = <1>;
+	mul-n = <24>;
+	div-p = <2>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(96)>;
+	d1cpre = <1>;
+	hpre = <1>;
+	d1ppre = <1>;
+	d2ppre1 = <2>;
+	d2ppre2 = <1>;
+	d3ppre = <1>;
+};
+
+&timers4 {
+	st,prescaler = <0>;
+
+	status = "okay";
+	pwm_clk: pwm {
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim4_ch3_pd14>;
+	};
+};

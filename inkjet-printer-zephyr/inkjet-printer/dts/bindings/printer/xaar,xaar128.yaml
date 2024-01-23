@@ -1,0 +1,12 @@
+description: |
+  Xaar 128 printhead driver
+
+compatible: "xaar,xaar128"
+
+include: base.yaml
+
+properties:
+  clocks:
+    required: true
+    type: phandle-array
+    description: Clock gate information

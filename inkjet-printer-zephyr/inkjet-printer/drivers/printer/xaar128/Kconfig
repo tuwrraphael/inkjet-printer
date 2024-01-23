@@ -1,0 +1,9 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config XAAR128
+	bool "Xaar 128 Printhead"
+	default y
+	depends on DT_HAS_XAAR_XAAR128_ENABLED
+	help
+	  Enable XAAR 128 Printhead Driver
