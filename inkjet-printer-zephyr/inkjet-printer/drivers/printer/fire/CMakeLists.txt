@@ -1,0 +1,5 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+zephyr_library()
+zephyr_library_sources_ifdef(CONFIG_FIRE_STM32_COMBINED_PWM stm32_combined_pwm.c)

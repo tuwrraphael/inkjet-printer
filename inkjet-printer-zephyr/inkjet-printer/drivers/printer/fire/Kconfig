@@ -1,0 +1,11 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config FIRE_STM32_COMBINED_PWM
+	bool "STM32 combined PWM"
+	default y
+	depends on DT_HAS_ST_FIRE_STM32_COMBINED_PWM_ENABLED
+	select USE_STM32_HAL_TIM
+	select USE_STM32_HAL_TIM_EX
+	help
+	  Enable STM32 combined PWM drive for printer fire

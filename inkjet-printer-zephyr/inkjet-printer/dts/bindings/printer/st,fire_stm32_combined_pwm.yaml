@@ -1,0 +1,23 @@
+description: |
+  STM32 combined PWM for printer fire signal
+
+compatible: "st,fire-stm32-combined-pwm"
+
+include: [base.yaml, pinctrl-device.yaml]
+
+properties:
+  pulse12_start:
+    type: int
+    required: true
+  pulse34_start:
+    type: int
+    required: true
+  pulse12_end:
+    type: int
+    required: true
+  pulse34_end:
+    type: int
+    required: true
+  mask_period:
+    type: int
+    required: true

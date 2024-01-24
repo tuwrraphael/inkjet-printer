@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "clock_control.h": "c",
+        "typeinfo": "c",
+        "chrono": "c",
+        "stm32_ll_tim.h": "c",
+        "stm32h7xx_ll_tim.h": "c",
+        "stm32_ll_rcc.h": "c",
+        "stm32h7xx_ll_rcc.h": "c",
+        "stm32h7xx_hal_tim.h": "c",
+        "printer_fire.h": "c"
+    }
+}

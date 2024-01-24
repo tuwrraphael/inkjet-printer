@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_subdirectory_ifdef(CONFIG_XAAR128 xaar128)
+add_subdirectory(fire)

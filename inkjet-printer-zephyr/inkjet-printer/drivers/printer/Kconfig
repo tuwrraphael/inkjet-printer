@@ -8,6 +8,10 @@ menuconfig PRINTER
 
 if PRINTER
 
+module = PRINTER
+module-str = printer
+source "subsys/logging/Kconfig.template.log_config"
+
 config PRINTER_INIT_PRIORITY
 	int "Printer init priority"
 	default 90
@@ -15,4 +19,5 @@ config PRINTER_INIT_PRIORITY
 	  Printer initialization priority.
 
 rsource "xaar128/Kconfig"
+rsource "fire/Kconfig"
 endif # PRINTER

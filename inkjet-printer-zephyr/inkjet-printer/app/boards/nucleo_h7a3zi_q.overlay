@@ -1,15 +1,19 @@
+#define PRINTHEAD_CLOCK_NS PWM_HZ(1000000)
+#define MAX_FIRE_FREQUENCY PWM_HZ(4000)
+
 / {
 	printhead: printhead {
 		compatible = "xaar,xaar128";
 		clocks = <&pwmclock 0>;
 	};
 
-    pwmclock: pwmclock1 {
-        status = "okay";
-        compatible = "pwm-clock";
-        #clock-cells = <1>;
-        pwms = <&pwm_clk 3 PWM_HZ(1000000) PWM_POLARITY_NORMAL>;
-    };
+	pwmclock: pwmclock1 {
+		status = "okay";
+		compatible = "pwm-clock";
+		#clock-cells = <1>;
+		pwms = <&pwm_clk 3 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
+	};
+
 };
 
 
@@ -42,5 +46,22 @@
 		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&tim4_ch3_pd14>;
+	};
+};
+
+&timers1 {
+	st,prescaler = <0>;
+	status = "okay";
+
+	printer_fire: printer_fire {
+		compatible = "st,fire-stm32-combined-pwm";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim1_ch2_pe11 &tim1_ch3_pe13>;
+		pulse12_start = <(PRINTHEAD_CLOCK_NS/4)>;
+		pulse34_start = <(PRINTHEAD_CLOCK_NS/4)>;
+		pulse12_end = <((PRINTHEAD_CLOCK_NS/4) + PRINTHEAD_CLOCK_NS)>;
+		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
+		mask_period = <MAX_FIRE_FREQUENCY>;
 	};
 };
