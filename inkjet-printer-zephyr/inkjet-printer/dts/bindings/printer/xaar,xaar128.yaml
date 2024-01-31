@@ -3,10 +3,16 @@ description: |
 
 compatible: "xaar,xaar128"
 
-include: base.yaml
+include: spi-device.yaml
 
 properties:
   clocks:
     required: true
     type: phandle-array
     description: Clock gate information
+  nss1-gpios:
+    type: phandle-array
+    required: true
+  nss2-gpios:
+    type: phandle-array
+    required: true

@@ -2,10 +2,6 @@
 #define MAX_FIRE_FREQUENCY PWM_HZ(4000)
 
 / {
-	printhead: printhead {
-		compatible = "xaar,xaar128";
-		clocks = <&pwmclock 0>;
-	};
 
 	pwmclock: pwmclock1 {
 		status = "okay";
@@ -17,10 +13,10 @@
 	controlpins: controlpins {
 		compatible = "gpio-leds";
 		nSS2: nSS2 { //these will be handled in the printhead driver
-			gpios = <&gpiog 9 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
 		};
 		nSS1: nSS1 {
-			gpios = <&gpioe 14 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
 		};
 		PHO: PHO {
 			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
@@ -113,5 +109,19 @@
 		pulse12_end = <((PRINTHEAD_CLOCK_NS/4) + PRINTHEAD_CLOCK_NS)>;
 		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
 		mask_period = <MAX_FIRE_FREQUENCY>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi1_mosi_pa7 &spi1_sck_pa5>;
+	printhead: printhead@0 {
+		compatible = "xaar,xaar128";
+		clocks = <&pwmclock 0>;
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		nss1-gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
+		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
 	};
 };

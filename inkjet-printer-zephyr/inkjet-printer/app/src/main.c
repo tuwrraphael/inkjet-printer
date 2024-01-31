@@ -11,6 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/console/console.h>
+#include <stdlib.h>
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -69,13 +70,13 @@ void n_reset_in_changed(const struct device *dev, struct gpio_callback *cb,
 }
 
 void nFault_int_handler(const struct device *dev, struct gpio_callback *cb,
-						  uint32_t pins)
+						uint32_t pins)
 {
 	LOG_INF("nFault changed to %d", gpio_pin_get_dt(&nFAULT));
 }
 
 void READY_int_handler(const struct device *dev, struct gpio_callback *cb,
-						 uint32_t pins)
+					   uint32_t pins)
 {
 	LOG_INF("READY changed to %d", gpio_pin_get_dt(&READY));
 }
@@ -436,7 +437,7 @@ static int cmd_test_printhead_io(const struct shell *sh, size_t argc, char **arg
 	return 0;
 }
 
-int cmd_test_other_io(const struct shell *sh, size_t argc, char **argv)
+static int cmd_test_other_io(const struct shell *sh, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
@@ -444,48 +445,64 @@ int cmd_test_other_io(const struct shell *sh, size_t argc, char **argv)
 	shell_print(sh, "Connect COMM_ENABLE to nRESET_FAULT");
 	if (shell_wait(sh) == ETIMEDOUT)
 	{
-		return;
+		return ETIMEDOUT;
 	}
 	if (gpio_pin_get_dt(&n_reset_fault) != 0)
 	{
 		shell_print(sh, "nRESET_FAULT is not low");
-		return;
+		return EINVAL;
 	}
 	gpio_pin_set_dt(&comm_enable, 1);
 	k_sleep(K_MSEC(1));
 	if (gpio_pin_get_dt(&n_reset_fault) != 1)
 	{
 		shell_print(sh, "nRESET_FAULT is not high");
-		return;
+		return EINVAL;
 	}
 	gpio_pin_set_dt(&comm_enable, 0);
 	shell_print(sh, "Connect COMM_ENABLE to nRESET_IN");
 	if (shell_wait(sh) == ETIMEDOUT)
 	{
-		return;
+		return ETIMEDOUT;
 	}
 	if (gpio_pin_get_dt(&n_reset_in) != 0)
 	{
 		shell_print(sh, "nRESET_IN is not low");
-		return;
+		return EINVAL;
 	}
 	gpio_pin_set_dt(&comm_enable, 1);
 	k_sleep(K_MSEC(1));
 	if (gpio_pin_get_dt(&n_reset_in) != 1)
 	{
 		shell_print(sh, "nRESET_IN is not high");
-		return;
+		return EINVAL;
 	}
 	gpio_pin_set_dt(&comm_enable, 0);
 	shell_print(sh, "done");
 	return 0;
-	
+}
+
+static int cmd_set_pixels(const struct shell *sh, size_t argc, char **argv)
+{
+	if (argc != 5)
+	{
+		shell_print(sh, "Usage: set_pixels <pixels1> <pixels2> <pixels3> <pixels4>");
+		return EINVAL;
+	}
+	uint32_t pixels[4] = {(uint32_t)atoll(argv[1]), (uint32_t)atoll(argv[2]), (uint32_t)atoll(argv[3]), (uint32_t)atoll(argv[4])};
+	shell_print(sh, "Setting pixels to %d %d %d %d", pixels[0], pixels[1], pixels[2], pixels[3]);
+	k_sleep(K_SECONDS(1));
+	const struct device *printhead;
+	printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+
+	return printer_set_pixels(printhead, pixels);
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
 							   SHELL_CMD(other_io, NULL, "Test other IO", cmd_test_other_io),
+							   SHELL_CMD(set_pixels, NULL, "Set pixels", cmd_set_pixels),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
