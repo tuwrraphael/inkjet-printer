@@ -11,9 +11,59 @@
 		status = "okay";
 		compatible = "pwm-clock";
 		#clock-cells = <1>;
-		pwms = <&pwm_clk 3 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
+		pwms = <&pwm_clk 4 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
 	};
 
+	controlpins: controlpins {
+		compatible = "gpio-leds";
+		nSS2: nSS2 { //these will be handled in the printhead driver
+			gpios = <&gpiog 9 GPIO_ACTIVE_HIGH>;
+		};
+		nSS1: nSS1 {
+			gpios = <&gpioe 14 GPIO_ACTIVE_HIGH>;
+		};
+		PHO: PHO {
+			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		//outputs
+		vpp_en: vpp_en {
+			gpios = <&gpiog 14 GPIO_ACTIVE_HIGH>;
+		};
+		comm_enable: comm_enable {
+			gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
+		};
+		n_reset_mcu: n_reset_mcu {
+			gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+		};
+		vpp_enable_cp: vpp_enable_cp {
+			gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+		};
+		reset_disable_cp: reset_disable_cp {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+		};
+
+
+	};
+
+	monitorpins: monitorpins {
+		compatible = "gpio-keys";
+
+		READY: READY {
+			gpios = <&gpiof 11 GPIO_ACTIVE_HIGH>;
+		};
+		nFAULT: nFAULT {
+			gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		//inputs
+		n_reset_fault: n_reset_fault {
+			gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		};
+		n_reset_in: n_reset_in {
+			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+		};
+	};
 };
 
 
@@ -45,7 +95,7 @@
 	pwm_clk: pwm {
 		status = "okay";
 		pinctrl-names = "default";
-		pinctrl-0 = <&tim4_ch3_pd14>;
+		pinctrl-0 = <&tim4_ch4_pd15>;
 	};
 };
 
