@@ -6,7 +6,14 @@
                 "${workspaceFolder}/inkjet-printer-zephyr/inkjet-printer/app/include",
                 "${workspaceFolder}/inkjet-printer-zephyr/inkjet-printer/app/build/**",
                 "${workspaceFolder}/inkjet-printer-zephyr/zephyr/include",
-                "${workspaceFolder}/inkjet-printer-zephyr/inkjet-printer/include"
+                "${workspaceFolder}/inkjet-printer-zephyr/inkjet-printer/include",
+                "${workspaceFolder}/inkjet-printer-zephyr/zephyr/modules/cmsis",
+                "${workspaceFolder}/inkjet-printer-zephyr/zephyr/soc/arm/st_stm32/stm32h7",
+                "${workspaceFolder}/inkjet-printer-zephyr/modules/hal/stm32/stm32cube/stm32h7xx/soc",
+                "${workspaceFolder}/inkjet-printer-zephyr/modules/hal/cmsis/CMSIS/Core/Include"
+            ],
+            "forcedInclude": [
+                "${workspaceFolder}/inkjet-printer-zephyr/inkjet-printer/app/build/zephyr/include/generated/autoconf.h"
             ],
             "defines": [
                 "STM32H7A3xx",

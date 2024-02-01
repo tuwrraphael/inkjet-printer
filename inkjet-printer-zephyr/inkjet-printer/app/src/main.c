@@ -13,6 +13,8 @@
 #include <zephyr/console/console.h>
 #include <stdlib.h>
 
+#include "printhead_routines.h"
+
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
 #if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
@@ -44,6 +46,8 @@ static struct gpio_callback n_reset_in_cb_data;
 
 static struct gpio_callback nFAULT_cb_data;
 static struct gpio_callback READY_cb_data;
+
+printhead_routine_work_t activate_printhead_work;
 
 K_EVENT_DEFINE(btn_event);
 
@@ -376,9 +380,10 @@ static int cmd_test_printhead_io(const struct shell *sh, size_t argc, char **arg
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 
-	gpio_pin_set_dt(&nSS2, 0);
-	gpio_pin_set_dt(&nSS1, 0);
+	gpio_pin_set_dt(&nSS2, 1);
+	gpio_pin_set_dt(&nSS1, 1);
 	gpio_pin_set_dt(&PHO, 0);
+	gpio_pin_set_dt(&comm_enable, 1);
 	shell_print(sh, "Connect nSS2 to READY");
 	if (shell_wait(sh) == ETIMEDOUT)
 	{
@@ -389,14 +394,14 @@ static int cmd_test_printhead_io(const struct shell *sh, size_t argc, char **arg
 		shell_print(sh, "READY is not low");
 		return EINVAL;
 	}
-	gpio_pin_set_dt(&nSS2, 1);
+	gpio_pin_set_dt(&nSS2, 0);
 	k_sleep(K_MSEC(1));
 	if (gpio_pin_get_dt(&READY) != 1)
 	{
 		shell_print(sh, "READY is not high");
 		return EINVAL;
 	}
-	gpio_pin_set_dt(&nSS2, 0);
+	gpio_pin_set_dt(&nSS2, 1);
 	shell_print(sh, "Connect nSS1 to READY");
 	if (shell_wait(sh) == ETIMEDOUT)
 	{
@@ -407,14 +412,14 @@ static int cmd_test_printhead_io(const struct shell *sh, size_t argc, char **arg
 		shell_print(sh, "READY is not low");
 		return EINVAL;
 	}
-	gpio_pin_set_dt(&nSS1, 1);
+	gpio_pin_set_dt(&nSS1, 0);
 	k_sleep(K_MSEC(1));
 	if (gpio_pin_get_dt(&READY) != 1)
 	{
 		shell_print(sh, "READY is not high");
 		return EINVAL;
 	}
-	gpio_pin_set_dt(&nSS1, 0);
+	gpio_pin_set_dt(&nSS1, 1);
 	shell_print(sh, "Connect PHO to nFAULT");
 	if (shell_wait(sh) == ETIMEDOUT)
 	{
@@ -489,7 +494,7 @@ static int cmd_set_pixels(const struct shell *sh, size_t argc, char **argv)
 		shell_print(sh, "Usage: set_pixels <pixels1> <pixels2> <pixels3> <pixels4>");
 		return EINVAL;
 	}
-	uint32_t pixels[4] = {(uint32_t)atoll(argv[1]), (uint32_t)atoll(argv[2]), (uint32_t)atoll(argv[3]), (uint32_t)atoll(argv[4])};
+	uint32_t pixels[4] = {(uint32_t)strtoll(argv[1], NULL, 16), (uint32_t)strtoll(argv[2], NULL, 16), (uint32_t)strtoll(argv[3], NULL, 16), (uint32_t)strtoll(argv[4], NULL, 16)};
 	shell_print(sh, "Setting pixels to %d %d %d %d", pixels[0], pixels[1], pixels[2], pixels[3]);
 	k_sleep(K_SECONDS(1));
 	const struct device *printhead;
@@ -498,17 +503,59 @@ static int cmd_set_pixels(const struct shell *sh, size_t argc, char **argv)
 	return printer_set_pixels(printhead, pixels);
 }
 
+static int cmd_comm_enable(const struct shell *sh, size_t argc, char **argv)
+{
+	if (argc != 2)
+	{
+		shell_print(sh, "Usage: comm_enable <0|1>");
+		return EINVAL;
+	}
+	int value = atoi(argv[1]);
+	if (value != 0 && value != 1)
+	{
+		shell_print(sh, "Usage: comm_enable <0|1>");
+		return EINVAL;
+	}
+	gpio_pin_set_dt(&comm_enable, value);
+	return 0;
+}
+
+// static int shutdown_printhead()
+// {
+// 	gpio_pin_set_dt(&comm_enable, 0);
+// 	gpio_pin_set_dt(&n_reset_mcu, 0);
+// 	LOG_INFO("Printhead reset enabled");
+// 	k_sleep(K_MSEC(100));
+// 	gpio_pin_set_dt(&vpp_en, 0);
+// 	LOG_INFO("VPPH/VPPL off");
+// }
+
+static int cmd_activate_printhead(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	k_event_clear(&btn_event, 0x1);
+	activate_printhead_work.cancelevent = &btn_event;
+	activate_printhead_work.events = 0x1;
+	k_work_submit(&activate_printhead_work.work);
+	return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
 							   SHELL_CMD(other_io, NULL, "Test other IO", cmd_test_other_io),
 							   SHELL_CMD(set_pixels, NULL, "Set pixels", cmd_set_pixels),
+							   SHELL_CMD(comm_enable, NULL, "Set COMM_ENABLE", cmd_comm_enable),
+							   SHELL_CMD(activate_printhead, NULL, "Activate printhead", cmd_activate_printhead),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
 int main(void)
 {
 	int ret;
+
+	k_work_init(&activate_printhead_work.work, activate_printhead_work_cb);
 
 	ret = initialize_io();
 	if (ret != 0)
@@ -554,8 +601,6 @@ int main(void)
 		LOG_ERR("Printhead not ready");
 		return 0;
 	}
-
-	printer_sample_function(printhead);
 
 	return 0;
 }
