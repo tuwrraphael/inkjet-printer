@@ -27,7 +27,9 @@ enum printhead_activate_state
     PRINTHEAD_ACTIVATE_ENABLE_VPP_PULSE,
     PRINTHEAD_ACTIVATE_ENABLE_COMM_RESET,
     PRINTHEAD_ACTIVATE_ENABLE_RESET_PULSE,
-    PRINTHEAD_ACTIVATE_ENABLE_CLOCK
+    PRINTHEAD_ACTIVATE_ENABLE_CLOCK,
+    PRINTHEAD_SHUTDOWN_DISABLE_COMM_RESET,
+    PRINTHEAD_SHUTDOWN_DISABLE_VPP
 };
 
 static void printhead_activate_enable_vpp_run(void *o);
@@ -35,6 +37,9 @@ static void printhead_activate_enable_vpp_pulse_run(void *o);
 static void printhead_activate_enable_comm_reset_run(void *o);
 static void printhead_activate_enable_reset_pulse_run(void *o);
 static void printhead_activate_enable_clock_run(void *o);
+static void printhead_shutdown_disable_comm_reset_run(void *o);
+static void printhead_shutdown_disable_vpp_run(void *o);
+static void printhead_shutdown_disable_comm_reset_entry(void *o);
 
 const struct smf_state printhead_activate_states[] = {
     [PRINTHEAD_ACTIVATE_ENABLE_VPP] = SMF_CREATE_STATE(NULL, printhead_activate_enable_vpp_run, NULL),
@@ -42,12 +47,14 @@ const struct smf_state printhead_activate_states[] = {
     [PRINTHEAD_ACTIVATE_ENABLE_COMM_RESET] = SMF_CREATE_STATE(NULL, printhead_activate_enable_comm_reset_run, NULL),
     [PRINTHEAD_ACTIVATE_ENABLE_RESET_PULSE] = SMF_CREATE_STATE(NULL, printhead_activate_enable_reset_pulse_run, NULL),
     [PRINTHEAD_ACTIVATE_ENABLE_CLOCK] = SMF_CREATE_STATE(NULL, printhead_activate_enable_clock_run, NULL),
-};
+    [PRINTHEAD_SHUTDOWN_DISABLE_COMM_RESET] = SMF_CREATE_STATE(printhead_shutdown_disable_comm_reset_entry, printhead_shutdown_disable_comm_reset_run, NULL),
+    [PRINTHEAD_SHUTDOWN_DISABLE_VPP] = SMF_CREATE_STATE(NULL, printhead_shutdown_disable_vpp_run, NULL)};
 
 struct printhead_activate_state_object
 {
     struct smf_ctx ctx;
     k_timeout_t next_delay;
+    bool disable_phase;
 
 } printhead_activate_state_object;
 
@@ -134,18 +141,64 @@ static void printhead_activate_enable_clock_run(void *o)
     smf_set_terminate(SMF_CTX(&printhead_activate_state_object), PRINTHEAD_SMF_DONE);
 }
 
-static int activate_printhead_smf(struct k_event *cancelevent, uint32_t events)
+static void printhead_shutdown_disable_comm_reset_run(void *o)
 {
-    smf_set_initial(SMF_CTX(&printhead_activate_state_object), &printhead_activate_states[PRINTHEAD_ACTIVATE_ENABLE_VPP]);
+    bool reset_diabled = false;
+    bool comm_disabled = false;
+    if (gpio_pin_get_dt(&n_reset_mcu) == 1)
+    {
+        gpio_pin_set_dt(&n_reset_mcu, 0);
+        reset_diabled = true;
+    }
+    if (gpio_pin_get_dt(&comm_enable) == 1)
+    {
+        gpio_pin_set_dt(&comm_enable, 0);
+        comm_disabled = true;
+    }
+    LOG_INF(reset_diabled ? "Reset disabled" : "Reset was already disabled");
+    LOG_INF(comm_disabled ? "Comm disabled" : "Comm was already disabled");
+    smf_set_state(SMF_CTX(&printhead_activate_state_object), &printhead_activate_states[PRINTHEAD_SHUTDOWN_DISABLE_VPP]);
+    printhead_activate_state_object.next_delay = K_MSEC(1);
+}
+
+static void printhead_shutdown_disable_vpp_run(void *o)
+{
+    if (gpio_pin_get_dt(&vpp_en) == 1)
+    {
+        gpio_pin_set_dt(&vpp_en, 0);
+        LOG_INF("VPPH/VPPL disabled");
+    }
+    else
+    {
+        LOG_INF("VPPH/VPPL was already disabled");
+    }
+    smf_set_terminate(SMF_CTX(&printhead_activate_state_object), PRINTHEAD_SMF_DONE);
+}
+
+static void printhead_shutdown_disable_comm_reset_entry(void *o)
+{
+    printhead_activate_state_object.disable_phase = true;
+}
+
+static int activate_printhead_smf(struct k_event *cancelevent, uint32_t events, struct smf_state *init_state)
+{
+    printhead_activate_state_object.disable_phase = false;
+    smf_set_initial(SMF_CTX(&printhead_activate_state_object), init_state);
     printhead_activate_state_object.next_delay = K_NO_WAIT;
     while (1)
     {
         k_sleep(printhead_activate_state_object.next_delay);
         if (cancelevent != NULL && k_event_test(cancelevent, events))
         {
-            LOG_WRN("Printhead activation cancelled");
-            smf_set_terminate(SMF_CTX(&printhead_activate_state_object), PRINTHEAD_SMF_CANCEL);
-            return -ECANCELED;
+            LOG_WRN("Printhead routine cancelled");
+            if (printhead_activate_state_object.disable_phase)
+            {
+                LOG_INF("Already in disable phase.");
+            }
+            else
+            {
+                smf_set_state(SMF_CTX(&printhead_activate_state_object), &printhead_activate_states[PRINTHEAD_SHUTDOWN_DISABLE_COMM_RESET]);
+            }
         }
         int ret = smf_run_state(SMF_CTX(&printhead_activate_state_object));
         if (ret != 0)
@@ -176,5 +229,12 @@ void activate_printhead_work_cb(struct k_work *item)
 {
     LOG_INF("Activating printhead");
     printhead_routine_work_t *parameters = CONTAINER_OF(item, printhead_routine_work_t, work);
-    activate_printhead_smf(parameters->cancelevent, parameters->events);
+    activate_printhead_smf(parameters->cancelevent, parameters->events, &printhead_activate_states[PRINTHEAD_ACTIVATE_ENABLE_VPP]);
+}
+
+void printhead_shutdown_work_cb(struct k_work *item)
+{
+    LOG_INF("Shutting down printhead");
+    printhead_routine_work_t *parameters = CONTAINER_OF(item, printhead_routine_work_t, work);
+    activate_printhead_smf(parameters->cancelevent, parameters->events, &printhead_activate_states[PRINTHEAD_SHUTDOWN_DISABLE_COMM_RESET]);
 }
