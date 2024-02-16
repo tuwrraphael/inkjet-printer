@@ -1,0 +1,6 @@
+description: |
+    Honeywell ABP digital pressure sensor.
+
+compatible: "honeywell,abp"
+
+include: [sensor-device.yaml, spi-device.yaml]

@@ -1,0 +1,10 @@
+# Copyright (c) 2021 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config ABP_PRESSURE_SENSOR
+	bool "ABP Pressure Sensor"
+	default y
+	depends on DT_HAS_HONEYWELL_ABP_ENABLED
+	select SPI
+	help
+	  Enable Honeywell ABP Pressure Sensor

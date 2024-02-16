@@ -125,3 +125,16 @@
 		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
 	};
 };
+
+&spi3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi3_miso_pc11 &spi3_sck_pc10>;
+	cs-gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
+	abp: abp@0 {
+		status = "okay";
+		compatible = "honeywell,abp";
+		reg = <0>;
+		spi-max-frequency = <400000>;
+	};
+};
