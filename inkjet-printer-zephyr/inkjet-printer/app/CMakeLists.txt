@@ -11,5 +11,6 @@ project(app LANGUAGES C)
 
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/printhead_routines.c)
+target_sources(app PRIVATE src/pressure_control.c)
 include_directories(include)
 

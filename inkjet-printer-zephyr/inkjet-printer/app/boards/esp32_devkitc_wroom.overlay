@@ -1,0 +1,38 @@
+/ {
+
+    pump_motor: pump_motor {
+		status = "okay";
+		compatible = "toshiba,tb6612fng";
+		pwms = <&mcpwm0 0 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
+		in1-gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+		in2-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+
+&spi2 {
+    status = "okay";
+    abp: abp@0 {
+		status = "okay";
+		compatible = "honeywell,abp";
+		reg = <0>;
+		spi-max-frequency = <400000>;
+	};
+};
+
+ &pinctrl {
+    mcpwm0_default: mcpwm0_default {
+      group1 {
+        pinmux = <MCPWM0_OUT0A_GPIO2>;
+        output-enable;
+      };
+    };
+  };
+
+&mcpwm0 {
+    status = "okay";
+    prescale = <255>;
+    prescale-timer0 = <1>;
+    pinctrl-0 = <&mcpwm0_default>;
+    pinctrl-names = "default";
+};

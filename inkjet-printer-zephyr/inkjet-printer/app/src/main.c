@@ -12,7 +12,10 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/console/console.h>
 #include <stdlib.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/drivers/motor.h>
 
+#include "pressure_control.h"
 #include "printhead_routines.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
@@ -48,6 +51,14 @@ static struct gpio_callback nFAULT_cb_data;
 static struct gpio_callback READY_cb_data;
 
 printhead_routine_work_t activate_printhead_work;
+
+void pressure_debug_timer_handler(struct k_timer *timer)
+{
+	double pressure = get_pressure();
+	printk("Pressure: %f mbar\n", pressure);
+}
+
+K_TIMER_DEFINE(pressure_debug_timer, pressure_debug_timer_handler, NULL);
 
 K_EVENT_DEFINE(btn_event);
 
@@ -541,6 +552,109 @@ static int cmd_activate_printhead(const struct shell *sh, size_t argc, char **ar
 	return 0;
 }
 
+static int cmd_pressure_control_enable(const struct shell *sh, size_t argc, char **argv, void *data)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	bool enable = (bool)data;
+	pressure_control_enable(enable);
+	return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(pressure_control_enable_cmds, cmd_pressure_control_enable,
+							 (enable, true, "enable"), (disable, false, "disable"));
+
+static int cmd_pressure_contol_set_target_pressure(const struct shell *sh, size_t argc, char **argv)
+{
+	if (argc != 2)
+	{
+		shell_print(sh, "Usage: pressure_control_set_target_pressure <pressure>");
+		return EINVAL;
+	}
+	float pressure = atof(argv[1]);
+	pressure_control_set_target_pressure(pressure);
+	return 0;
+}
+
+static int cmd_pressure_control_print_pressure(const struct shell *sh, size_t argc, char **argv, void *data)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+    bool enable = (bool)data;
+	if (enable)
+	{
+		k_timer_start(&pressure_debug_timer, K_SECONDS(1), K_SECONDS(1));
+	}
+	else
+	{
+		k_timer_stop(&pressure_debug_timer);
+	}
+	return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(pressure_control_print_pressure_cmds, cmd_pressure_control_print_pressure,
+							 (enable, true, "enable"), (disable, false, "disable"));
+
+static int cmd_pressure_control_calibrate_zero_pressure(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	return calibrate_zero_pressure();
+}
+
+float speed;
+motor_action_t action;
+
+static int cmd_test_pump(const struct shell *sh, size_t argc, char **argv, void *data)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	// if (argc != 3)
+	// {
+	// 	shell_print(sh, "Usage: pump_motor <cw|ccw|brk|stop> <pwm>");
+	// 	return EINVAL;
+	// }
+
+	const struct device *pump;
+	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
+	if (!device_is_ready(pump))
+	{
+		LOG_ERR("Pump not ready");
+		return 0;
+	}
+	action = (motor_action_t)data;
+	shell_print(sh, "Setting pump motor to %d at %f", action, (double)speed);
+	motor_set_action(pump, action, speed);
+	return 0;
+}
+
+static int cmd_test_pump_speed(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	if (argc != 2)
+	{
+		shell_print(sh, "Usage: pump_motor_speed <pwm>");
+		return EINVAL;
+	}
+	speed = atof(argv[1]);
+	shell_print(sh, "Setting pump motor to %d at %f", action, (double)speed);
+	const struct device *pump;
+	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
+	if (!device_is_ready(pump))
+	{
+		LOG_ERR("Pump not ready");
+		return 0;
+	}
+	motor_set_action(pump, action, speed);
+	return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(pump_motor_cmds, cmd_test_pump,
+							 (cw, MOTOR_ACTION_CW, "clockwise"), (ccw, MOTOR_ACTION_CCW, "counter clockwise"),
+							 (brk, MOTOR_ACTION_SHORT_BRAKE, "brake"), (stop, MOTOR_ACTION_STOP, "stop"));
+
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
@@ -548,6 +662,12 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(set_pixels, NULL, "Set pixels", cmd_set_pixels),
 							   SHELL_CMD(comm_enable, NULL, "Set COMM_ENABLE", cmd_comm_enable),
 							   SHELL_CMD(activate_printhead, NULL, "Activate printhead", cmd_activate_printhead),
+							   SHELL_CMD(pressure_control_enable, &pressure_control_enable_cmds, "Enable/disable pressure control", NULL),
+							   SHELL_CMD(pressure_control_set_target_pressure, NULL, "Set target pressure", cmd_pressure_contol_set_target_pressure),
+							   SHELL_CMD(pressure_control_print_pressure, &pressure_control_print_pressure_cmds, "Print pressure", NULL),
+							   SHELL_CMD(pressure_control_calibrate_zero_pressure, NULL, "Calibrate zero pressure", cmd_pressure_control_calibrate_zero_pressure),
+							   SHELL_CMD(pump_motor, &pump_motor_cmds, "Test pump motor", cmd_test_pump),
+							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
@@ -556,7 +676,6 @@ int main(void)
 	int ret;
 
 	k_work_init(&activate_printhead_work.work, activate_printhead_work_cb);
-
 	ret = initialize_io();
 	if (ret != 0)
 	{
@@ -601,6 +720,5 @@ int main(void)
 		LOG_ERR("Printhead not ready");
 		return 0;
 	}
-
 	return 0;
 }

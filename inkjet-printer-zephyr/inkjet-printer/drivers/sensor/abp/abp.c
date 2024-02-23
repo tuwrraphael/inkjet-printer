@@ -34,8 +34,8 @@ static int abp_sample_fetch(const struct device *dev,
 	};
 
 	ret = spi_read(config->bus.bus, &config->bus.config, &rx);
-	bool status_bit_0_set = (read_data[0] & (1 << 14)) > 0;
-	bool status_bit_1_set = (read_data[0] & (1 << 15)) > 0;
+	// bool status_bit_0_set = (read_data[0] & (1 << 14)) > 0;
+	// bool status_bit_1_set = (read_data[0] & (1 << 15)) > 0;
 	int32_t adc_val = ((read_data[0] & 0x3F) << 8) | read_data[1];
 
 	uint32_t adc_max = 14745;

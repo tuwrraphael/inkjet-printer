@@ -10,6 +10,14 @@
 		pwms = <&pwm_clk 4 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
 	};
 
+    pump_motor: pump_motor {
+		status = "okay";
+		compatible = "toshiba,tb6612fng";
+		pwms = <&pwm_pump 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
+		in1-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+		in2-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>;
+	};
+
 	controlpins: controlpins {
 		compatible = "gpio-leds";
 		nSS2: nSS2 { //these will be handled in the printhead driver
@@ -38,8 +46,6 @@
 		reset_disable_cp: reset_disable_cp {
 			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
 		};
-
-
 	};
 
 	monitorpins: monitorpins {
@@ -93,6 +99,17 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&tim4_ch4_pd15>;
 	};
+};
+
+&timers2 {
+	status = "okay";
+	st,prescaler = <64>;
+
+	pwm_pump: pwm {
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim2_ch3_pa2>;
+	};	
 };
 
 &timers1 {

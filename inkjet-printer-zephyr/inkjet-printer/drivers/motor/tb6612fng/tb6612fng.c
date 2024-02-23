@@ -9,6 +9,8 @@ LOG_MODULE_REGISTER(tb6612fng, CONFIG_MOTOR_LOG_LEVEL);
 
 struct tb6612fng_data
 {
+	motor_action_t last_action;
+	float last_speed;
 };
 
 struct tb6612fng_config
@@ -21,6 +23,11 @@ struct tb6612fng_config
 static int tb6612fng_set_action(const struct device *dev, motor_action_t action, float speed)
 {
 	const struct tb6612fng_config *config = dev->config;
+	struct tb6612fng_data *data = dev->data;
+	if (action == data->last_action && speed == data->last_speed)
+	{
+		return 0;
+	}
 	int nextIn1 = 0;
 	int nextIn2 = 0;
 	switch (action)
@@ -47,6 +54,9 @@ static int tb6612fng_set_action(const struct device *dev, motor_action_t action,
 	uint32_t period = config->pwm_dt.period;
 	uint32_t pulse = speed * period;
 	pwm_set_dt(&config->pwm_dt, period, pulse);
+	LOG_DBG("tb6612fng_set_action: action %d, period %d, pulse %d", action, period, pulse);
+	data->last_action = action;
+	data->last_speed = speed;
 	return 0;
 }
 
@@ -56,7 +66,9 @@ static const struct motor_api tb6612fng_api = {
 static int tb6612fng_init(const struct device *dev)
 {
 	const struct tb6612fng_config *config = dev->config;
-	// struct tb6612fng_data *data = dev->data;
+	struct tb6612fng_data *data = dev->data;
+	data->last_action = MOTOR_ACTION_STOP;
+	data->last_speed = 0;
 
 	if (!device_is_ready(config->pwm_dt.dev))
 	{
@@ -64,6 +76,8 @@ static int tb6612fng_init(const struct device *dev)
 				config->pwm_dt.dev->name);
 		return -ENODEV;
 	}
+	uint32_t period = config->pwm_dt.period;
+	pwm_set_dt(&config->pwm_dt, period, 0);
 	if (!gpio_is_ready_dt(&config->in1_gpio))
 	{
 		LOG_ERR("Error: in1_gpio device %s is not ready\n",
