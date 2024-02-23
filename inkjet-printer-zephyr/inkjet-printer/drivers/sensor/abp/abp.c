@@ -9,6 +9,7 @@ LOG_MODULE_REGISTER(abp, CONFIG_SENSOR_LOG_LEVEL);
 
 struct abp_data
 {
+	int32_t data_ubar;
 };
 
 struct abp_config
@@ -20,10 +21,10 @@ static int abp_sample_fetch(const struct device *dev,
 							enum sensor_channel channel)
 {
 	const struct abp_config *config = dev->config;
-	// struct abp_data *data = dev->data;
+	struct abp_data *data = dev->data;
 	uint8_t read_data[2];
 	int ret;
-		struct spi_buf buf = {
+	struct spi_buf buf = {
 		.buf = read_data,
 		.len = sizeof(uint8_t) * 2,
 	};
@@ -31,19 +32,55 @@ static int abp_sample_fetch(const struct device *dev,
 		.buffers = &buf,
 		.count = 1,
 	};
-	ret = spi_read(config->bus.bus, &config->bus.config, &rx);
-	uint16_t adc_val = (read_data[0] << 8) | read_data[1];
-	double max_pressure = 1034.0;
-	double min_pressure = 0.0;
-	double max_adc = 0x3FFF;
-	int32_t pressure_raw = ((adc_val - 0x2000)*1034)/0x2000;
 
-	LOG_INF("abp_sample_fetch: spi_read, adc = %d", pressure_raw);
+	ret = spi_read(config->bus.bus, &config->bus.config, &rx);
+	bool status_bit_0_set = (read_data[0] & (1 << 14)) > 0;
+	bool status_bit_1_set = (read_data[0] & (1 << 15)) > 0;
+	int32_t adc_val = ((read_data[0] & 0x3F) << 8) | read_data[1];
+
+	uint32_t adc_max = 14745;
+	uint32_t adc_min = 1638;
+	int32_t adc_middle = 0x2000;
+	if (adc_val > adc_max || adc_val < adc_min)
+	{
+		LOG_ERR("abp_sample_fetch: adc value out of range");
+		return -EIO;
+	}
+	int32_t p_max_mbar = 1034;
+	uint32_t p_range = 2 * p_max_mbar;
+
+	int32_t adc_range = (adc_max - adc_min);
+
+	int32_t adc_mul = (adc_val - adc_middle) * p_range * 100;
+
+	data->data_ubar = adc_mul / adc_range * 10;
+
+	return 0;
+}
+
+static int abp_channel_get(const struct device *dev,
+						   enum sensor_channel chan,
+						   struct sensor_value *val)
+{
+	struct abp_data *data = dev->data;
+
+	switch (chan)
+	{
+
+	case SENSOR_CHAN_PRESS:
+		val->val1 = data->data_ubar / 10 / 1000;
+		val->val2 = (data->data_ubar / 10 % 1000) * 1000;
+		break;
+	default:
+		return -ENOTSUP;
+	}
+
 	return 0;
 }
 
 static const struct sensor_driver_api abp_api = {
-	.sample_fetch = abp_sample_fetch};
+	.sample_fetch = abp_sample_fetch,
+	.channel_get = abp_channel_get};
 
 static int abp_init(const struct device *dev)
 {

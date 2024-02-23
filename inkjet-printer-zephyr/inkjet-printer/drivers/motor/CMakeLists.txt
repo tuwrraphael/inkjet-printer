@@ -1,0 +1,1 @@
+add_subdirectory_ifdef(CONFIG_TB6612FNG tb6612fng)

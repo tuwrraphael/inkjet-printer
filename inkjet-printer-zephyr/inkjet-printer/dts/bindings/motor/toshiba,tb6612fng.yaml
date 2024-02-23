@@ -1,0 +1,17 @@
+description: |
+  H Bridge Motor driver
+
+compatible: "toshiba,tb6612fng"
+
+include: [base.yaml]
+
+properties:
+  in1-gpios:
+    type: phandle-array
+    required: true
+  in2-gpios:
+    type: phandle-array
+    required: true
+  pwms:
+    type: phandle-array
+    required: true

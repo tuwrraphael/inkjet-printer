@@ -242,10 +242,10 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim1.Init.RepetitionCounter = 0;
 	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-	LOG_INF("Timer Init %x", timer);
+	LOG_INF("Timer Init");
 	if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
 	{
-		LOG_ERR("Timer Init failed %x", timer);
+		LOG_ERR("Timer Init failed");
 		return -ENODEV;
 	}
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
@@ -356,7 +356,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	// }
 
 	/* Reset the MMS Bits */
-	uint32_t tmpcr2;
+	uint32_t tmpcr2 = TIM4->CR2;
 	tmpcr2 &= ~TIM_CR2_MMS;
 	/* Select the TRGO source */
 	tmpcr2 |= sMasterConfig.MasterOutputTrigger;

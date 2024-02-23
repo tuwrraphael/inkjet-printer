@@ -106,7 +106,7 @@ static const struct printer_driver_api xaar128_api = {
 static int xaar128_init(const struct device *dev)
 {
 	const struct xaar128_config *config = dev->config;
-	struct xaar128_data *data = dev->data;
+	// struct xaar128_data *data = dev->data;
 
 	if (!spi_is_ready_dt(&config->bus))
 	{

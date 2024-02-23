@@ -1,0 +1,19 @@
+menuconfig MOTOR
+	bool "Motor drivers"
+	help
+	  Include motor drivers in system config
+
+if MOTOR
+
+module = MOTOR
+module-str = motor
+source "subsys/logging/Kconfig.template.log_config"
+
+config MOTOR_INIT_PRIORITY
+	int "Motor init priority"
+	default 90
+	help
+	  Motor initialization priority.
+
+rsource "tb6612fng/Kconfig"
+endif # MOTOR

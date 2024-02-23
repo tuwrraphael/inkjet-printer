@@ -1,4 +1,5 @@
 menu "Drivers"
 rsource "printer/Kconfig"
 rsource "sensor/Kconfig"
+rsource "motor/Kconfig"
 endmenu
