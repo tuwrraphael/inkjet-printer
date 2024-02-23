@@ -8,3 +8,4 @@ Strobe/Strobe.csv
 \#auto_saved_files#
 *.kicad_pcb.lck
 import.sh
+symbols/*.bak

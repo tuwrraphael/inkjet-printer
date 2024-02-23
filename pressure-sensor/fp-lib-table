@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Honeywell_ABP")(type "KiCad")(uri "${KIPRJMOD}/../footprints/Honeywell_ABP.pretty")(options "")(descr ""))
+)
