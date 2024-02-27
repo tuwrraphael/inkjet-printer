@@ -14,5 +14,7 @@ target_sources(app PRIVATE src/printhead_routines.c)
 target_sources(app PRIVATE src/pressure_control.c)
 target_sources(app PRIVATE src/printer_system_smf.c)
 target_sources(app PRIVATE src/failure_handling.c)
+target_sources(app PRIVATE src/webusb.c)
+target_sources(app PRIVATE src/webusb_initialize.c)
 include_directories(include)
 

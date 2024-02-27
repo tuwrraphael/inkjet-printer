@@ -1,0 +1,157 @@
+#define PRINTHEAD_CLOCK_NS PWM_HZ(1000000)
+#define MAX_FIRE_FREQUENCY PWM_HZ(4000)
+
+/ {
+
+	pwmclock: pwmclock1 {
+		status = "okay";
+		compatible = "pwm-clock";
+		#clock-cells = <1>;
+		pwms = <&pwm_clk 4 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
+	};
+
+    pump_motor: pump_motor {
+		status = "okay";
+		compatible = "toshiba,tb6612fng";
+		pwms = <&pwm_pump 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
+		in1-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+		in2-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>;
+	};
+
+	controlpins: controlpins {
+		compatible = "gpio-leds";
+		nSS2: nSS2 { //these will be handled in the printhead driver
+			gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
+		};
+		nSS1: nSS1 {
+			gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
+		};
+		PHO: PHO {
+			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		//outputs
+		vpp_en: vpp_en {
+			gpios = <&gpiog 14 GPIO_ACTIVE_HIGH>;
+		};
+		comm_enable: comm_enable {
+			gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
+		};
+		n_reset_mcu: n_reset_mcu {
+			gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+		};
+		vpp_enable_cp: vpp_enable_cp {
+			gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+		};
+		reset_disable_cp: reset_disable_cp {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	monitorpins: monitorpins {
+		compatible = "gpio-keys";
+
+		READY: READY {
+			gpios = <&gpiof 11 GPIO_ACTIVE_HIGH>;
+		};
+		nFAULT: nFAULT {
+			gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		//inputs
+		n_reset_fault: n_reset_fault {
+			gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		};
+		n_reset_in: n_reset_in {
+			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+
+&pll {
+	div-m = <1>;
+	mul-n = <24>;
+	div-p = <2>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(96)>;
+	d1cpre = <1>;
+	hpre = <1>;
+	d1ppre = <1>;
+	d2ppre1 = <2>;
+	d2ppre2 = <1>;
+	d3ppre = <1>;
+};
+
+&timers4 {
+	st,prescaler = <0>;
+
+	status = "okay";
+	pwm_clk: pwm {
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim4_ch4_pd15>;
+	};
+};
+
+&timers2 {
+	status = "okay";
+	st,prescaler = <64>;
+
+	pwm_pump: pwm {
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim2_ch3_pa2>;
+	};	
+};
+
+&timers1 {
+	st,prescaler = <0>;
+	status = "okay";
+
+	printer_fire: printer_fire {
+		compatible = "st,fire-stm32-combined-pwm";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&tim1_ch2_pe11 &tim1_ch3_pe13>;
+		pulse12_start = <(PRINTHEAD_CLOCK_NS/4)>;
+		pulse34_start = <(PRINTHEAD_CLOCK_NS/4)>;
+		pulse12_end = <((PRINTHEAD_CLOCK_NS/4) + PRINTHEAD_CLOCK_NS)>;
+		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
+		mask_period = <MAX_FIRE_FREQUENCY>;
+	};
+};
+
+&spi1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi1_mosi_pa7 &spi1_sck_pa5>;
+	printhead: printhead@0 {
+		compatible = "xaar,xaar128";
+		clocks = <&pwmclock 0>;
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		nss1-gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
+		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&spi3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi3_miso_pc11 &spi3_sck_pc10>;
+	cs-gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
+	abp: abp@0 {
+		status = "okay";
+		compatible = "honeywell,abp";
+		reg = <0>;
+		spi-max-frequency = <400000>;
+	};
+};
