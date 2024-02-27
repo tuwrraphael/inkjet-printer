@@ -1,16 +1,18 @@
-#include "printhead_routines.h"
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/printer.h>
 
-LOG_MODULE_REGISTER(printhead_routines, CONFIG_APP_LOG_LEVEL);
+#include "printhead_routines.h"
+#include "failure_handling.h"
 
-K_EVENT_DEFINE(printhead_routine_event);
-#define PRINTHEAD_ROUTINE_CANCEL (1 << 0)
+LOG_MODULE_REGISTER(printhead_routines, CONFIG_APP_LOG_LEVEL);
 
 #define PRINTHEAD_SMF_DONE (1)
 #define PRINTHEAD_SMF_ERROR (2)
+
+static bool watch_reset = false;
+static printhead_routines_error_callback_t error_callback;
 
 static const struct gpio_dt_spec vpp_en = GPIO_DT_SPEC_GET(DT_NODELABEL(vpp_en), gpios);
 static const struct gpio_dt_spec comm_enable = GPIO_DT_SPEC_GET(DT_NODELABEL(comm_enable), gpios);
@@ -119,6 +121,7 @@ static void printhead_routine_activate_enable_reset_pulse_run(void *o)
         smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_ERROR);
         return;
     }
+    watch_reset = true;
     smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_CLOCK]);
     printhead_routine_state_object.next_delay = K_NO_WAIT;
 }
@@ -134,6 +137,7 @@ static void printhead_routine_activate_enable_clock_run(void *o)
 
 static void printhead_routine_shutdown_disable_comm_reset_run(void *o)
 {
+    watch_reset = false;
     bool reset_disabled = false;
     bool comm_disabled = false;
     if (gpio_pin_get_dt(&n_reset_mcu) == 1)
@@ -146,14 +150,20 @@ static void printhead_routine_shutdown_disable_comm_reset_run(void *o)
         gpio_pin_set_dt(&comm_enable, 0);
         comm_disabled = true;
     }
-    if (reset_disabled) {
+    if (reset_disabled)
+    {
         LOG_INF("Reset disabled");
-    } else {
+    }
+    else
+    {
         LOG_INF("Reset was already disabled");
     }
-    if (comm_disabled) {
+    if (comm_disabled)
+    {
         LOG_INF("Comm disabled");
-    } else {
+    }
+    else
+    {
         LOG_INF("Comm was already disabled");
     }
     smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_VPP]);
@@ -181,7 +191,6 @@ static void printhead_routine_shutdown_disable_comm_reset_entry(void *o)
 
 int printhead_routine_smf(enum printhead_routine_state init_state)
 {
-    k_event_clear(&printhead_routine_event, 0xFFFFFFFF);
     printhead_routine_state_object.disable_phase = false;
     smf_set_initial(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[init_state]);
     printhead_routine_state_object.next_delay = K_NO_WAIT;
@@ -189,7 +198,7 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
     while (1)
     {
         k_sleep(printhead_routine_state_object.next_delay);
-        if (k_event_test(&printhead_routine_event, PRINTHEAD_ROUTINE_CANCEL))
+        if (failure_handling_is_in_error_state())
         {
             canceled = true;
             LOG_WRN("Printhead routine cancelled");
@@ -229,7 +238,147 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
     }
 }
 
-void printhead_routine_cancel()
+static struct gpio_callback n_reset_fault_cb_data;
+static struct gpio_callback n_reset_in_cb_data;
+static struct gpio_callback nFAULT_cb_data;
+
+void n_reset_fault_changed(const struct device *dev, struct gpio_callback *cb,
+                           uint32_t pins)
 {
-    k_event_set(&printhead_routine_event, PRINTHEAD_ROUTINE_CANCEL);
+    int nResetFaultState = gpio_pin_get_dt(&n_reset_fault);
+    if (watch_reset && nResetFaultState == 1)
+    {
+        error_callback();
+    }
+    LOG_INF("n_reset_fault changed to %d", gpio_pin_get_dt(&n_reset_fault));
+}
+
+void n_reset_in_changed(const struct device *dev, struct gpio_callback *cb,
+                        uint32_t pins)
+{
+    int nResetInState = gpio_pin_get_dt(&n_reset_in);
+    if (watch_reset && nResetInState == 0)
+    {
+        error_callback();
+    }
+    LOG_INF("n_reset_in changed to %d", gpio_pin_get_dt(&n_reset_in));
+}
+
+void nFault_int_handler(const struct device *dev, struct gpio_callback *cb,
+                        uint32_t pins)
+{
+    int nFaultState = gpio_pin_get_dt(&nFAULT);
+    if (watch_reset && nFaultState == 0)
+    {
+        error_callback();
+    }
+    LOG_INF("nFault changed to %d", nFaultState);
+}
+
+static int initialize_input_with_interrupt(const struct gpio_dt_spec *gpio, struct gpio_callback *callback, gpio_callback_handler_t handler)
+{
+    if (!gpio_is_ready_dt(gpio))
+    {
+        LOG_ERR("Error: device %s is not ready\n",
+                gpio->port->name);
+        return ENODEV;
+    }
+    int ret = gpio_pin_configure_dt(gpio, GPIO_INPUT);
+    if (ret != 0)
+    {
+        LOG_ERR("Error %d: failed to configure %s pin %d\n",
+                ret, gpio->port->name, gpio->pin);
+        return ret;
+    }
+    ret = gpio_pin_interrupt_configure_dt(gpio,
+                                          GPIO_INT_EDGE_BOTH);
+    if (ret != 0)
+    {
+        LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
+                ret, gpio->port->name, gpio->pin);
+        return ret;
+    }
+    gpio_init_callback(callback, handler, BIT(gpio->pin));
+    ret = gpio_add_callback(gpio->port, callback);
+    if (ret != 0)
+    {
+        LOG_ERR("Error %d: failed to add callback on %s pin %d\n",
+                ret, gpio->port->name, gpio->pin);
+        return ret;
+    }
+    return 0;
+}
+
+static int initialize_output(const struct gpio_dt_spec *gpio)
+{
+    if (!gpio_is_ready_dt(gpio))
+    {
+        LOG_ERR("Error: device %s is not ready\n",
+                gpio->port->name);
+        return ENODEV;
+    }
+    int ret = gpio_pin_configure_dt(gpio, GPIO_OUTPUT_INACTIVE);
+    if (ret != 0)
+    {
+        LOG_ERR("Error %d: failed to configure %s pin %d\n",
+                ret, gpio->port->name, gpio->pin);
+        return ret;
+    }
+    return 0;
+}
+
+int printhead_routines_initialize(printhead_routines_init_t *init)
+{
+    if (init->error_callback == NULL)
+    {
+        return -1;
+    }
+    error_callback = init->error_callback;
+    int ret;
+    ret = initialize_input_with_interrupt(&nFAULT, &nFAULT_cb_data, nFault_int_handler);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_input_with_interrupt(&n_reset_fault, &n_reset_fault_cb_data, n_reset_fault_changed);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_input_with_interrupt(&n_reset_in, &n_reset_in_cb_data, n_reset_in_changed);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_output(&vpp_en);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_output(&comm_enable);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_output(&n_reset_mcu);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_output(&vpp_enable_cp);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    ret = initialize_output(&reset_disable_cp);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    return 0;
+}
+
+void printhead_routines_go_to_safe_state() {
+    gpio_pin_set_dt(&n_reset_mcu, 0);
+    watch_reset = false;
 }

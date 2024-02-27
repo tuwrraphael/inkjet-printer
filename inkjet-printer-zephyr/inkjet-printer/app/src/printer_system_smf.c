@@ -20,6 +20,7 @@ enum printer_system_smf_state
 
 static void printer_system_startup(void *o);
 static void printer_system_idle(void *o);
+static void printer_system_error_entry(void *o);
 static void printer_system_error(void *o);
 static void printer_system_dropwatcher_entry(void *o);
 static void printer_system_dropwatcher_run(void *o);
@@ -48,9 +49,15 @@ static void printer_system_startup(void *o)
     ARG_UNUSED(o);
 }
 
+static void printer_system_error_entry(void *o)
+{
+    ARG_UNUSED(o);
+    (void)printhead_routine_smf(PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL);
+}
+
 static void printer_system_error(void *o)
 {
-    
+    ARG_UNUSED(o);
 }
 
 static bool has_external_error()
@@ -102,6 +109,9 @@ int printer_system_smf()
             k_event_clear(&printer_system_smf_event, PRINTER_SYSTEM_SMF_GO_TO_ERROR);
             smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
         }
-        smf_run_state(SMF_CTX(&printer_system_state_object));
+        int ret = smf_run_state(SMF_CTX(&printer_system_state_object));
+        if (ret != 0) {
+            break;
+        }
     }
 }

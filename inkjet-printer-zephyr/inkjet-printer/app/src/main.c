@@ -18,6 +18,7 @@
 #include "pressure_control.h"
 #include "printhead_routines.h"
 #include "printer_system_smf.h"
+#include "failure_handling.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -31,9 +32,7 @@ static struct gpio_callback button_cb_data;
 
 static const struct gpio_dt_spec vpp_en = GPIO_DT_SPEC_GET(DT_NODELABEL(vpp_en), gpios);
 static const struct gpio_dt_spec comm_enable = GPIO_DT_SPEC_GET(DT_NODELABEL(comm_enable), gpios);
-static const struct gpio_dt_spec n_reset_mcu = GPIO_DT_SPEC_GET(DT_NODELABEL(n_reset_mcu), gpios);
 static const struct gpio_dt_spec vpp_enable_cp = GPIO_DT_SPEC_GET(DT_NODELABEL(vpp_enable_cp), gpios);
-static const struct gpio_dt_spec reset_disable_cp = GPIO_DT_SPEC_GET(DT_NODELABEL(reset_disable_cp), gpios);
 
 static const struct gpio_dt_spec n_reset_fault = GPIO_DT_SPEC_GET(DT_NODELABEL(n_reset_fault), gpios);
 static const struct gpio_dt_spec n_reset_in = GPIO_DT_SPEC_GET(DT_NODELABEL(n_reset_in), gpios);
@@ -45,10 +44,6 @@ static struct gpio_dt_spec PHO = GPIO_DT_SPEC_GET(DT_NODELABEL(pho), gpios);
 static struct gpio_dt_spec nFAULT = GPIO_DT_SPEC_GET(DT_NODELABEL(nfault), gpios);
 static struct gpio_dt_spec READY = GPIO_DT_SPEC_GET(DT_NODELABEL(ready), gpios);
 
-static struct gpio_callback n_reset_fault_cb_data;
-static struct gpio_callback n_reset_in_cb_data;
-
-static struct gpio_callback nFAULT_cb_data;
 static struct gpio_callback READY_cb_data;
 
 void pressure_debug_timer_handler(struct k_timer *timer)
@@ -75,29 +70,6 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	// // printer_fire(fire_dev);
 	k_event_post(&btn_event, 0x1);
 	k_event_post(&error_event, ERROR_EVENT_ABORT_GRACEFULLY);
-}
-
-void n_reset_fault_changed(const struct device *dev, struct gpio_callback *cb,
-						   uint32_t pins)
-{
-	LOG_INF("n_reset_fault changed to %d", gpio_pin_get_dt(&n_reset_fault));
-}
-
-void n_reset_in_changed(const struct device *dev, struct gpio_callback *cb,
-						uint32_t pins)
-{
-	LOG_INF("n_reset_in changed to %d", gpio_pin_get_dt(&n_reset_in));
-}
-
-void nFault_int_handler(const struct device *dev, struct gpio_callback *cb,
-						uint32_t pins)
-{
-	int nFaultState = gpio_pin_get_dt(&nFAULT);
-	LOG_INF("nFault changed to %d", nFaultState);
-	if (nFaultState == 1)
-	{
-		k_event_post(&error_event, ERROR_EVENT_ABORT_IMMEDIATELY);
-	}
 }
 
 void READY_int_handler(const struct device *dev, struct gpio_callback *cb,
@@ -148,35 +120,6 @@ static int printhead_io_init()
 				ret, PHO.port->name, PHO.pin);
 		return ret;
 	}
-	if (!gpio_is_ready_dt(&nFAULT))
-	{
-		LOG_ERR("Error: nFAULT device %s is not ready\n",
-				nFAULT.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&nFAULT, GPIO_INPUT);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, nFAULT.port->name, nFAULT.pin);
-		return ret;
-	}
-	ret = gpio_pin_interrupt_configure_dt(&nFAULT,
-										  GPIO_INT_EDGE_BOTH);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
-				ret, nFAULT.port->name, nFAULT.pin);
-		return ret;
-	}
-	gpio_init_callback(&nFAULT_cb_data, nFault_int_handler, BIT(nFAULT.pin));
-	ret = gpio_add_callback(nFAULT.port, &nFAULT_cb_data);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to add callback on %s pin %d\n",
-				ret, nFAULT.port->name, nFAULT.pin);
-		return ret;
-	}
 	if (!gpio_is_ready_dt(&READY))
 	{
 		LOG_ERR("Error: READY device %s is not ready\n",
@@ -215,129 +158,6 @@ int initialize_io()
 	ret = printhead_io_init();
 	if (ret != 0)
 	{
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&vpp_en))
-	{
-		LOG_ERR("Error: vpp_en device %s is not ready\n",
-				vpp_en.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&vpp_en, GPIO_OUTPUT_INACTIVE);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, vpp_en.port->name, vpp_en.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&comm_enable))
-	{
-		LOG_ERR("Error: comm_enable device %s is not ready\n",
-				comm_enable.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&comm_enable, GPIO_OUTPUT_INACTIVE);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, comm_enable.port->name, comm_enable.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&n_reset_mcu))
-	{
-		LOG_ERR("Error: n_reset_mcu device %s is not ready\n",
-				n_reset_mcu.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&n_reset_mcu, GPIO_OUTPUT_INACTIVE);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, n_reset_mcu.port->name, n_reset_mcu.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&vpp_enable_cp))
-	{
-		LOG_ERR("Error: vpp_enable_cp device %s is not ready\n",
-				vpp_enable_cp.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&vpp_enable_cp, GPIO_OUTPUT_INACTIVE);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, vpp_enable_cp.port->name, vpp_enable_cp.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&reset_disable_cp))
-	{
-		LOG_ERR("Error: reset_disable_cp device %s is not ready\n",
-				reset_disable_cp.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&reset_disable_cp, GPIO_OUTPUT_INACTIVE);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, reset_disable_cp.port->name, reset_disable_cp.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&n_reset_fault))
-	{
-		LOG_ERR("Error: n_reset_fault device %s is not ready\n",
-				n_reset_fault.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&n_reset_fault, GPIO_INPUT);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, n_reset_fault.port->name, n_reset_fault.pin);
-		return ret;
-	}
-	ret = gpio_pin_interrupt_configure_dt(&n_reset_fault,
-										  GPIO_INT_EDGE_BOTH);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
-				ret, n_reset_fault.port->name, n_reset_fault.pin);
-		return ret;
-	}
-	gpio_init_callback(&n_reset_fault_cb_data, n_reset_fault_changed, BIT(n_reset_fault.pin));
-	ret = gpio_add_callback(n_reset_fault.port, &n_reset_fault_cb_data);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to add callback on %s pin %d\n",
-				ret, n_reset_fault.port->name, n_reset_fault.pin);
-		return ret;
-	}
-	if (!gpio_is_ready_dt(&n_reset_in))
-	{
-		LOG_ERR("Error: n_reset_in device %s is not ready\n",
-				n_reset_in.port->name);
-		return ENODEV;
-	}
-	ret = gpio_pin_configure_dt(&n_reset_in, GPIO_INPUT);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure %s pin %d\n",
-				ret, n_reset_in.port->name, n_reset_in.pin);
-		return ret;
-	}
-	ret = gpio_pin_interrupt_configure_dt(&n_reset_in,
-										  GPIO_INT_EDGE_BOTH);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
-				ret, n_reset_in.port->name, n_reset_in.pin);
-		return ret;
-	}
-	gpio_init_callback(&n_reset_in_cb_data, n_reset_in_changed, BIT(n_reset_in.pin));
-	ret = gpio_add_callback(n_reset_in.port, &n_reset_in_cb_data);
-	if (ret != 0)
-	{
-		LOG_ERR("Error %d: failed to add callback on %s pin %d\n",
-				ret, n_reset_in.port->name, n_reset_in.pin);
 		return ret;
 	}
 	return 0;
@@ -658,6 +478,21 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
+
+static void pressure_control_error() {
+	failure_handling_set_error_state(ERROR_PRESSURE_CONTROL);
+}
+
+static void failure_callback(){
+	printhead_routines_go_to_safe_state();
+	pressure_control_go_to_safe_state();
+	printer_system_smf_go_to_error();
+}
+
+static void printhead_routines_error() {
+	failure_handling_set_error_state(ERROR_PRINTHEAD_RESET);
+}
+
 int main(void)
 {
 	int ret;
@@ -705,10 +540,30 @@ int main(void)
 		LOG_ERR("Printhead not ready");
 		return 0;
 	}
+
+	pressure_control_init_t pressure_control_init = {
+		.error_callback = pressure_control_error
+	};
+	ret = pressure_control_initialize(&pressure_control_init);
+	if (ret != 0)
+	{
+		return ret;
+	}
+
+	printhead_routines_init_t printhead_routines_init = {
+		.error_callback = printhead_routines_error
+	};
+	ret = printhead_routines_initialize(&printhead_routines_init);
+
+	failure_handling_init_t failure_handling_init = {
+		.failure_callback = failure_callback
+	};
+	ret = failure_handling_initialize(&failure_handling_init);
+
 	ret = printer_system_smf();
 	if (ret != 0)
 	{
-		LOG_ERR("Printer system SMF should never terminate");
+		LOG_ERR("Printer system state machine terminated with error %d", ret);
 		return ret;
 	}
 	return 0;

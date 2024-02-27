@@ -3,6 +3,9 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/motor.h>
 
+#include "failure_handling.h"
+#include "pressure_control.h"
+
 LOG_MODULE_REGISTER(pressure_control, CONFIG_APP_LOG_LEVEL);
 
 #define CONTROL_MSEC (10)
@@ -10,11 +13,10 @@ LOG_MODULE_REGISTER(pressure_control, CONFIG_APP_LOG_LEVEL);
 #define CONTROL_CYCLES_TIMEOUT (CONTROL_TIMEOUT / CONTROL_MSEC)
 #define MAX_SENSOR_ERROR_COUNT (10)
 
-K_EVENT_DEFINE(pressure_event);
+K_EVENT_DEFINE(pressure_reach_target_event);
 
 #define EVENT_TARGET_REACHED (1 << 0)
-#define EVENT_CONTROL_ERROR (1 << 1)
-#define EVENT_CONTROL_DISABLED (1 << 2)
+#define EVENT_CANCELED (1 << 1)
 
 static float p = 0.15;
 static float k_i = 0.5;
@@ -31,17 +33,36 @@ static int cycles_not_advanced = 0;
 static int sensor_error_count = 0;
 
 static const struct device *abp;
-
 static const struct device *pump;
+static pressure_control_error_callback_t error_callback;
 
-static int pressure_control_init()
+static void motor_stop() {
+	motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+}
+
+static void motor_set_action_safe(motor_action_t action, float pwm)
 {
+	if (failure_handling_is_in_error_state())
+	{
+		return;
+	}
+	motor_set_action(pump, action, pwm);
+}
+
+int pressure_control_initialize(pressure_control_init_t *init)
+{
+	if (init->error_callback == NULL)
+	{
+		LOG_ERR("Pressure control error callback not set");
+		return -1;
+	}
+	error_callback = init->error_callback;
 	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
 	if (!device_is_ready(pump))
 	{
 		LOG_ERR("Pump not ready");
 	}
-	motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+	motor_stop();
 	abp = DEVICE_DT_GET(DT_NODELABEL(abp));
 	if (!device_is_ready(abp))
 	{
@@ -66,20 +87,21 @@ static void control_pressure_handler(struct k_work *work)
 	if (!pressure_control_enabled || disable_pressure_control)
 	{
 		pressure_control_enabled = false;
-		motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+		motor_stop();
 		last_control_time = 0;
+		k_event_set(&pressure_reach_target_event, EVENT_CANCELED);
 		return;
 	}
 	if (sensor_sample_fetch(abp) < 0)
 	{
-		motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+		motor_stop();
 		LOG_ERR("Sensor sample fetch failed");
 		sensor_error_count++;
 		if (sensor_error_count > MAX_SENSOR_ERROR_COUNT)
 		{
 			LOG_ERR("Sensor sample fetch failed");
 			disable_pressure_control = true;
-			k_event_set(&pressure_event, EVENT_CONTROL_ERROR);
+			error_callback();
 		}
 		return;
 	}
@@ -107,7 +129,7 @@ static void control_pressure_handler(struct k_work *work)
 	last_control_time = current_time;
 	if (error_abs < 0.5f)
 	{
-		k_event_set(&pressure_event, EVENT_TARGET_REACHED);
+		k_event_set(&pressure_reach_target_event, EVENT_TARGET_REACHED);
 		error = 0;
 	}
 	else
@@ -117,9 +139,9 @@ static void control_pressure_handler(struct k_work *work)
 			cycles_not_advanced++;
 			if (cycles_not_advanced > CONTROL_CYCLES_TIMEOUT)
 			{
-				motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+				motor_stop();
+				error_callback();
 				disable_pressure_control = true;
-				k_event_set(&pressure_event, EVENT_CONTROL_ERROR);
 				return;
 			}
 		}
@@ -148,23 +170,28 @@ static void control_pressure_handler(struct k_work *work)
 
 	if (pwm_abs > min_pwm)
 	{
-		motor_set_action(pump, pwm > 0 ? MOTOR_ACTION_CCW : MOTOR_ACTION_CW, pwm_abs);
+		motor_set_action_safe(pwm > 0 ? MOTOR_ACTION_CCW : MOTOR_ACTION_CW, pwm_abs);
 	}
 	else
 	{
-		motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+		motor_stop();
 	}
 }
 
 void pressure_control_set_target_pressure(float pressure)
 {
-	k_event_clear(&pressure_event, EVENT_TARGET_REACHED);
+	if (pressure > 20 || pressure < -20)
+	{
+		LOG_ERR("Pressure control target out of range");
+		return;
+	}
+	k_event_clear(&pressure_reach_target_event, EVENT_TARGET_REACHED);
 	target_pressure = pressure;
 }
 
 int pressure_control_wait_for_target_pressure()
 {
-	int events = k_event_wait(&pressure_event, 0xFFFFFFFF, false, K_FOREVER);
+	int events = k_event_wait(&pressure_reach_target_event, 0xFFFFFFFF, false, K_FOREVER);
 	if (events == EVENT_TARGET_REACHED)
 	{
 		return 0;
@@ -222,7 +249,9 @@ void pressure_control_enable(bool enable)
 	pressure_control_enabled = enable;
 	if (enable)
 	{
-		k_event_clear(&pressure_event, 0xFFFFFFF);
+		sensor_error_count = 0;
+		cycles_not_advanced = 0;
+		k_event_clear(&pressure_reach_target_event, 0xFFFFFFF);
 		disable_pressure_control = false;
 		pressure_control_enabled = true;
 		last_control_time = 0;
@@ -231,7 +260,6 @@ void pressure_control_enable(bool enable)
 	}
 	else
 	{
-		k_event_set(&pressure_event, EVENT_CONTROL_DISABLED);
 		disable_pressure_control = true;
 		k_timer_stop(&control_pressure_timer);
 		k_work_submit(&control_pressure);
@@ -239,4 +267,7 @@ void pressure_control_enable(bool enable)
 	}
 }
 
-SYS_INIT(pressure_control_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+void pressure_control_go_to_safe_state() {
+	motor_stop();
+	pressure_control_enable(false);
+}

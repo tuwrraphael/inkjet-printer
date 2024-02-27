@@ -7,18 +7,25 @@ extern "C" {
 
 #include <stdbool.h>
 
-// Function to set target pressure
+typedef void (*pressure_control_error_callback_t)(void);
+
+typedef struct {
+    pressure_control_error_callback_t error_callback;
+} pressure_control_init_t;
+
+int pressure_control_initialize(pressure_control_init_t *init);
+
 void pressure_control_set_target_pressure(float pressure);
 
-// Function to calibrate zero pressure
 int calibrate_zero_pressure(void);
 
-// Function to enable or disable pressure control
 void pressure_control_enable(bool enable);
 
 double get_pressure(void);
 
 int pressure_control_wait_for_target_pressure();
+
+void pressure_control_go_to_safe_state();
 
 #ifdef __cplusplus
 }
