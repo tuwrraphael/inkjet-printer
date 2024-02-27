@@ -17,6 +17,7 @@
 
 #include "pressure_control.h"
 #include "printhead_routines.h"
+#include "printer_system_smf.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -50,8 +51,6 @@ static struct gpio_callback n_reset_in_cb_data;
 static struct gpio_callback nFAULT_cb_data;
 static struct gpio_callback READY_cb_data;
 
-printhead_routine_work_t activate_printhead_work;
-
 void pressure_debug_timer_handler(struct k_timer *timer)
 {
 	double pressure = get_pressure();
@@ -59,6 +58,11 @@ void pressure_debug_timer_handler(struct k_timer *timer)
 }
 
 K_TIMER_DEFINE(pressure_debug_timer, pressure_debug_timer_handler, NULL);
+
+#define ERROR_EVENT_ABORT_GRACEFULLY (0x1)
+#define ERROR_EVENT_ABORT_IMMEDIATELY (0x2)
+
+K_EVENT_DEFINE(error_event);
 
 K_EVENT_DEFINE(btn_event);
 
@@ -70,6 +74,7 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	// fire_dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 	// // printer_fire(fire_dev);
 	k_event_post(&btn_event, 0x1);
+	k_event_post(&error_event, ERROR_EVENT_ABORT_GRACEFULLY);
 }
 
 void n_reset_fault_changed(const struct device *dev, struct gpio_callback *cb,
@@ -87,7 +92,12 @@ void n_reset_in_changed(const struct device *dev, struct gpio_callback *cb,
 void nFault_int_handler(const struct device *dev, struct gpio_callback *cb,
 						uint32_t pins)
 {
-	LOG_INF("nFault changed to %d", gpio_pin_get_dt(&nFAULT));
+	int nFaultState = gpio_pin_get_dt(&nFAULT);
+	LOG_INF("nFault changed to %d", nFaultState);
+	if (nFaultState == 1)
+	{
+		k_event_post(&error_event, ERROR_EVENT_ABORT_IMMEDIATELY);
+	}
 }
 
 void READY_int_handler(const struct device *dev, struct gpio_callback *cb,
@@ -531,27 +541,6 @@ static int cmd_comm_enable(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-// static int shutdown_printhead()
-// {
-// 	gpio_pin_set_dt(&comm_enable, 0);
-// 	gpio_pin_set_dt(&n_reset_mcu, 0);
-// 	LOG_INFO("Printhead reset enabled");
-// 	k_sleep(K_MSEC(100));
-// 	gpio_pin_set_dt(&vpp_en, 0);
-// 	LOG_INFO("VPPH/VPPL off");
-// }
-
-static int cmd_activate_printhead(const struct shell *sh, size_t argc, char **argv)
-{
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-	k_event_clear(&btn_event, 0x1);
-	activate_printhead_work.cancelevent = &btn_event;
-	activate_printhead_work.events = 0x1;
-	k_work_submit(&activate_printhead_work.work);
-	return 0;
-}
-
 static int cmd_pressure_control_enable(const struct shell *sh, size_t argc, char **argv, void *data)
 {
 	ARG_UNUSED(argc);
@@ -580,7 +569,7 @@ static int cmd_pressure_control_print_pressure(const struct shell *sh, size_t ar
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-    bool enable = (bool)data;
+	bool enable = (bool)data;
 	if (enable)
 	{
 		k_timer_start(&pressure_debug_timer, K_SECONDS(1), K_SECONDS(1));
@@ -654,14 +643,12 @@ SHELL_SUBCMD_DICT_SET_CREATE(pump_motor_cmds, cmd_test_pump,
 							 (cw, MOTOR_ACTION_CW, "clockwise"), (ccw, MOTOR_ACTION_CCW, "counter clockwise"),
 							 (brk, MOTOR_ACTION_SHORT_BRAKE, "brake"), (stop, MOTOR_ACTION_STOP, "stop"));
 
-
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
 							   SHELL_CMD(other_io, NULL, "Test other IO", cmd_test_other_io),
 							   SHELL_CMD(set_pixels, NULL, "Set pixels", cmd_set_pixels),
 							   SHELL_CMD(comm_enable, NULL, "Set COMM_ENABLE", cmd_comm_enable),
-							   SHELL_CMD(activate_printhead, NULL, "Activate printhead", cmd_activate_printhead),
 							   SHELL_CMD(pressure_control_enable, &pressure_control_enable_cmds, "Enable/disable pressure control", NULL),
 							   SHELL_CMD(pressure_control_set_target_pressure, NULL, "Set target pressure", cmd_pressure_contol_set_target_pressure),
 							   SHELL_CMD(pressure_control_print_pressure, &pressure_control_print_pressure_cmds, "Print pressure", NULL),
@@ -674,8 +661,6 @@ SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 int main(void)
 {
 	int ret;
-
-	k_work_init(&activate_printhead_work.work, activate_printhead_work_cb);
 	ret = initialize_io();
 	if (ret != 0)
 	{
@@ -719,6 +704,12 @@ int main(void)
 	{
 		LOG_ERR("Printhead not ready");
 		return 0;
+	}
+	ret = printer_system_smf();
+	if (ret != 0)
+	{
+		LOG_ERR("Printer system SMF should never terminate");
+		return ret;
 	}
 	return 0;
 }

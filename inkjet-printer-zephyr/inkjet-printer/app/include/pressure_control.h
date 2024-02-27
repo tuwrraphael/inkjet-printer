@@ -18,6 +18,8 @@ void pressure_control_enable(bool enable);
 
 double get_pressure(void);
 
+int pressure_control_wait_for_target_pressure();
+
 #ifdef __cplusplus
 }
 #endif

@@ -6,6 +6,15 @@
 LOG_MODULE_REGISTER(pressure_control, CONFIG_APP_LOG_LEVEL);
 
 #define CONTROL_MSEC (10)
+#define CONTROL_TIMEOUT (1000)
+#define CONTROL_CYCLES_TIMEOUT (CONTROL_TIMEOUT / CONTROL_MSEC)
+#define MAX_SENSOR_ERROR_COUNT (10)
+
+K_EVENT_DEFINE(pressure_event);
+
+#define EVENT_TARGET_REACHED (1 << 0)
+#define EVENT_CONTROL_ERROR (1 << 1)
+#define EVENT_CONTROL_DISABLED (1 << 2)
 
 static float p = 0.15;
 static float k_i = 0.5;
@@ -17,25 +26,28 @@ static float zero_pressure = 0;
 static bool pressure_control_enabled = false;
 static bool disable_pressure_control = true;
 static uint64_t last_control_time = 0;
+static float last_error_abs = 0;
+static int cycles_not_advanced = 0;
+static int sensor_error_count = 0;
 
 static const struct device *abp;
-	
-static const struct device *pump;
-	
 
-static int pressure_control_init() {
-    pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
+static const struct device *pump;
+
+static int pressure_control_init()
+{
+	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
 	if (!device_is_ready(pump))
 	{
 		LOG_ERR("Pump not ready");
 	}
-    motor_set_action(pump, MOTOR_ACTION_STOP, 0);
-    abp = DEVICE_DT_GET(DT_NODELABEL(abp));
+	motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+	abp = DEVICE_DT_GET(DT_NODELABEL(abp));
 	if (!device_is_ready(abp))
 	{
 		LOG_ERR("Pressure sensor not ready");
 	}
-    return 0;
+	return 0;
 }
 
 static void control_pressure_handler(struct k_work *work);
@@ -53,37 +65,70 @@ static void control_pressure_handler(struct k_work *work)
 {
 	if (!pressure_control_enabled || disable_pressure_control)
 	{
-        pressure_control_enabled = false;
-        motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+		pressure_control_enabled = false;
+		motor_set_action(pump, MOTOR_ACTION_STOP, 0);
 		last_control_time = 0;
 		return;
 	}
 	if (sensor_sample_fetch(abp) < 0)
 	{
-		LOG_ERR("Sensor sample fetch failed");
 		motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+		LOG_ERR("Sensor sample fetch failed");
+		sensor_error_count++;
+		if (sensor_error_count > MAX_SENSOR_ERROR_COUNT)
+		{
+			LOG_ERR("Sensor sample fetch failed");
+			disable_pressure_control = true;
+			k_event_set(&pressure_event, EVENT_CONTROL_ERROR);
+		}
 		return;
+	}
+	else
+	{
+		sensor_error_count = 0;
 	}
 
 	struct sensor_value pressure;
 	sensor_channel_get(abp, SENSOR_CHAN_PRESS, &pressure);
 	float pressure_kpa = pressure.val1 + (pressure.val2 / (1000.0 * 1000.0));
 	float pressure_mbar = pressure_kpa * 10 - zero_pressure;
-
 	float error = target_pressure - pressure_mbar;
-	if(last_control_time == 0){
+	float error_abs = error > 0 ? error : -error;
+	if (last_control_time == 0)
+	{
 		last_control_time = k_uptime_get_32();
+		last_error_abs = error_abs;
 		return;
 	}
+
 	uint64_t current_time = k_uptime_get_32();
 
 	float elapsed_time = (current_time - last_control_time) / 1000.0;
 	last_control_time = current_time;
-	float error_abs = error > 0 ? error : -error;
 	if (error_abs < 0.5f)
 	{
+		k_event_set(&pressure_event, EVENT_TARGET_REACHED);
 		error = 0;
 	}
+	else
+	{
+		if (error_abs > last_error_abs)
+		{
+			cycles_not_advanced++;
+			if (cycles_not_advanced > CONTROL_CYCLES_TIMEOUT)
+			{
+				motor_set_action(pump, MOTOR_ACTION_STOP, 0);
+				disable_pressure_control = true;
+				k_event_set(&pressure_event, EVENT_CONTROL_ERROR);
+				return;
+			}
+		}
+		else
+		{
+			cycles_not_advanced = 0;
+		}
+	}
+	last_error_abs = error_abs;
 	i += error * elapsed_time;
 	if (i > max_i)
 	{
@@ -113,40 +158,53 @@ static void control_pressure_handler(struct k_work *work)
 
 void pressure_control_set_target_pressure(float pressure)
 {
-    target_pressure = pressure;
+	k_event_clear(&pressure_event, EVENT_TARGET_REACHED);
+	target_pressure = pressure;
 }
 
-int calibrate_zero_pressure() {
-    if (pressure_control_enabled)
-    {
-        LOG_ERR("Zero pressure calibration failed: pressure control is enabled");
-        return -1;
-    }
-    float sum = 0; 
-    for (int i = 0; i < 10; i++)
-    {
-        if (sensor_sample_fetch(abp) < 0)
-        {
-            LOG_ERR("Sensor sample fetch failed");
-            return -1;
-        }
-        struct sensor_value pressure;
-        sensor_channel_get(abp, SENSOR_CHAN_PRESS, &pressure);
-        float pressure_kpa = pressure.val1 + (pressure.val2 / (1000.0 * 1000.0));
-        float pressure_mbar = pressure_kpa * 10;
-        if (pressure_mbar < -5 || pressure_mbar > 5)
-        {
-            LOG_ERR("Zero pressure calibration failed: pressure sensor reading is not near 0");
-            return -1;
-        }
-        sum += pressure_mbar;
-        k_sleep(K_MSEC(100));
-    }
-    zero_pressure = sum / 10;
-    return 0;
+int pressure_control_wait_for_target_pressure()
+{
+	int events = k_event_wait(&pressure_event, 0xFFFFFFFF, false, K_FOREVER);
+	if (events == EVENT_TARGET_REACHED)
+	{
+		return 0;
+	}
+	return -1;
 }
 
-double get_pressure(void) {
+int calibrate_zero_pressure()
+{
+	if (pressure_control_enabled)
+	{
+		LOG_ERR("Zero pressure calibration failed: pressure control is enabled");
+		return -1;
+	}
+	float sum = 0;
+	for (int i = 0; i < 10; i++)
+	{
+		if (sensor_sample_fetch(abp) < 0)
+		{
+			LOG_ERR("Sensor sample fetch failed");
+			return -1;
+		}
+		struct sensor_value pressure;
+		sensor_channel_get(abp, SENSOR_CHAN_PRESS, &pressure);
+		float pressure_kpa = pressure.val1 + (pressure.val2 / (1000.0 * 1000.0));
+		float pressure_mbar = pressure_kpa * 10;
+		if (pressure_mbar < -5 || pressure_mbar > 5)
+		{
+			LOG_ERR("Zero pressure calibration failed: pressure sensor reading is not near 0");
+			return -1;
+		}
+		sum += pressure_mbar;
+		k_sleep(K_MSEC(100));
+	}
+	zero_pressure = sum / 10;
+	return 0;
+}
+
+double get_pressure(void)
+{
 	if (sensor_sample_fetch(abp) < 0)
 	{
 		LOG_ERR("Sensor sample fetch failed");
@@ -157,28 +215,28 @@ double get_pressure(void) {
 	double pressure_kpa = pressure.val1 + (pressure.val2 / (1000.0 * 1000.0));
 	double pressure_mbar = pressure_kpa * 10.0 - (double)zero_pressure;
 	return pressure_mbar;
-
 }
 
 void pressure_control_enable(bool enable)
 {
-    pressure_control_enabled = enable;
-    if (enable)
-    {
-        disable_pressure_control = false;
-        pressure_control_enabled = true;
-        last_control_time = 0;
-        k_timer_start(&control_pressure_timer, K_MSEC(CONTROL_MSEC), K_MSEC(CONTROL_MSEC));
-        LOG_INF("Pressure control enabled");
-    }
-    else
-    {
-        disable_pressure_control = true;
-        k_timer_stop(&control_pressure_timer);
+	pressure_control_enabled = enable;
+	if (enable)
+	{
+		k_event_clear(&pressure_event, 0xFFFFFFF);
+		disable_pressure_control = false;
+		pressure_control_enabled = true;
+		last_control_time = 0;
+		k_timer_start(&control_pressure_timer, K_MSEC(CONTROL_MSEC), K_MSEC(CONTROL_MSEC));
+		LOG_INF("Pressure control enabled");
+	}
+	else
+	{
+		k_event_set(&pressure_event, EVENT_CONTROL_DISABLED);
+		disable_pressure_control = true;
+		k_timer_stop(&control_pressure_timer);
 		k_work_submit(&control_pressure);
-        LOG_INF("Request to disable pressure control");
-    }
+		LOG_INF("Request to disable pressure control");
+	}
 }
-
 
 SYS_INIT(pressure_control_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
