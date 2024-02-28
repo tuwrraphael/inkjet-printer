@@ -9,7 +9,7 @@
 LOG_MODULE_REGISTER(pressure_control, CONFIG_APP_LOG_LEVEL);
 
 #define CONTROL_MSEC (10)
-#define CONTROL_TIMEOUT (1000)
+#define CONTROL_TIMEOUT (2000)
 #define CONTROL_CYCLES_TIMEOUT (CONTROL_TIMEOUT / CONTROL_MSEC)
 #define MAX_SENSOR_ERROR_COUNT (10)
 
@@ -36,7 +36,8 @@ static const struct device *abp;
 static const struct device *pump;
 static pressure_control_error_callback_t error_callback;
 
-static void motor_stop() {
+static void motor_stop()
+{
 	motor_set_action(pump, MOTOR_ACTION_STOP, 0);
 }
 
@@ -99,7 +100,7 @@ static void control_pressure_handler(struct k_work *work)
 		sensor_error_count++;
 		if (sensor_error_count > MAX_SENSOR_ERROR_COUNT)
 		{
-			LOG_ERR("Sensor sample fetch failed");
+			LOG_ERR("Pressure control sensor error count exceeded");
 			disable_pressure_control = true;
 			error_callback();
 		}
@@ -131,23 +132,25 @@ static void control_pressure_handler(struct k_work *work)
 	{
 		k_event_set(&pressure_reach_target_event, EVENT_TARGET_REACHED);
 		error = 0;
+		cycles_not_advanced = 0;
 	}
-	else
+	else if (error_abs > 1.5f)
 	{
-		if (error_abs > last_error_abs)
+		if (error_abs >= last_error_abs)
 		{
 			cycles_not_advanced++;
 			if (cycles_not_advanced > CONTROL_CYCLES_TIMEOUT)
 			{
 				motor_stop();
+				LOG_ERR("Pressure control timeout");
 				error_callback();
 				disable_pressure_control = true;
 				return;
 			}
 		}
-		else
+		else if (cycles_not_advanced > 0)
 		{
-			cycles_not_advanced = 0;
+			cycles_not_advanced--;
 		}
 	}
 	last_error_abs = error_abs;
@@ -267,7 +270,8 @@ void pressure_control_enable(bool enable)
 	}
 }
 
-void pressure_control_go_to_safe_state() {
+void pressure_control_go_to_safe_state()
+{
 	motor_stop();
 	pressure_control_enable(false);
 }

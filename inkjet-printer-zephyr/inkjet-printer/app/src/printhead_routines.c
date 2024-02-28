@@ -9,7 +9,6 @@
 LOG_MODULE_REGISTER(printhead_routines, CONFIG_APP_LOG_LEVEL);
 
 #define PRINTHEAD_SMF_DONE (1)
-#define PRINTHEAD_SMF_ERROR (2)
 
 static bool watch_reset = false;
 static printhead_routines_error_callback_t error_callback;
@@ -56,7 +55,7 @@ static int check_nfault()
     if (gpio_pin_get_dt(&nFAULT) != 1)
     {
         LOG_ERR("Activate printhead failed: nFAULT is active indicates temperature error");
-        smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_ERROR);
+        smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL]);
         return EINVAL;
     }
     return 0;
@@ -102,10 +101,8 @@ static void printhead_routine_activate_enable_reset_pulse_run(void *o)
     }
     if (gpio_pin_get_dt(&n_reset_fault) != 0)
     {
-        gpio_pin_set_dt(&vpp_en, 0);
-        gpio_pin_set_dt(&n_reset_mcu, 0);
         LOG_ERR("Activate printhead failed: nRESET_FAULT is active indicates disabling reset not allowed by hardware");
-        smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_ERROR);
+        smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL]);
         return;
     }
 
@@ -114,11 +111,8 @@ static void printhead_routine_activate_enable_reset_pulse_run(void *o)
     gpio_pin_set_dt(&reset_disable_cp, 0);
     if (gpio_pin_get_dt(&n_reset_in) != 1)
     {
-        gpio_pin_set_dt(&vpp_en, 0);
-        gpio_pin_set_dt(&n_reset_mcu, 0);
-        gpio_pin_set_dt(&comm_enable, 0);
         LOG_ERR("Activate printhead failed: nRESET_IN is not active indicates disabling did not work");
-        smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_ERROR);
+        smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL]);
         return;
     }
     watch_reset = true;
@@ -138,25 +132,25 @@ static void printhead_routine_activate_enable_clock_run(void *o)
 static void printhead_routine_shutdown_disable_comm_reset_run(void *o)
 {
     watch_reset = false;
-    bool reset_disabled = false;
+    bool reset_enabled = false;
     bool comm_disabled = false;
     if (gpio_pin_get_dt(&n_reset_mcu) == 1)
     {
         gpio_pin_set_dt(&n_reset_mcu, 0);
-        reset_disabled = true;
+        reset_enabled = true;
     }
     if (gpio_pin_get_dt(&comm_enable) == 1)
     {
         gpio_pin_set_dt(&comm_enable, 0);
         comm_disabled = true;
     }
-    if (reset_disabled)
+    if (reset_enabled)
     {
-        LOG_INF("Reset disabled");
+        LOG_INF("Reset enabled");
     }
     else
     {
-        LOG_INF("Reset was already disabled");
+        LOG_INF("Reset was already enabled");
     }
     if (comm_disabled)
     {
@@ -194,22 +188,13 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
     printhead_routine_state_object.disable_phase = false;
     smf_set_initial(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[init_state]);
     printhead_routine_state_object.next_delay = K_NO_WAIT;
-    bool canceled = false;
     while (1)
     {
         k_sleep(printhead_routine_state_object.next_delay);
-        if (failure_handling_is_in_error_state())
+        if (failure_handling_is_in_error_state() && !printhead_routine_state_object.disable_phase)
         {
-            canceled = true;
             LOG_WRN("Printhead routine cancelled");
-            if (printhead_routine_state_object.disable_phase)
-            {
-                LOG_INF("Already in disable phase.");
-            }
-            else
-            {
-                smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_COMM_RESET]);
-            }
+            smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_COMM_RESET]);
         }
         int ret = smf_run_state(SMF_CTX(&printhead_routine_state_object));
         if (ret != 0)
@@ -217,17 +202,14 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
             switch (ret)
             {
             case PRINTHEAD_SMF_DONE:
-                if (canceled)
+                if (init_state == PRINTHEAD_ROUTINE_ACTIVATE_INITIAL&& printhead_routine_state_object.disable_phase)
                 {
-                    LOG_WRN("Printhead finsihed (cancelled)");
-                    return -ECANCELED;
+                    LOG_ERR("Printhead routine failed");
+                    return -EINVAL;
                 }
                 LOG_INF("Printhead routine completed");
                 return 0;
                 break;
-            case PRINTHEAD_SMF_ERROR:
-                LOG_ERR("Printhead routine failed");
-                return -EINVAL;
             default:
                 LOG_ERR("Printhead routine failed with unknown error code %d", ret);
                 return -EINVAL;
@@ -378,7 +360,8 @@ int printhead_routines_initialize(printhead_routines_init_t *init)
     return 0;
 }
 
-void printhead_routines_go_to_safe_state() {
+void printhead_routines_go_to_safe_state()
+{
     gpio_pin_set_dt(&n_reset_mcu, 0);
     watch_reset = false;
 }
