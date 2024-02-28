@@ -1,5 +1,6 @@
 #include <zephyr/smf.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/printer_fire.h>
 
 #include "printer_system_smf.h"
 #include "printhead_routines.h"
@@ -10,10 +11,15 @@ LOG_MODULE_REGISTER(printer_system, CONFIG_APP_LOG_LEVEL);
 
 K_EVENT_DEFINE(printer_system_smf_event);
 
-K_SEM_DEFINE(event_sem, 0, 1);
+K_SEM_DEFINE(event_sem, 1, 1);
 
 #define PRINTER_SYSTEM_GO_TO_ERROR (1 << 0)
 #define PRINTER_SYSTEM_STATE_CHANGE (1 << 1)
+#define PRINTER_SYSTEM_TIMEOUT (1 << 2)
+#define PRINTER_SYSTEM_REQUEST_FIRE (1 << 3)
+
+const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 
 enum printer_system_smf_state
 {
@@ -32,6 +38,7 @@ static void printer_system_error_entry(void *o);
 static void printer_system_error(void *o);
 static void printer_system_dropwatcher_entry(void *o);
 static void printer_system_dropwatcher_run(void *o);
+static void event_post(uint32_t event);
 
 const struct smf_state printer_system_states[] = {
     [PRINTER_SYSTEM_IDLE] = SMF_CREATE_STATE(printer_system_idle_entry, printer_system_idle, NULL),
@@ -44,6 +51,14 @@ struct printer_system_state_object
     struct smf_ctx ctx;
     int32_t events;
 } printer_system_state_object;
+
+static void timeout_timer_handler(struct k_timer *dummy)
+{
+    ARG_UNUSED(dummy);
+    event_post(PRINTER_SYSTEM_TIMEOUT);
+}
+
+K_TIMER_DEFINE(timout_timer, timeout_timer_handler, NULL);
 
 static void printer_system_idle_entry(void *o)
 {
@@ -79,6 +94,16 @@ static void printer_system_error(void *o)
     LOG_INF("Error state\n");
 }
 
+static bool exit_on_error_after_wait()
+{
+    if (failure_handling_is_in_error_state())
+    {
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
+        return true;
+    }
+    return false;
+}
+
 static void printer_system_dropwatcher_entry(void *o)
 {
     ARG_UNUSED(o);
@@ -86,6 +111,10 @@ static void printer_system_dropwatcher_entry(void *o)
     pressure_control_set_target_pressure(-3.0f);
     pressure_control_enable(true);
     int ret = pressure_control_wait_for_target_pressure();
+    if (exit_on_error_after_wait())
+    {
+        return;
+    }
     if (ret != 0)
     {
         LOG_ERR("Failed to reach target pressure, going to idle state");
@@ -93,6 +122,10 @@ static void printer_system_dropwatcher_entry(void *o)
         return;
     }
     ret = printhead_routine_smf(PRINTHEAD_ROUTINE_ACTIVATE_INITIAL);
+    if (exit_on_error_after_wait())
+    {
+        return;
+    }
     if (ret != 0)
     {
         LOG_ERR("Failed to activate printhead, going to idle state");
@@ -105,7 +138,22 @@ static void printer_system_dropwatcher_run(void *o)
 {
     // struct printer_system_state_object *object = (struct printer_system_state_object *)o;
     ARG_UNUSED(o);
-    LOG_INF("Dropwatcher state\n");
+    LOG_INF("Dropwatcher state %d\n", printer_system_state_object.events);
+    if (printer_system_state_object.events & PRINTER_SYSTEM_TIMEOUT)
+    {
+        LOG_ERR("Timeout in dropwatcher state, going to idle state");
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+        return;
+    }
+    else
+    {
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_FIRE)
+        {
+            LOG_INF("Firing printhead");
+            printer_fire(printer_fire_device);
+        }
+        k_timer_start(&timout_timer, K_SECONDS(60), K_NO_WAIT);
+    }
 }
 
 static void event_post(uint32_t event)
@@ -129,6 +177,11 @@ void go_to_idle()
 {
     requested_state = PRINTER_SYSTEM_IDLE;
     event_post(PRINTER_SYSTEM_STATE_CHANGE);
+}
+
+void request_printhead_fire()
+{
+    event_post(PRINTER_SYSTEM_REQUEST_FIRE);
 }
 
 int printer_system_smf()
@@ -157,3 +210,20 @@ int printer_system_smf()
         }
     }
 }
+
+int printer_system_smf_init()
+{
+    if (!device_is_ready(printhead))
+    {
+        LOG_ERR("Printhead not ready");
+        return -1;
+    }
+    if (!device_is_ready(printer_fire_device))
+    {
+        LOG_ERR("Printer fire not ready");
+        return -1;
+    }
+    return 0;
+}
+
+SYS_INIT(printer_system_smf_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

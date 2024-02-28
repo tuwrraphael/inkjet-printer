@@ -483,6 +483,14 @@ static int cmd_system_state(const struct shell *sh, size_t argc, char **argv, vo
 SHELL_SUBCMD_DICT_SET_CREATE(system_state_cmds, cmd_system_state,
 							 (idle, 0, "idle"), (dropwatcher, 1, "dropwatcher"));
 
+static int cmd_fire(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	request_printhead_fire();
+	return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
@@ -496,6 +504,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(pump_motor, &pump_motor_cmds, "Test pump motor", cmd_test_pump),
 							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),
 							   SHELL_CMD(system_state, &system_state_cmds, "Set system state", cmd_system_state),
+							   SHELL_CMD(fire, NULL, "Fire printhead", cmd_fire),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 

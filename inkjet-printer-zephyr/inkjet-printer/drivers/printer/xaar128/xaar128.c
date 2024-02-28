@@ -60,12 +60,12 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	const struct xaar128_config *config = dev->config;
 	struct spi_cs_control cs = {
 		.delay = 0};
-	cs.gpio.dt_flags = config->nss1_gpio.dt_flags;
-	cs.gpio.port = config->nss1_gpio.port;
-	cs.gpio.pin = config->nss1_gpio.pin;
+	cs.gpio.dt_flags = config->nss2_gpio.dt_flags;
+	cs.gpio.port = config->nss2_gpio.port;
+	cs.gpio.pin = config->nss2_gpio.pin;
 
 	struct spi_buf buf = {
-		.buf = pixels,
+		.buf = &pixels[2],
 		.len = sizeof(uint32_t) * 2,
 	};
 	struct spi_buf_set tx = {
@@ -83,11 +83,11 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 				ret, config->bus.bus->name);
 		return ret;
 	}
-	cs.gpio.dt_flags = config->nss2_gpio.dt_flags;
-	cs.gpio.port = config->nss2_gpio.port;
-	cs.gpio.pin = config->nss2_gpio.pin;
+	cs.gpio.dt_flags = config->nss1_gpio.dt_flags;
+	cs.gpio.port = config->nss1_gpio.port;
+	cs.gpio.pin = config->nss1_gpio.pin;
 	spi_config.cs = cs;
-	buf.buf = &pixels[2];
+	buf.buf = pixels;
 	ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
@@ -161,7 +161,9 @@ static int xaar128_init(const struct device *dev)
 	static const struct xaar128_config xaar128_config_##i = { \
 		.bus = SPI_DT_SPEC_INST_GET(i,                        \
 									SPI_OP_MODE_MASTER |      \
-										SPI_WORD_SET(8),      \
+										SPI_WORD_SET(8) |     \
+										SPI_MODE_CPOL |       \
+										SPI_MODE_CPHA,        \
 									0),                       \
 		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),    \
 		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),    \
