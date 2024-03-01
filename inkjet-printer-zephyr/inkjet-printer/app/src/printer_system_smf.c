@@ -108,7 +108,7 @@ static void printer_system_dropwatcher_entry(void *o)
 {
     ARG_UNUSED(o);
     LOG_INF("Enabling pressure control");
-    pressure_control_set_target_pressure(-3.0f);
+    pressure_control_set_target_pressure(-7.0f);
     pressure_control_enable(true);
     int ret = pressure_control_wait_for_target_pressure();
     if (exit_on_error_after_wait())

@@ -163,7 +163,8 @@ static int xaar128_init(const struct device *dev)
 									SPI_OP_MODE_MASTER |      \
 										SPI_WORD_SET(8) |     \
 										SPI_MODE_CPOL |       \
-										SPI_MODE_CPHA,        \
+										SPI_MODE_CPHA |       \
+										SPI_TRANSFER_LSB,     \
 									0),                       \
 		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),    \
 		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),    \

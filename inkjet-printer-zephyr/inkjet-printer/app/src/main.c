@@ -51,13 +51,56 @@ void pressure_debug_timer_handler(struct k_timer *timer)
 	double pressure = get_pressure();
 	printk("Pressure: %f mbar\n", pressure);
 }
+static int fire_count = 0;
+static int drop_count = 100;
+
+void print_fire_timer_handler(struct k_timer *timer);
 
 K_TIMER_DEFINE(pressure_debug_timer, pressure_debug_timer_handler, NULL);
 
-#define ERROR_EVENT_ABORT_GRACEFULLY (0x1)
-#define ERROR_EVENT_ABORT_IMMEDIATELY (0x2)
+K_TIMER_DEFINE(print_fire_timer, print_fire_timer_handler, NULL);
 
-K_EVENT_DEFINE(error_event);
+static uint32_t pattern[4] = {0, 0, 0, 1};
+
+static void advance_pattern()
+{
+	bool filling = (pattern[3] & 0x80000000) == 0;
+	for (int i = 3; i >= 0; i--)
+	{
+		pattern[i] = (pattern[i] << 1);
+		if (i > 0 && (pattern[i - 1] & 0x80000000))
+		{
+			pattern[i] |= 1;
+		}
+	}
+	if (pattern[3] & 0x80000000)
+	{
+		pattern[0] |= 1;
+	}
+	// if (filling)
+	// {
+	// 	pattern[0] |= 1;
+	// }
+}
+
+void print_fire_timer_handler(struct k_timer *timer)
+{
+	if (gpio_pin_get_dt(&READY) == 1)
+	{
+		if (fire_count %30 == 0) {
+					advance_pattern();
+		}
+		const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+		printer_set_pixels(printhead, pattern);
+		request_printhead_fire();
+	}
+	fire_count++;
+	if (fire_count > drop_count)
+	{
+		k_timer_stop(&print_fire_timer);
+		fire_count = 0;
+	}
+}
 
 K_EVENT_DEFINE(btn_event);
 
@@ -68,8 +111,8 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	// const struct device *fire_dev;
 	// fire_dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 	// // printer_fire(fire_dev);
-	k_event_post(&btn_event, 0x1);
-	k_event_post(&error_event, ERROR_EVENT_ABORT_GRACEFULLY);
+	// k_event_post(&btn_event, 0x1);
+	failure_handling_set_error_state(ERROR_USER_ABORT);
 }
 
 void READY_int_handler(const struct device *dev, struct gpio_callback *cb,
@@ -465,17 +508,17 @@ SHELL_SUBCMD_DICT_SET_CREATE(pump_motor_cmds, cmd_test_pump,
 
 static int cmd_system_state(const struct shell *sh, size_t argc, char **argv, void *data)
 {
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-	switch((int)data) {
-		case 0:
-			go_to_idle();
-			break;
-		case 1:
-			go_to_dropwatcher();
-			break;
-		default:
-			break;
+	switch ((int)data)
+	{
+	case 0:
+		k_timer_stop(&print_fire_timer);
+		go_to_idle();
+		break;
+	case 1:
+		go_to_dropwatcher();
+		break;
+	default:
+		break;
 	}
 	return 0;
 }
@@ -485,9 +528,18 @@ SHELL_SUBCMD_DICT_SET_CREATE(system_state_cmds, cmd_system_state,
 
 static int cmd_fire(const struct shell *sh, size_t argc, char **argv)
 {
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-	request_printhead_fire();
+	if (argc != 3)
+	{
+		shell_print(sh, "Usage: fire <ms> <drop_count>");
+		return EINVAL;
+	}
+	fire_count = 0;
+	drop_count = atoi(argv[2]);
+	int interval_ms = atoi(argv[1]);
+	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+	uint32_t pixels[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+	printer_set_pixels(printhead, pixels);
+	k_timer_start(&print_fire_timer, K_MSEC(interval_ms), K_MSEC(interval_ms));
 	return 0;
 }
 
@@ -508,18 +560,20 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
-
-static void pressure_control_error() {
+static void pressure_control_error()
+{
 	failure_handling_set_error_state(ERROR_PRESSURE_CONTROL);
 }
 
-static void failure_callback(){
+static void failure_callback()
+{
 	printhead_routines_go_to_safe_state();
 	pressure_control_go_to_safe_state();
 	printer_system_smf_go_to_safe_state();
 }
 
-static void printhead_routines_error() {
+static void printhead_routines_error()
+{
 	failure_handling_set_error_state(ERROR_PRINTHEAD_RESET);
 }
 
@@ -572,8 +626,7 @@ int main(void)
 	}
 
 	pressure_control_init_t pressure_control_init = {
-		.error_callback = pressure_control_error
-	};
+		.error_callback = pressure_control_error};
 	ret = pressure_control_initialize(&pressure_control_init);
 	if (ret != 0)
 	{
@@ -581,13 +634,11 @@ int main(void)
 	}
 
 	printhead_routines_init_t printhead_routines_init = {
-		.error_callback = printhead_routines_error
-	};
+		.error_callback = printhead_routines_error};
 	ret = printhead_routines_initialize(&printhead_routines_init);
 
 	failure_handling_init_t failure_handling_init = {
-		.failure_callback = failure_callback
-	};
+		.failure_callback = failure_callback};
 	ret = failure_handling_initialize(&failure_handling_init);
 
 	ret = printer_system_smf();
