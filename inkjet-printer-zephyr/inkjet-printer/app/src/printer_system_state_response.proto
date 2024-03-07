@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "printer_system_state.proto";
+
+message PrinterSystemStateResponse {
+  float pressure = 1;
+  PrinterSystemState state = 2;
+}

@@ -9,6 +9,12 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C)
 
+list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
+include(nanopb)
+zephyr_nanopb_sources(app src/printer_system_state.proto)
+zephyr_nanopb_sources(app src/printer_system_state_response.proto)
+zephyr_nanopb_sources(app src/printer_request.proto)
+
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/printhead_routines.c)
 target_sources(app PRIVATE src/pressure_control.c)

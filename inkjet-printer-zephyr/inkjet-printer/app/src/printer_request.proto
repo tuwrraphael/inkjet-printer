@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "printer_system_state.proto";
+
+message GetPrinterSystemStateRequest {
+
+}
+
+message ChangePrinterSystemStateRequest {
+    PrinterSystemState state = 1;
+}
+
+message ChangeDropwatcherParametersRequest {
+    int32 delay_nanos = 1;
+    int32 flash_on_time_nanos = 2;
+}
+
+message CameraFrameRequest {
+}
+
+message PrinterRequest
+{
+    optional GetPrinterSystemStateRequest get_printer_system_state_request = 1;
+    optional ChangePrinterSystemStateRequest change_printer_system_state_request = 2;
+    optional ChangeDropwatcherParametersRequest change_dropwatcher_parameters_request = 3;
+    optional CameraFrameRequest camera_frame_request = 4;
+}

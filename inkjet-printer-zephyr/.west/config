@@ -1,6 +1,7 @@
 [manifest]
 path = inkjet-printer
 file = west.yml
+project-filter = +nanopb
 
 [zephyr]
 base = zephyr
