@@ -3,7 +3,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/drivers/printer.h>
-#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(xaar128, CONFIG_PRINTER_LOG_LEVEL);
 
@@ -14,41 +14,37 @@ struct xaar128_data
 
 struct xaar128_config
 {
-	// struct gpio_dt_spec input;
 	struct gpio_dt_spec nss1_gpio;
 	struct gpio_dt_spec nss2_gpio;
-	const struct device *clk_dev;
-	uint8_t clk_id;
+	const struct pwm_dt_spec pwm_dt;
 	struct spi_dt_spec bus;
 };
+
+static int clock_control_pwm_on(const struct device *dev)
+{
+	const struct xaar128_config *config = dev->config;
+	const struct pwm_dt_spec *spec = &config->pwm_dt;
+	return pwm_set_dt(spec, spec->period, spec->period / 2);
+}
 
 static int xaar128_sample_function(const struct device *dev)
 {
 	const struct xaar128_config *config = dev->config;
-	// struct xaar128_data *data = dev->data;
 
-	// data->state = gpio_pin_get_dt(&config->input);
-
-	if (config->clk_dev != NULL)
+	if (!device_is_ready(config->pwm_dt.dev))
 	{
-		uint32_t clk_id = config->clk_id;
+		return -ENODEV;
+	}
 
-		if (!device_is_ready(config->clk_dev))
-		{
-			LOG_ERR("Clock controller not ready");
-			return -ENODEV;
-		}
-
-		int ret = clock_control_on(config->clk_dev, (clock_control_subsys_t)clk_id);
-		if (ret < 0)
-		{
-			LOG_ERR("Failed to enable clock [%d]", ret);
-			return ret;
-		}
-		else
-		{
-			LOG_INF("Clock enabled");
-		}
+	int ret = clock_control_pwm_on(dev);
+	if (ret < 0)
+	{
+		LOG_ERR("Failed to enable clock [%d]", ret);
+		return ret;
+	}
+	else
+	{
+		LOG_INF("Clock enabled");
 	}
 
 	return 0;
@@ -168,8 +164,7 @@ static int xaar128_init(const struct device *dev)
 									0),                       \
 		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),    \
 		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),    \
-		.clk_dev = DEVICE_DT_GET(DT_INST_CLOCKS_CTLR(i)),     \
-		.clk_id = DT_INST_CLOCKS_CELL(i, id)};                \
+		.pwm_dt = PWM_DT_SPEC_INST_GET(i)};                   \
                                                               \
 	DEVICE_DT_INST_DEFINE(i, xaar128_init, NULL,              \
 						  &xaar128_data_##i,                  \

@@ -67,7 +67,7 @@ static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
 static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t duration)
 {
 	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
-	uint32_t period_cycles = (uint32_t)((cycles_per_sec * cfg->mask_period) / (1000 * 1000 * 1000));
+	
 	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * delay) / (1000 * 1000 * 1000));
 	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * (delay + duration)) / (1000 * 1000 * 1000));
 
@@ -96,6 +96,7 @@ static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t d
 		LOG_ERR("Timer PWM ConfigChannel 4 failed");
 		return -ENODEV;
 	}
+	return 0;
 }
 
 static const struct printer_fire_api fire_stm32_combined_pwm_api = {

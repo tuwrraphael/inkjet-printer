@@ -1,8 +1,8 @@
 syntax = "proto3";
 enum PrinterSystemState {
-  PrinterSystemState_UNSPECIFIED = 0;
-  PrinterSystemState_STARTUP = 1;
-  PrinterSystemState_IDLE = 2;
-  PrinterSystemState_ERROR = 3;
-  PrinterSystemState_DROPWATCHER = 4;
+  UNSPECIFIED = 0;
+  STARTUP = 1;
+  IDLE = 2;
+  ERROR = 3;
+  DROPWATCHER = 4;
 }

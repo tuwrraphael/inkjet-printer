@@ -9,6 +9,10 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(app LANGUAGES C)
 
+set(PROTOC_OPTIONS "--experimental_allow_proto3_optional")
+
+
+
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
 zephyr_nanopb_sources(app src/printer_system_state.proto)

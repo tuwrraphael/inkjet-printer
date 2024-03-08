@@ -212,11 +212,11 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		ChangePrinterSystemStateRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangePrinterSystemStateRequest_fields, &request);
 		if (status) {
-			if (request.state == PRINTER_SYSTEM_STATE_IDLE) {
+			if (request.state == PrinterSystemState_IDLE) {
 				go_to_idle();
-			} else if (request.state == PRINTER_SYSTEM_STATE_DROPWATCHER) {
+			} else if (request.state == PrinterSystemState_DROPWATCHER) {
 				go_to_dropwatcher();
-			} else if (request.state == PRINTER_SYSTEM_STATE_ERROR) {
+			} else if (request.state == PrinterSystemState_ERROR) {
 				printer_system_smf_go_to_safe_state();
 			} else {
 				LOG_WRN("Transition to %d is not supported", request.state);

@@ -18,8 +18,8 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_TIMEOUT (1 << 2)
 #define PRINTER_SYSTEM_REQUEST_FIRE (1 << 3)
 
-const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
+static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+static const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 
 enum printer_system_smf_state
 {

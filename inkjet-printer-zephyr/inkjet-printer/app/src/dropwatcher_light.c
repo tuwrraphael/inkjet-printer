@@ -8,7 +8,7 @@
 
 LOG_MODULE_REGISTER(dropwatcher_light, CONFIG_APP_LOG_LEVEL);
 
-const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
+static const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 
 int set_light_timing(uint32_t delay, uint32_t on_time) {
     if (!device_is_ready(printer_fire_device)) {

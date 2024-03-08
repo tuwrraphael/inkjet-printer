@@ -5,6 +5,7 @@
   "main": "index.html",
   "dependencies": {
     "core-js": "^3.8.1",
+    "protobufjs": "^7.2.6",
     "roboto-fontface": "^0.10.0"
   },
   "devDependencies": {
@@ -26,6 +27,7 @@
     "mini-css-extract-plugin": "^2.4.2",
     "postcss": "^8.2.1",
     "postcss-loader": "^7.0.1",
+    "protobufjs-cli": "^1.1.2",
     "sass": "^1.30.0",
     "sass-loader": "^13.1.0",
     "ts-loader": "^9.1.1",
@@ -37,6 +39,8 @@
     "workbox-webpack-plugin": "^7.0.0"
   },
   "scripts": {
+    "generate-proto": "pbjs -t static-module -w commonjs -o compiled.js ../inkjet-printer-zephyr/inkjet-printer/app/src/*.proto",
+    "generate-protots": "pbts -o compiled.d.ts compiled.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "start": "webpack serve --mode development --env development"

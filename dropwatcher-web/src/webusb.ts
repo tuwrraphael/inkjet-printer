@@ -14,7 +14,7 @@ export class WebUSBWrapper extends EventTarget {
         if (devices.length > 0) {
             this._device = devices[0];
         } else {
-            this._device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x2341, productId: 0x8037 }] });
+            this._device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x2FE3, productId: 0x000A }] });
         }
         await this._device.open();
         await this._device.selectConfiguration(1);
@@ -36,13 +36,13 @@ export class WebUSBWrapper extends EventTarget {
         })
         await this._device.claimInterface(this._interfaceNumber);
         await this._device.selectAlternateInterface(this._interfaceNumber, 0);
-        await this._device.controlTransferOut({
-            'requestType': 'class',
-            'recipient': 'interface',
-            'request': 0x22,
-            'value': 0x01,
-            'index': this._interfaceNumber
-        });
+        // await this._device.controlTransferOut({
+        //     'requestType': 'class',
+        //     'recipient': 'interface',
+        //     'request': 0x22,
+        //     'value': 0x01,
+        //     'index': this._interfaceNumber
+        // });
         console.log("usb init done");
         this.receive();
     }

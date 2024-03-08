@@ -1,6 +1,7 @@
 import "./styles.scss";
-import { process } from "./process";
 import { WebUSBWrapper } from "./webusb";
+import {ChangeDropwatcherParametersRequest} from "../compiled";
+import { PrinterRequest } from "../compiled";
 
 async function startVideo() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -71,7 +72,7 @@ async function startUsb() {
 }
 
 async function start() {
-    await startVideo();
+    // await startVideo();
     await startUsb();
 }
 
@@ -95,7 +96,20 @@ async function writeConfig() {
     view.setUint16(3, strobeOnTicks, true);
     view.setUint8(5, jettingSignalMode);
     view.setUint16(6, cameraReadyDelayTicks, true);
-    await webusb.send(arr);
+
+    let request = new PrinterRequest();
+    request.changeDropwatcherParametersRequest = new ChangeDropwatcherParametersRequest();
+    request.changeDropwatcherParametersRequest.delayNanos = delayAfterJettingSignalTicks*62.5;
+    request.changeDropwatcherParametersRequest.flashOnTimeNanos = strobeOnTicks*62.5;
+
+    
+
+    let bytes = PrinterRequest.encode(request).finish();
+
+    console.log(bytes);
+
+
+    await webusb.send(bytes);
 }
 
 document.querySelector("#start-button").addEventListener("click", start);

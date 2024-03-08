@@ -195,7 +195,7 @@ static const uint8_t webusb_allowed_origins[] = {
 static const uint8_t webusb_origin_url[] = {
     /* Length, DescriptorType, Scheme */
     0x11, 0x03, 0x00,
-    'l', 'o', 'c', 'a', 'l', 'h', 'o', 's', 't', ':', '8', '0', '0', '0'};
+    'l', 'o', 'c', 'a', 'l', 'h', 'o', 's', 't', ':', '9', '0', '0', '0'};
 
 /* Predefined response to control commands related to MS OS 1.0 descriptors
  * Please note that this code only defines "extended compat ID OS feature
