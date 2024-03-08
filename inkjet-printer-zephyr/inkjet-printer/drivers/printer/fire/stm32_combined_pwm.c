@@ -57,8 +57,50 @@ static int fire(const struct device *dev)
 	return data->irq_counter;
 }
 
+static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
+{
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	return (uint64_t)(data->tim_clk / (cfg->prescaler + 1));
+}
+
+static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t duration)
+{
+	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
+	uint32_t period_cycles = (uint32_t)((cycles_per_sec * cfg->mask_period) / (1000 * 1000 * 1000));
+	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * delay) / (1000 * 1000 * 1000));
+	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * (delay + duration)) / (1000 * 1000 * 1000));
+
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
+	TIM_HandleTypeDef htim1;
+	htim1.Instance = timer;
+
+	TIM_OC_InitTypeDef sConfigOC = {0};
+	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM2;
+	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+	sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+	sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+	sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	sConfigOC.Pulse = pulse34_start_cycles;
+	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+	{
+		LOG_ERR("Timer PWM ConfigChannel 3 failed");
+		return -ENODEV;
+	}
+	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
+	sConfigOC.Pulse = pulse34_end_cycles;
+	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+	{
+		LOG_ERR("Timer PWM ConfigChannel 4 failed");
+		return -ENODEV;
+	}
+}
+
 static const struct printer_fire_api fire_stm32_combined_pwm_api = {
-	.fire = &fire};
+	.fire = &fire,
+	.set_light_timing = &set_light_timing};
 
 static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t *tim_clk)
 {
@@ -174,13 +216,6 @@ static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t
 	return 0;
 }
 
-static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
-{
-	struct fire_stm32_combined_pwm_data *data = dev->data;
-	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
-	return (uint64_t)(data->tim_clk / (cfg->prescaler + 1));	
-}
-
 static int fire_stm32_combined_pwm_init(const struct device *dev)
 {
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
@@ -227,18 +262,18 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
 	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
-	uint32_t period_cycles = (uint32_t)((cycles_per_sec*cfg->mask_period)/(1000*1000*1000));
-	uint32_t pulse12_end_cycles = (uint32_t)((cycles_per_sec*cfg->pulse12_end)/(1000*1000*1000));
-	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec*cfg->pulse34_end)/(1000*1000*1000));
-	uint32_t pulse12_start_cycles = (uint32_t)((cycles_per_sec*cfg->pulse12_start)/(1000*1000*1000));
-	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec*cfg->pulse34_start)/(1000*1000*1000));
+	uint32_t period_cycles = (uint32_t)((cycles_per_sec * cfg->mask_period) / (1000 * 1000 * 1000));
+	uint32_t pulse12_end_cycles = (uint32_t)((cycles_per_sec * cfg->pulse12_end) / (1000 * 1000 * 1000));
+	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * cfg->pulse34_end) / (1000 * 1000 * 1000));
+	uint32_t pulse12_start_cycles = (uint32_t)((cycles_per_sec * cfg->pulse12_start) / (1000 * 1000 * 1000));
+	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * cfg->pulse34_start) / (1000 * 1000 * 1000));
 
 	LOG_INF("Mask cycles: %d | Pulse12 %d - %d | Pulse34 %d - %d", period_cycles, pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles);
 
 	htim1.Instance = timer;
 	htim1.Init.Prescaler = cfg->prescaler;
 	htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim1.Init.Period = period_cycles-1;
+	htim1.Init.Period = period_cycles - 1;
 	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim1.Init.RepetitionCounter = 0;
 	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;

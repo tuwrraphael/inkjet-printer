@@ -17,10 +17,12 @@ extern "C"
 #endif
 
     typedef int (*printer_fire_t)(const struct device *dev);
+    typedef int (*printer_fire_set_light_timing_t)(const struct device *dev, uint32_t delay, uint32_t duration);
 
     __subsystem struct printer_fire_api
     {
         printer_fire_t fire;
+        printer_fire_set_light_timing_t set_light_timing;
     };
 
     __syscall int printer_fire(const struct device *dev)
@@ -29,6 +31,14 @@ extern "C"
             (const struct printer_fire_api *)dev->api;
 
         return api->fire(dev);
+    }
+
+    __syscall int printer_fire_set_light_timing(const struct device *dev, uint32_t delay, uint32_t duration)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_light_timing(dev, delay, duration);
     }
 
 #ifdef __cplusplus

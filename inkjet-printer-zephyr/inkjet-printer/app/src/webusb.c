@@ -26,6 +26,8 @@ LOG_MODULE_REGISTER(webusb);
 
 #include "src/printer_request.pb.h"
 #include "webusb.h"
+#include "dropwatcher_light.h"
+#include "printer_system_smf.h"
 
 /* Max packet size for Bulk endpoints */
 #if defined(CONFIG_USB_DC_HAS_HS_SUPPORT)
@@ -209,15 +211,38 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 	} else if (type == ChangePrinterSystemStateRequest_fields) {
 		ChangePrinterSystemStateRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangePrinterSystemStateRequest_fields, &request);
-		LOG_INF("ChangePrinterSystemStateRequest");
+		if (status) {
+			if (request.state == PRINTER_SYSTEM_STATE_IDLE) {
+				go_to_idle();
+			} else if (request.state == PRINTER_SYSTEM_STATE_DROPWATCHER) {
+				go_to_dropwatcher();
+			} else if (request.state == PRINTER_SYSTEM_STATE_ERROR) {
+				printer_system_smf_go_to_safe_state();
+			} else {
+				LOG_WRN("Transition to %d is not supported", request.state);
+			}
+			LOG_DBG("ChangePrinterSystemStateRequest: state=%d", request.state);
+		} else {
+			LOG_ERR("Failed to decode ChangePrinterSystemStateRequest");
+		}
 	} else if (type == ChangeDropwatcherParametersRequest_fields) {
 		ChangeDropwatcherParametersRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangeDropwatcherParametersRequest_fields, &request);
-		LOG_INF("ChangeDropwatcherParametersRequest");
+		if (status)
+		{
+			set_light_timing(request.delay_nanos, request.flash_on_time_nanos);
+		} else {
+			LOG_ERR("Failed to decode ChangeDropwatcherParametersRequest");
+		}
 	} else if (type == CameraFrameRequest_fields) {
 		CameraFrameRequest request = {};
 		status = decode_unionmessage_contents(&stream, CameraFrameRequest_fields, &request);
-		LOG_INF("CameraFrameRequest");
+		if (status) {
+			request_printhead_fire();
+			LOG_DBG("CameraFrameRequest");
+		} else {
+			LOG_ERR("Failed to decode CameraFrameRequest");
+		}
 	} else {
 		LOG_INF("Unknown message type");
 	}
@@ -225,10 +250,6 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 	// usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, rx_buf, size,
 	// 	     USB_TRANS_WRITE, webusb_write_cb, cfg);
 
-	char print_buf[65];
-	memcpy(print_buf, rx_buf, size);
-	print_buf[size] = '\0';
-	LOG_DBG("Received %s bytes", print_buf);
 done:
 
 	// usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, sizeof(tx_buf),

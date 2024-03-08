@@ -22,5 +22,6 @@ target_sources(app PRIVATE src/printer_system_smf.c)
 target_sources(app PRIVATE src/failure_handling.c)
 target_sources(app PRIVATE src/webusb.c)
 target_sources(app PRIVATE src/webusb_initialize.c)
+target_sources(app PRIVATE src/dropwatcher_light.c)
 include_directories(include)
 
