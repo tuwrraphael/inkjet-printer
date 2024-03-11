@@ -118,7 +118,7 @@
 		pulse34_start = <(PRINTHEAD_CLOCK_NS/4)>;
 		pulse12_end = <((PRINTHEAD_CLOCK_NS/4) + PRINTHEAD_CLOCK_NS)>;
 		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
-		mask_period = <MAX_FIRE_FREQUENCY>;
+		min_mask_period = <MAX_FIRE_FREQUENCY>;
 	};
 };
 

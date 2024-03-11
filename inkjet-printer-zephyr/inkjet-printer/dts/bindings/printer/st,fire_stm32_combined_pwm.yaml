@@ -18,6 +18,6 @@ properties:
   pulse34_end:
     type: int
     required: true
-  mask_period:
+  min_mask_period:
     type: int
     required: true

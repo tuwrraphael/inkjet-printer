@@ -1,7 +1,46 @@
 import "./styles.scss";
 import { WebUSBWrapper } from "./webusb";
-import {ChangeDropwatcherParametersRequest} from "../compiled";
+import { ChangeDropwatcherParametersRequest } from "../compiled";
 import { PrinterRequest } from "../compiled";
+import { web } from "webpack";
+import { CameraFrameRequest } from "../compiled";
+
+const appState = {
+    connected: false
+};
+
+const timer_clock = 96000000;
+const timer_tick_us = (1 / timer_clock) * 1000000;
+
+const strobeOnInput = document.querySelector("#config-strobe-on") as HTMLInputElement;
+const delayAfterJettingSignalInput = document.querySelector("#config-delay-after-jetting-signal") as HTMLInputElement;
+const connectUsbButton = document.querySelector("#connect-usb-button") as HTMLButtonElement;
+
+
+strobeOnInput.min = (1 * timer_tick_us).toString();
+strobeOnInput.max = (0xFFDF * timer_tick_us).toString();
+strobeOnInput.step = timer_tick_us.toString();
+strobeOnInput.value = (Math.ceil(2 / timer_tick_us) * timer_tick_us).toString();
+
+strobeOnInput.addEventListener("input", (e) => {
+    let us = parseFloat(strobeOnInput.value);
+    console.log("ticks: " + us / timer_tick_us);
+});
+
+delayAfterJettingSignalInput.min = (1 * timer_tick_us).toString();
+delayAfterJettingSignalInput.max = (0xFFDF * timer_tick_us).toString();
+delayAfterJettingSignalInput.step = timer_tick_us.toString();
+delayAfterJettingSignalInput.value = (Math.ceil(10 / timer_tick_us) * timer_tick_us).toString();
+
+
+let webusb = new WebUSBWrapper();
+
+async function sendWebcamReady() {
+    let printerRequest = new PrinterRequest();
+    printerRequest.cameraFrameRequest = new CameraFrameRequest();
+    await webusb.send(PrinterRequest.encode(printerRequest).finish());
+}
+
 
 async function startVideo() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -46,14 +85,14 @@ async function startVideo() {
 
         let frame = await createImageBitmap(video);
 
-        // console.log(frame);
+        // console.log(frame); warning causes hang
         var duration = performance.measure("frame", "start", "end").duration;
         // console.log(duration);
         // if (nr < 10) {
         performance.mark("start");
         video.requestVideoFrameCallback(cv);
         if ((<HTMLInputElement>document.querySelector("#strobe-on")).checked) {
-            await webusb.send(new Uint8Array(["R".charCodeAt(0)]));
+            sendWebcamReady();
         }
         // } else {
         //     console.log(performance.getEntriesByType("measure").map(m => m.duration));
@@ -62,7 +101,18 @@ async function startVideo() {
     performance.mark("start");
     video.requestVideoFrameCallback(cv);
 }
-let webusb = new WebUSBWrapper();
+
+webusb.addEventListener("connected", () => {
+    appState.connected = true;
+    refresh();
+});
+webusb.addEventListener("disconnected", () => {
+    appState.connected = false;
+    refresh();
+});
+function refresh() {
+    connectUsbButton.disabled = appState.connected;
+}
 async function startUsb() {
 
     await webusb.connect();
@@ -72,37 +122,34 @@ async function startUsb() {
 }
 
 async function start() {
-    // await startVideo();
-    await startUsb();
+    await startVideo();
+    
 }
 
-async function sendWebcamReady() {
-    await webusb.send(new Uint8Array(["R".charCodeAt(0)]));
-}
 
 const JETTING_SIGNAL_MODE_FALLING = 2;
 const JETTING_SIGNAL_MODE_RISING = 3;
 
 async function writeConfig() {
-    let cameraReadyDelayTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-camera-ready-delay")).value) *1000)/62.5);
-    let strobeOnTicks: number = ((parseFloat((<HTMLInputElement>document.querySelector("#config-strobe-on")).value) *1000)/62.5)-2;
-    let delayAfterJettingSignalTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-delay-after-jetting-signal")).value)*1000/62.5));
-    console.log(delayAfterJettingSignalTicks);
-    let jettingSignalMode = JETTING_SIGNAL_MODE_RISING;
-    let arr = new Uint8Array(8);
-    let view = new DataView(arr.buffer);
-    view.setUint8(0, "C".charCodeAt(0));
-    view.setUint16(1, delayAfterJettingSignalTicks, true);
-    view.setUint16(3, strobeOnTicks, true);
-    view.setUint8(5, jettingSignalMode);
-    view.setUint16(6, cameraReadyDelayTicks, true);
+    // let cameraReadyDelayTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-camera-ready-delay")).value) * 1000) / 62.5);
+    // let strobeOnTicks: number = ((parseFloat((<HTMLInputElement>document.querySelector("#config-strobe-on")).value) * 1000) / 62.5) - 2;
+    // let delayAfterJettingSignalTicks = ((parseFloat((<HTMLInputElement>document.querySelector("#config-delay-after-jetting-signal")).value) * 1000 / 62.5));
+    // console.log(delayAfterJettingSignalTicks);
+    // let jettingSignalMode = JETTING_SIGNAL_MODE_RISING;
+    // let arr = new Uint8Array(8);
+    // let view = new DataView(arr.buffer);
+    // view.setUint8(0, "C".charCodeAt(0));
+    // view.setUint16(1, delayAfterJettingSignalTicks, true);
+    // view.setUint16(3, strobeOnTicks, true);
+    // view.setUint8(5, jettingSignalMode);
+    // view.setUint16(6, cameraReadyDelayTicks, true);
 
     let request = new PrinterRequest();
     request.changeDropwatcherParametersRequest = new ChangeDropwatcherParametersRequest();
-    request.changeDropwatcherParametersRequest.delayNanos = delayAfterJettingSignalTicks*62.5;
-    request.changeDropwatcherParametersRequest.flashOnTimeNanos = strobeOnTicks*62.5;
+    request.changeDropwatcherParametersRequest.delayNanos = (parseFloat(delayAfterJettingSignalInput.value) * 1000);
+    request.changeDropwatcherParametersRequest.flashOnTimeNanos = (parseFloat(strobeOnInput.value) * 1000);
 
-    
+
 
     let bytes = PrinterRequest.encode(request).finish();
 
@@ -112,10 +159,25 @@ async function writeConfig() {
     await webusb.send(bytes);
 }
 
+
+
 document.querySelector("#start-button").addEventListener("click", start);
 document.querySelector("#test-button").addEventListener("click", sendWebcamReady);
 document.querySelector("#write-config").addEventListener("click", writeConfig);
 
+connectUsbButton.addEventListener("click", async () => {
+    await webusb.connect();
+});
+
+
+
+async function autoStart() {
+    if (await webusb.hasDevices()) {
+        await startUsb();
+    }
+}
+
+autoStart().catch(console.error);
 
 
 if (module.hot) {

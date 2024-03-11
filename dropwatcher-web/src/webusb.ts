@@ -9,6 +9,11 @@ export class WebUSBWrapper extends EventTarget {
         super();
     }
 
+    async hasDevices() {
+        let devices = await navigator.usb.getDevices();
+        return devices.length > 0;
+    }
+
     async connect() {
         let devices = await navigator.usb.getDevices();
         if (devices.length > 0) {
@@ -17,6 +22,7 @@ export class WebUSBWrapper extends EventTarget {
             this._device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x2FE3, productId: 0x000A }] });
         }
         await this._device.open();
+        this.dispatchEvent(new CustomEvent("connected"));
         await this._device.selectConfiguration(1);
         var configurationInterfaces = this._device.configuration.interfaces;
         configurationInterfaces.forEach(element => {
@@ -58,6 +64,10 @@ export class WebUSBWrapper extends EventTarget {
             } catch (e) {
                 err = true;
                 console.log(e);
+                if (this._device !== undefined) {
+                    this._device.close();
+                    this.dispatchEvent(new CustomEvent("disconnected"));
+                }
             }
         }
     }
@@ -67,13 +77,6 @@ export class WebUSBWrapper extends EventTarget {
     }
 
     disconnect() {
-        this._device.controlTransferOut({
-            'requestType': 'class',
-            'recipient': 'interface',
-            'request': 0x22,
-            'value': 0x00,
-            'index': this._interfaceNumber
-        });
         return this._device.close();
     }
 }

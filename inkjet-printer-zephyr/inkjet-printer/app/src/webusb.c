@@ -12,9 +12,8 @@
  * to support the WebUSB.
  */
 
-#define LOG_LEVEL CONFIG_USB_DEVICE_LOG_LEVEL
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(webusb);
+LOG_MODULE_REGISTER(webusb, CONFIG_APP_LOG_LEVEL);
 
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usb_device.h>
@@ -239,7 +238,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		status = decode_unionmessage_contents(&stream, CameraFrameRequest_fields, &request);
 		if (status) {
 			request_printhead_fire();
-			LOG_DBG("CameraFrameRequest");
+			LOG_INF("CameraFrameRequest");
 		} else {
 			LOG_ERR("Failed to decode CameraFrameRequest");
 		}

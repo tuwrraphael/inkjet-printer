@@ -36,7 +36,7 @@ struct fire_stm32_combined_pwm_config
 	uint32_t pulse34_start;
 	uint32_t pulse12_end;
 	uint32_t pulse34_end;
-	uint32_t mask_period;
+	uint32_t min_mask_period;
 };
 
 static int fire(const struct device *dev)
@@ -66,36 +66,52 @@ static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
 
 static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t duration)
 {
-	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
-	
-	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * delay) / (1000 * 1000 * 1000));
-	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * (delay + duration)) / (1000 * 1000 * 1000));
-
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
+
+
+	uint32_t min_mask_cycles = (uint32_t)((cycles_per_sec * cfg->min_mask_period) / (1000 * 1000 * 1000));
+	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * (cfg->pulse12_start + delay)) / (1000 * 1000 * 1000));
+	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * (cfg->pulse12_start + delay + duration)) / (1000 * 1000 * 1000));
+	uint32_t pulse12_end_cycles = (uint32_t)((cycles_per_sec * cfg->pulse12_end) / (1000 * 1000 * 1000));
+	uint32_t mask_cycles = pulse12_end_cycles > pulse34_end_cycles ? pulse12_end_cycles : pulse34_end_cycles;
+
+	mask_cycles = mask_cycles > min_mask_cycles ? mask_cycles : min_mask_cycles;
+
+	LOG_INF("Set light timing: %d - %d, mask: %d", pulse34_start_cycles, pulse34_end_cycles, mask_cycles);
+
 	TIM_TypeDef *timer = cfg->timer;
 	TIM_HandleTypeDef htim1;
 	htim1.Instance = timer;
 
-	TIM_OC_InitTypeDef sConfigOC = {0};
-	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM2;
-	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-	sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-	sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-	sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	sConfigOC.Pulse = pulse34_start_cycles;
-	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-	{
-		LOG_ERR("Timer PWM ConfigChannel 3 failed");
-		return -ENODEV;
-	}
-	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
-	sConfigOC.Pulse = pulse34_end_cycles;
-	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-	{
-		LOG_ERR("Timer PWM ConfigChannel 4 failed");
-		return -ENODEV;
-	}
+	// TIM_OC_InitTypeDef sConfigOC = {0};
+	// sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM2;
+	// sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+	// sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+	// sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+	// sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+	// sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+	// sConfigOC.Pulse = pulse34_start_cycles;
+	// if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+	// {
+	// 	LOG_ERR("Timer PWM ConfigChannel 3 failed");
+	// 	return -ENODEV;
+	// }
+	// sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
+	// sConfigOC.Pulse = pulse34_end_cycles;
+	// if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+	// {
+	// 	LOG_ERR("Timer PWM ConfigChannel 4 failed");
+	// 	return -ENODEV;
+	// }
+
+	// HAL_TIM_
+
+	// 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+	// HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse34_start_cycles);
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, pulse34_end_cycles);
+	__HAL_TIM_SET_AUTORELOAD(&htim1, mask_cycles - 1);
 	return 0;
 }
 
@@ -263,18 +279,22 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
 	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
-	uint32_t period_cycles = (uint32_t)((cycles_per_sec * cfg->mask_period) / (1000 * 1000 * 1000));
+
+	uint32_t min_mask_cycles = (uint32_t)((cycles_per_sec * cfg->min_mask_period) / (1000 * 1000 * 1000));
 	uint32_t pulse12_end_cycles = (uint32_t)((cycles_per_sec * cfg->pulse12_end) / (1000 * 1000 * 1000));
 	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * cfg->pulse34_end) / (1000 * 1000 * 1000));
 	uint32_t pulse12_start_cycles = (uint32_t)((cycles_per_sec * cfg->pulse12_start) / (1000 * 1000 * 1000));
 	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * cfg->pulse34_start) / (1000 * 1000 * 1000));
 
-	LOG_INF("Mask cycles: %d | Pulse12 %d - %d | Pulse34 %d - %d", period_cycles, pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles);
+	uint32_t mask_cycles = pulse12_end_cycles > pulse34_end_cycles ? pulse12_end_cycles : pulse34_end_cycles;
+	mask_cycles = mask_cycles > min_mask_cycles ? mask_cycles : min_mask_cycles;
+
+		LOG_INF("Mask cycles: %d | Pulse12 %d - %d | Pulse34 %d - %d", mask_cycles, pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles);
 
 	htim1.Instance = timer;
 	htim1.Init.Prescaler = cfg->prescaler;
 	htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim1.Init.Period = period_cycles - 1;
+	htim1.Init.Period = mask_cycles - 1;
 	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim1.Init.RepetitionCounter = 0;
 	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -377,7 +397,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_TRIGGER);
 	// // __HAL_TIM_ENABLE(&htim1);
 
 	TIM_HandleTypeDef htim4;
@@ -408,19 +428,45 @@ void timer_irq_handler(const struct device *dev)
 	struct fire_stm32_combined_pwm_data *data = dev->data;
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	TIM_TypeDef *timer = cfg->timer;
-	if (timer->SR & TIM_SR_UIF)
+	// if (timer->SR & TIM_SR_UIF)
+	// {
+	// 	LOG_INF("Timer update");
+	// 	// //disable the timer
+	// 	// bool was_enabled = timer->CR1 & TIM_CR1_CEN;
+	// 	// // timer->CR1 &= ~(TIM_CR1_CEN);
+
+	// 	// /* Get the TIMx SMCR register value */
+	// 	// uint32_t tmpsmcr = timer->SMCR;
+
+	// 	// /* Reset the slave mode Bits */
+	// 	// tmpsmcr &= ~TIM_SMCR_SMS;
+
+	// 	// timer->SMCR = tmpsmcr;
+	// 	// // clear the interrupt flag
+	// 	timer->SR &= ~TIM_SR_UIF;
+	// 	// LOG_INF("Timer IRQ %x, %d", TIM1->CNT, was_enabled);
+	// 	//
+	// }
+	// if (timer->SR & TIM_SR_CC1IF)
+	// {
+	// 	/* Get the TIMx SMCR register value */
+
+	// 	LOG_INF("Timer CC1");
+	// 	timer->SR &= ~TIM_SR_CC1IF;
+	// }
+	if (timer->SR & TIM_SR_TIF)
 	{
-		/* Get the TIMx SMCR register value */
 		uint32_t tmpsmcr = timer->SMCR;
 
 		/* Reset the slave mode Bits */
 		tmpsmcr &= ~TIM_SMCR_SMS;
 
 		timer->SMCR = tmpsmcr;
-		timer->SR &= ~TIM_SR_UIF;
-		// LOG_INF("Timer IRQ %x", TIM1->CNT);
 		data->irq_counter++;
+		LOG_INF("Timer trigger %d", data->irq_counter);
+		timer->SR &= ~TIM_SR_TIF;
 	}
+	// LOG_INF("Timer IRQ %x, %x", TIM1->CNT, TIM4->CNT);
 }
 
 #define TIMER(idx) DT_INST_PARENT(idx)
@@ -435,12 +481,12 @@ void timer_irq_handler(const struct device *dev)
                                                                                                      \
 	static void fire_##idx##_stm32_irq_config(const struct device *dev)                              \
 	{                                                                                                \
-		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), up, irq),                                             \
-					DT_IRQ_BY_NAME(TIMER(idx), up, priority),                                        \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq),                                         \
+					DT_IRQ_BY_NAME(TIMER(idx), trgcom, priority),                                    \
 					timer_irq_handler,                                                               \
 					DEVICE_DT_INST_GET(idx),                                                         \
 					0);                                                                              \
-		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), up, irq));                                             \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq));                                         \
 	};                                                                                               \
 	PINCTRL_DT_INST_DEFINE(idx);                                                                     \
                                                                                                      \
@@ -455,7 +501,7 @@ void timer_irq_handler(const struct device *dev)
 		.pulse34_start = DT_PROP(DT_DRV_INST(idx), pulse34_start),                                   \
 		.pulse12_end = DT_PROP(DT_DRV_INST(idx), pulse12_end),                                       \
 		.pulse34_end = DT_PROP(DT_DRV_INST(idx), pulse34_end),                                       \
-		.mask_period = DT_PROP(DT_DRV_INST(idx), mask_period),                                       \
+		.min_mask_period = DT_PROP(DT_DRV_INST(idx), min_mask_period),                               \
 	};                                                                                               \
                                                                                                      \
 	DEVICE_DT_INST_DEFINE(idx, fire_stm32_combined_pwm_init, NULL,                                   \
