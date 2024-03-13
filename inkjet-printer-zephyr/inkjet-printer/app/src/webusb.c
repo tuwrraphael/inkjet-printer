@@ -21,12 +21,16 @@ LOG_MODULE_REGISTER(webusb, CONFIG_APP_LOG_LEVEL);
 #include <string.h>
 
 #include <pb_decode.h>
+#include <pb_encode.h>
 #include <pb_common.h>
 
 #include "src/printer_request.pb.h"
+#include "src/printer_system_state_response.pb.h"
 #include "webusb.h"
 #include "dropwatcher_light.h"
 #include "printer_system_smf.h"
+#include "failure_handling.h"
+#include "pressure_control.h"
 
 /* Max packet size for Bulk endpoints */
 #if defined(CONFIG_USB_DC_HAS_HS_SUPPORT)
@@ -186,6 +190,77 @@ bool decode_unionmessage_contents(pb_istream_t *stream, const pb_msgdesc_t *mess
 	return status;
 }
 
+static uint8_t tx_buf[64];
+
+static PrinterSystemState map_system_state_to_proto(enum printer_system_smf_state state)
+{
+	switch (state)
+	{
+	case PRINTER_SYSTEM_STARTUP:
+		return PrinterSystemState_PrinterSystemState_STARTUP;
+	case PRINTER_SYSTEM_IDLE:
+		return PrinterSystemState_PrinterSystemState_IDLE;
+	case PRINTER_SYSTEM_ERROR:
+		return PrinterSystemState_PrinterSystemState_ERROR;
+	case PRINTER_SYSTEM_DROPWATCHER:
+		return PrinterSystemState_PrinterSystemState_DROPWATCHER;
+	default:
+		return PrinterSystemState_PrinterSystemState_UNSPECIFIED;
+	}
+}
+
+static PressureControlAlgorithm map_pressure_control_algorithm_to_proto(pressure_control_algorithm_t algorithm)
+{
+	switch (algorithm)
+	{
+	case PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE:
+		return PressureControlAlgorithm_PressureControlAlgorithm_TARGET_PRESSURE;
+	case PRESSURE_CONTROL_ALGORITHM_FEED_WITH_LIMIT:
+		return PressureControlAlgorithm_PressureControlAlgorithm_FEED_WITH_LIMIT;
+	default:
+		return PressureControlAlgorithm_PressureControlAlgorithm_UNSPECIFIED;
+	}
+}
+
+static PressureControlDirection map_pressure_control_direction_to_proto(pressure_direction_t direction)
+{
+	switch (direction)
+	{
+	case PRESSURE_DIRECTION_VACUUM:
+		return PressureControlDirection_PressureControlDirection_VACUUM;
+	case PRESSURE_DIRECTION_PRESSURE:
+		return PressureControlDirection_PressureControlDirection_PRESSURE;
+	default:
+		return PressureControlDirection_PressureControlDirection_UNSPECIFIED;
+	}
+}
+
+static pressure_direction_t map_proto_to_pressure_control_direction(PressureControlDirection direction)
+{
+	switch (direction)
+	{
+	case PressureControlDirection_PressureControlDirection_VACUUM:
+		return PRESSURE_DIRECTION_VACUUM;
+	case PressureControlDirection_PressureControlDirection_PRESSURE:
+		return PRESSURE_DIRECTION_PRESSURE;
+	default:
+		return PRESSURE_DIRECTION_VACUUM;
+	}
+}
+
+static pressure_control_algorithm_t map_proto_to_pressure_control_algorithm(PressureControlAlgorithm algorithm)
+{
+	switch (algorithm)
+	{
+	case PressureControlAlgorithm_PressureControlAlgorithm_TARGET_PRESSURE:
+		return PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+	case PressureControlAlgorithm_PressureControlAlgorithm_FEED_WITH_LIMIT:
+		return PRESSURE_CONTROL_ALGORITHM_FEED_WITH_LIMIT;
+	default:
+		return PRESSURE_CONTROL_ALGORITHM_NONE;
+	}
+}
+
 static void webusb_read_cb(uint8_t ep, int size, void *priv)
 {
 	struct usb_cfg_data *cfg = priv;
@@ -206,53 +281,129 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 	{
 		GetPrinterSystemStateRequest request = {};
 		status = decode_unionmessage_contents(&stream, GetPrinterSystemStateRequest_fields, &request);
-		LOG_INF("GetPrinterSystemStateRequest");
-	} else if (type == ChangePrinterSystemStateRequest_fields) {
+		if (status)
+		{
+			// LOG_INF("GetPrinterSystemStateRequest");
+			pb_ostream_t tx_stream = pb_ostream_from_buffer(tx_buf, sizeof(tx_buf));
+			PrinterSystemStateResponse response = PrinterSystemStateResponse_init_zero;
+			response.state = map_system_state_to_proto(printer_system_smf_get_state());
+			response.error_flags = failure_handling_get_error_state();
+			pressure_control_info_t pressure_info;
+			pressure_control_get_info(&pressure_info);
+			response.has_pressure_control = true;
+			response.pressure_control.pressure = pressure_info.pressure;
+			response.pressure_control.has_parameters = true;
+			response.pressure_control.parameters.algorithm = map_pressure_control_algorithm_to_proto(pressure_info.algorithm.algorithm);
+			response.pressure_control.parameters.direction = map_pressure_control_direction_to_proto(pressure_info.algorithm.direction);
+			response.pressure_control.parameters.target_pressure = pressure_info.algorithm.target_pressure;
+			response.pressure_control.parameters.limit_pressure = pressure_info.algorithm.limit_pressure;
+			response.pressure_control.parameters.feed_pwm = pressure_info.algorithm.feed_pwm;
+			response.pressure_control.parameters.feed_time = pressure_info.algorithm.feed_time;
+			response.pressure_control.done = pressure_info.done;
+			response.pressure_control.parameters.enabled = pressure_info.enabled;
+			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
+			if (status) {
+				// LOG_INF("PrinterSystemStateResponse: length %d", tx_stream.bytes_written);
+				usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, tx_stream.bytes_written,
+					USB_TRANS_WRITE, webusb_write_cb, cfg);
+			} else {
+				LOG_ERR("Failed to encode PrinterSystemStateResponse");
+			}
+		}
+		else
+		{
+			LOG_ERR("Failed to decode GetPrinterSystemStateRequest");
+		}
+	}
+	else if (type == ChangePrinterSystemStateRequest_fields)
+	{
 		ChangePrinterSystemStateRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangePrinterSystemStateRequest_fields, &request);
-		if (status) {
-			if (request.state == PrinterSystemState_IDLE) {
+		if (status)
+		{
+			if (request.state == PrinterSystemState_PrinterSystemState_IDLE)
+			{
 				go_to_idle();
-			} else if (request.state == PrinterSystemState_DROPWATCHER) {
+			}
+			else if (request.state == PrinterSystemState_PrinterSystemState_DROPWATCHER)
+			{
 				go_to_dropwatcher();
-			} else if (request.state == PrinterSystemState_ERROR) {
+			}
+			else if (request.state == PrinterSystemState_PrinterSystemState_ERROR)
+			{
 				printer_system_smf_go_to_safe_state();
-			} else {
+			}
+			else
+			{
 				LOG_WRN("Transition to %d is not supported", request.state);
 			}
 			LOG_DBG("ChangePrinterSystemStateRequest: state=%d", request.state);
-		} else {
+		}
+		else
+		{
 			LOG_ERR("Failed to decode ChangePrinterSystemStateRequest");
 		}
-	} else if (type == ChangeDropwatcherParametersRequest_fields) {
+	}
+	else if (type == ChangeDropwatcherParametersRequest_fields)
+	{
 		ChangeDropwatcherParametersRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangeDropwatcherParametersRequest_fields, &request);
 		if (status)
 		{
 			set_light_timing(request.delay_nanos, request.flash_on_time_nanos);
-		} else {
+		}
+		else
+		{
 			LOG_ERR("Failed to decode ChangeDropwatcherParametersRequest");
 		}
-	} else if (type == CameraFrameRequest_fields) {
+	}
+	else if (type == CameraFrameRequest_fields)
+	{
 		CameraFrameRequest request = {};
 		status = decode_unionmessage_contents(&stream, CameraFrameRequest_fields, &request);
-		if (status) {
+		if (status)
+		{
 			request_printhead_fire();
 			LOG_INF("CameraFrameRequest");
-		} else {
+		}
+		else
+		{
 			LOG_ERR("Failed to decode CameraFrameRequest");
 		}
-	} else {
+	}
+	else if (type == PressureControlChangeParametersRequest_fields) {
+		PressureControlChangeParametersRequest request = {};
+		status = decode_unionmessage_contents(&stream, PressureControlChangeParametersRequest_fields, &request);
+		if (status)
+		{
+			pressure_control_algorithm_init_t init = {
+				.algorithm = map_proto_to_pressure_control_algorithm(request.parameters.algorithm),
+				.direction = map_proto_to_pressure_control_direction(request.parameters.direction),
+				.target_pressure = request.parameters.target_pressure,
+				.limit_pressure = request.parameters.limit_pressure,
+				.feed_pwm = request.parameters.feed_pwm,
+				.feed_time = request.parameters.feed_time
+			};
+			pressure_control_update_parameters(&init);
+			if (request.parameters.enabled)
+			{
+				pressure_control_enable();
+			}
+			else
+			{
+				pressure_control_disable();
+			}
+		}
+		else
+		{
+			LOG_ERR("Failed to decode PressureControlChangeParametersRequest");
+		}
+	}
+	else
+	{
 		LOG_INF("Unknown message type");
 	}
-
-	// usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, rx_buf, size,
-	// 	     USB_TRANS_WRITE, webusb_write_cb, cfg);
-
 done:
-
-	// usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, sizeof(tx_buf),
-	// 			 USB_TRANS_WRITE, webusb_write_cb, cfg);
 	usb_transfer(ep, rx_buf, sizeof(rx_buf), USB_TRANS_READ,
 				 webusb_read_cb, cfg);
 }

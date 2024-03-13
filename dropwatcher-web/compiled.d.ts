@@ -1,7 +1,224 @@
 import * as $protobuf from "protobufjs";
 import Long = require("long");
-/** Properties of a GetPrinterSystemStateRequest. */
-export interface IGetPrinterSystemStateRequest {
+/** PressureControlAlgorithm enum. */
+export enum PressureControlAlgorithm {
+    PressureControlAlgorithm_UNSPECIFIED = 0,
+    PressureControlAlgorithm_TARGET_PRESSURE = 1,
+    PressureControlAlgorithm_FEED_WITH_LIMIT = 2
+}
+
+/** PressureControlDirection enum. */
+export enum PressureControlDirection {
+    PressureControlDirection_UNSPECIFIED = 0,
+    PressureControlDirection_VACUUM = 1,
+    PressureControlDirection_PRESSURE = 2
+}
+
+/** Represents a PressureControlParameters. */
+export class PressureControlParameters implements IPressureControlParameters {
+
+    /**
+     * Constructs a new PressureControlParameters.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPressureControlParameters);
+
+    /** PressureControlParameters enabled. */
+    public enabled: boolean;
+
+    /** PressureControlParameters algorithm. */
+    public algorithm: PressureControlAlgorithm;
+
+    /** PressureControlParameters targetPressure. */
+    public targetPressure: number;
+
+    /** PressureControlParameters direction. */
+    public direction: PressureControlDirection;
+
+    /** PressureControlParameters limitPressure. */
+    public limitPressure: number;
+
+    /** PressureControlParameters feedPwm. */
+    public feedPwm: number;
+
+    /** PressureControlParameters feedTime. */
+    public feedTime: number;
+
+    /**
+     * Creates a new PressureControlParameters instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PressureControlParameters instance
+     */
+    public static create(properties?: IPressureControlParameters): PressureControlParameters;
+
+    /**
+     * Encodes the specified PressureControlParameters message. Does not implicitly {@link PressureControlParameters.verify|verify} messages.
+     * @param message PressureControlParameters message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPressureControlParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PressureControlParameters message, length delimited. Does not implicitly {@link PressureControlParameters.verify|verify} messages.
+     * @param message PressureControlParameters message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPressureControlParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PressureControlParameters message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PressureControlParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PressureControlParameters;
+
+    /**
+     * Decodes a PressureControlParameters message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PressureControlParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PressureControlParameters;
+
+    /**
+     * Verifies a PressureControlParameters message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PressureControlParameters message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PressureControlParameters
+     */
+    public static fromObject(object: { [k: string]: any }): PressureControlParameters;
+
+    /**
+     * Creates a plain object from a PressureControlParameters message. Also converts values to other types if specified.
+     * @param message PressureControlParameters
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PressureControlParameters, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PressureControlParameters to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PressureControlParameters
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
+/** Represents a PressureControlSystemState. */
+export class PressureControlSystemState implements IPressureControlSystemState {
+
+    /**
+     * Constructs a new PressureControlSystemState.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPressureControlSystemState);
+
+    /** PressureControlSystemState pressure. */
+    public pressure: number;
+
+    /** PressureControlSystemState enabled. */
+    public enabled: boolean;
+
+    /** PressureControlSystemState parameters. */
+    public parameters?: (IPressureControlParameters|null);
+
+    /** PressureControlSystemState done. */
+    public done: boolean;
+
+    /**
+     * Creates a new PressureControlSystemState instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PressureControlSystemState instance
+     */
+    public static create(properties?: IPressureControlSystemState): PressureControlSystemState;
+
+    /**
+     * Encodes the specified PressureControlSystemState message. Does not implicitly {@link PressureControlSystemState.verify|verify} messages.
+     * @param message PressureControlSystemState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPressureControlSystemState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PressureControlSystemState message, length delimited. Does not implicitly {@link PressureControlSystemState.verify|verify} messages.
+     * @param message PressureControlSystemState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPressureControlSystemState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PressureControlSystemState message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PressureControlSystemState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PressureControlSystemState;
+
+    /**
+     * Decodes a PressureControlSystemState message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PressureControlSystemState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PressureControlSystemState;
+
+    /**
+     * Verifies a PressureControlSystemState message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PressureControlSystemState message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PressureControlSystemState
+     */
+    public static fromObject(object: { [k: string]: any }): PressureControlSystemState;
+
+    /**
+     * Creates a plain object from a PressureControlSystemState message. Also converts values to other types if specified.
+     * @param message PressureControlSystemState
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PressureControlSystemState, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PressureControlSystemState to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PressureControlSystemState
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
 /** Represents a GetPrinterSystemStateRequest. */
@@ -89,13 +306,6 @@ export class GetPrinterSystemStateRequest implements IGetPrinterSystemStateReque
      * @returns The default type url
      */
     public static getTypeUrl(typeUrlPrefix?: string): string;
-}
-
-/** Properties of a ChangePrinterSystemStateRequest. */
-export interface IChangePrinterSystemStateRequest {
-
-    /** ChangePrinterSystemStateRequest state */
-    state?: (PrinterSystemState|null);
 }
 
 /** Represents a ChangePrinterSystemStateRequest. */
@@ -186,16 +396,6 @@ export class ChangePrinterSystemStateRequest implements IChangePrinterSystemStat
      * @returns The default type url
      */
     public static getTypeUrl(typeUrlPrefix?: string): string;
-}
-
-/** Properties of a ChangeDropwatcherParametersRequest. */
-export interface IChangeDropwatcherParametersRequest {
-
-    /** ChangeDropwatcherParametersRequest delayNanos */
-    delayNanos?: (number|null);
-
-    /** ChangeDropwatcherParametersRequest flashOnTimeNanos */
-    flashOnTimeNanos?: (number|null);
 }
 
 /** Represents a ChangeDropwatcherParametersRequest. */
@@ -291,10 +491,6 @@ export class ChangeDropwatcherParametersRequest implements IChangeDropwatcherPar
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
-/** Properties of a CameraFrameRequest. */
-export interface ICameraFrameRequest {
-}
-
 /** Represents a CameraFrameRequest. */
 export class CameraFrameRequest implements ICameraFrameRequest {
 
@@ -382,20 +578,94 @@ export class CameraFrameRequest implements ICameraFrameRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
-/** Properties of a PrinterRequest. */
-export interface IPrinterRequest {
+/** Represents a PressureControlChangeParametersRequest. */
+export class PressureControlChangeParametersRequest implements IPressureControlChangeParametersRequest {
 
-    /** PrinterRequest getPrinterSystemStateRequest */
-    getPrinterSystemStateRequest?: (IGetPrinterSystemStateRequest|null);
+    /**
+     * Constructs a new PressureControlChangeParametersRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPressureControlChangeParametersRequest);
 
-    /** PrinterRequest changePrinterSystemStateRequest */
-    changePrinterSystemStateRequest?: (IChangePrinterSystemStateRequest|null);
+    /** PressureControlChangeParametersRequest parameters. */
+    public parameters?: (IPressureControlParameters|null);
 
-    /** PrinterRequest changeDropwatcherParametersRequest */
-    changeDropwatcherParametersRequest?: (IChangeDropwatcherParametersRequest|null);
+    /**
+     * Creates a new PressureControlChangeParametersRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PressureControlChangeParametersRequest instance
+     */
+    public static create(properties?: IPressureControlChangeParametersRequest): PressureControlChangeParametersRequest;
 
-    /** PrinterRequest cameraFrameRequest */
-    cameraFrameRequest?: (ICameraFrameRequest|null);
+    /**
+     * Encodes the specified PressureControlChangeParametersRequest message. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
+     * @param message PressureControlChangeParametersRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPressureControlChangeParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PressureControlChangeParametersRequest message, length delimited. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
+     * @param message PressureControlChangeParametersRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPressureControlChangeParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PressureControlChangeParametersRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PressureControlChangeParametersRequest;
+
+    /**
+     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PressureControlChangeParametersRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PressureControlChangeParametersRequest;
+
+    /**
+     * Verifies a PressureControlChangeParametersRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PressureControlChangeParametersRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PressureControlChangeParametersRequest
+     */
+    public static fromObject(object: { [k: string]: any }): PressureControlChangeParametersRequest;
+
+    /**
+     * Creates a plain object from a PressureControlChangeParametersRequest message. Also converts values to other types if specified.
+     * @param message PressureControlChangeParametersRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PressureControlChangeParametersRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PressureControlChangeParametersRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PressureControlChangeParametersRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
 /** Represents a PrinterRequest. */
@@ -419,6 +689,9 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest cameraFrameRequest. */
     public cameraFrameRequest?: (ICameraFrameRequest|null);
 
+    /** PrinterRequest pressureControlChangeParametersRequest. */
+    public pressureControlChangeParametersRequest?: (IPressureControlChangeParametersRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -430,6 +703,9 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _cameraFrameRequest. */
     public _cameraFrameRequest?: "cameraFrameRequest";
+
+    /** PrinterRequest _pressureControlChangeParametersRequest. */
+    public _pressureControlChangeParametersRequest?: "pressureControlChangeParametersRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.
@@ -511,11 +787,11 @@ export class PrinterRequest implements IPrinterRequest {
 
 /** PrinterSystemState enum. */
 export enum PrinterSystemState {
-    UNSPECIFIED = 0,
-    STARTUP = 1,
-    IDLE = 2,
-    ERROR = 3,
-    DROPWATCHER = 4
+    PrinterSystemState_UNSPECIFIED = 0,
+    PrinterSystemState_STARTUP = 1,
+    PrinterSystemState_IDLE = 2,
+    PrinterSystemState_ERROR = 3,
+    PrinterSystemState_DROPWATCHER = 4
 }
 
 /** Represents a PrinterSystemStateResponse. */
@@ -527,11 +803,14 @@ export class PrinterSystemStateResponse implements IPrinterSystemStateResponse {
      */
     constructor(properties?: IPrinterSystemStateResponse);
 
-    /** PrinterSystemStateResponse pressure. */
-    public pressure: number;
-
     /** PrinterSystemStateResponse state. */
     public state: PrinterSystemState;
+
+    /** PrinterSystemStateResponse errorFlags. */
+    public errorFlags: number;
+
+    /** PrinterSystemStateResponse pressureControl. */
+    public pressureControl?: (IPressureControlSystemState|null);
 
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.

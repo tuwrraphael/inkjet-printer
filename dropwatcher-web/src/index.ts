@@ -1,13 +1,22 @@
 import "./styles.scss";
 import { WebUSBWrapper } from "./webusb";
-import { ChangeDropwatcherParametersRequest } from "../compiled";
+import { ChangeDropwatcherParametersRequest, GetPrinterSystemStateRequest, PressureControlDirection, PrinterSystemStateResponse } from "../compiled";
 import { PrinterRequest } from "../compiled";
 import { web } from "webpack";
 import { CameraFrameRequest } from "../compiled";
+import { PressureControlChangeParametersRequest } from "../compiled";
+import { PressureControlParameters } from "../compiled";
+import { PressureControlAlgorithm } from "../compiled";
 
 const appState = {
-    connected: false
+    connected: false,
+    printerSystemState: <PrinterSystemStateResponse>null
 };
+
+function changeAppState(newState: Partial<typeof appState>) {
+    Object.assign(appState, newState);
+    refresh();
+}
 
 const timer_clock = 96000000;
 const timer_tick_us = (1 / timer_clock) * 1000000;
@@ -15,6 +24,9 @@ const timer_tick_us = (1 / timer_clock) * 1000000;
 const strobeOnInput = document.querySelector("#config-strobe-on") as HTMLInputElement;
 const delayAfterJettingSignalInput = document.querySelector("#config-delay-after-jetting-signal") as HTMLInputElement;
 const connectUsbButton = document.querySelector("#connect-usb-button") as HTMLButtonElement;
+const stateDebug = document.querySelector("#state-debug") as HTMLPreElement;
+const targetPressureInput = document.querySelector("#target-pressure") as HTMLInputElement;
+const pressureControlButton = document.querySelector("#pressure-control") as HTMLButtonElement;
 
 
 strobeOnInput.min = (1 * timer_tick_us).toString();
@@ -103,28 +115,37 @@ async function startVideo() {
 }
 
 webusb.addEventListener("connected", () => {
-    appState.connected = true;
-    refresh();
+    changeAppState({ connected: true });
 });
 webusb.addEventListener("disconnected", () => {
-    appState.connected = false;
-    refresh();
+    changeAppState({ connected: false });
 });
 function refresh() {
     connectUsbButton.disabled = appState.connected;
+    stateDebug.textContent = JSON.stringify(appState, null, 2);
 }
 async function startUsb() {
 
     await webusb.connect();
     webusb.addEventListener("data", (e: CustomEvent) => {
-        console.log(e.detail);
+        let received: DataView = e.detail;
+        let response = PrinterSystemStateResponse.decode(new Uint8Array(received.buffer));
+        changeAppState({ printerSystemState: response });
     });
 }
 
 async function start() {
     await startVideo();
-    
+
 }
+
+setInterval(async () => {
+    if (appState.connected) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.getPrinterSystemStateRequest = new GetPrinterSystemStateRequest();
+        await webusb.send(PrinterRequest.encode(printerRequest).finish());
+    }
+}, 1000);
 
 
 const JETTING_SIGNAL_MODE_FALLING = 2;
@@ -186,3 +207,20 @@ if (module.hot) {
         // process();
     });
 }
+
+pressureControlButton.addEventListener("click", async () => {
+
+    let request = new PrinterRequest();
+    let changeParametersRequest = new PressureControlChangeParametersRequest();
+    let parameters = new PressureControlParameters();
+    parameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
+    parameters.direction = PressureControlDirection.PressureControlDirection_VACUUM;
+    parameters.feedPwm = 0.5;
+    parameters.limitPressure = -10.0;
+    parameters.feedTime = 5;
+    parameters.targetPressure = parseFloat(targetPressureInput.value);
+    parameters.enabled = true;
+    changeParametersRequest.parameters = parameters;
+    request.pressureControlChangeParametersRequest = changeParametersRequest;
+    await webusb.send(PrinterRequest.encode(request).finish());
+});

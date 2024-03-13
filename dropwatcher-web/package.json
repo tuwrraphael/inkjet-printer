@@ -39,8 +39,7 @@
     "workbox-webpack-plugin": "^7.0.0"
   },
   "scripts": {
-    "generate-proto": "pbjs -t static-module -w commonjs -o compiled.js ../inkjet-printer-zephyr/inkjet-printer/app/src/*.proto",
-    "generate-protots": "pbts -o compiled.d.ts compiled.js",
+    "build-proto": "pbjs -t static-module -w commonjs -o compiled.js ../inkjet-printer-zephyr/inkjet-printer/app/src/*.proto && pbts -o compiled.d.ts compiled.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "start": "webpack serve --mode development --env development"

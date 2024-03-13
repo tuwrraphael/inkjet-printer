@@ -21,14 +21,6 @@ K_SEM_DEFINE(event_sem, 1, 1);
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 static const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 
-enum printer_system_smf_state
-{
-    PRINTER_SYSTEM_STARTUP,
-    PRINTER_SYSTEM_IDLE,
-    PRINTER_SYSTEM_ERROR,
-    PRINTER_SYSTEM_DROPWATCHER
-};
-
 static enum printer_system_smf_state requested_state = PRINTER_SYSTEM_STARTUP;
 
 static void printer_system_startup(void *o);
@@ -65,7 +57,7 @@ static void printer_system_idle_entry(void *o)
     ARG_UNUSED(o);
     LOG_INF("Entering idle state");
     (void)printhead_routine_smf(PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL);
-    pressure_control_enable(false);
+    pressure_control_disable();
 }
 
 static void printer_system_idle(void *o)
@@ -108,9 +100,12 @@ static void printer_system_dropwatcher_entry(void *o)
 {
     ARG_UNUSED(o);
     LOG_INF("Enabling pressure control");
-    pressure_control_set_target_pressure(-7.0f);
-    pressure_control_enable(true);
-    int ret = pressure_control_wait_for_target_pressure();
+    pressure_control_algorithm_init_t init;
+    init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+    init.target_pressure = -7.0f;
+    pressure_control_update_parameters(&init);
+    pressure_control_enable();
+    int ret = pressure_control_wait_for_done();
     if (exit_on_error_after_wait())
     {
         return;
@@ -224,6 +219,10 @@ int printer_system_smf_init()
         return -1;
     }
     return 0;
+}
+
+enum printer_system_smf_state printer_system_smf_get_state() {
+    return (enum printer_system_smf_state)(SMF_CTX(&printer_system_state_object)->current - printer_system_states);
 }
 
 SYS_INIT(printer_system_smf_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

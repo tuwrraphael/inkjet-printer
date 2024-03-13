@@ -18,6 +18,8 @@ int failure_handling_initialize(failure_handling_init_t *init);
 
 bool failure_handling_is_in_error_state(void);
 
+uint32_t failure_handling_get_error_state(void);
+
 void failure_handling_set_error_state(uint32_t error);
 
 #endif // FAILURE_HANDLING_H

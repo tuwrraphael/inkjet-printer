@@ -13,6 +13,10 @@ bool failure_handling_is_in_error_state(void)
     return error_state;
 }
 
+uint32_t failure_handling_get_error_state(void) {
+    return error_state;
+}
+
 void failure_handling_set_error_state(uint32_t error)
 {
     if (!error_state)

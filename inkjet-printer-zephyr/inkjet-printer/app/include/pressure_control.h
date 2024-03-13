@@ -2,30 +2,45 @@
 #define PRESSURE_CONTROL_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stdbool.h>
+#include "pressure_control_algorithm.h"
 
-typedef void (*pressure_control_error_callback_t)(void);
+    typedef void (*pressure_control_error_callback_t)(void);
 
-typedef struct {
-    pressure_control_error_callback_t error_callback;
-} pressure_control_init_t;
+    typedef struct
+    {
+        pressure_control_error_callback_t error_callback;
+    } pressure_control_init_t;
 
-int pressure_control_initialize(pressure_control_init_t *init);
+    typedef struct
+    {
+        float pressure;
+        bool enabled;
+        bool done;
+        pressure_control_algorithm_init_t algorithm;
+    } pressure_control_info_t;
 
-void pressure_control_set_target_pressure(float pressure);
+    int pressure_control_initialize(pressure_control_init_t *init);
 
-int calibrate_zero_pressure(void);
+    int calibrate_zero_pressure(void);
 
-void pressure_control_enable(bool enable);
+    void pressure_control_enable();
 
-double get_pressure(void);
+    void pressure_control_update_parameters(pressure_control_algorithm_init_t *init);
 
-int pressure_control_wait_for_target_pressure();
+    void pressure_control_disable();
 
-void pressure_control_go_to_safe_state();
+    double pressure_control_get_pressure(void);
+
+    void pressure_control_get_info(pressure_control_info_t *info);
+
+    int pressure_control_wait_for_done();
+
+    void pressure_control_go_to_safe_state();
 
 #ifdef __cplusplus
 }

@@ -48,7 +48,7 @@ static struct gpio_callback READY_cb_data;
 
 void pressure_debug_timer_handler(struct k_timer *timer)
 {
-	double pressure = get_pressure();
+	double pressure = pressure_control_get_pressure();
 	printk("Pressure: %f mbar\n", pressure);
 }
 static int fire_count = 0;
@@ -87,8 +87,9 @@ void print_fire_timer_handler(struct k_timer *timer)
 {
 	if (gpio_pin_get_dt(&READY) == 1)
 	{
-		if (fire_count %30 == 0) {
-					advance_pattern();
+		if (fire_count % 30 == 0)
+		{
+			advance_pattern();
 		}
 		const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 		printer_set_pixels(printhead, pattern);
@@ -409,7 +410,14 @@ static int cmd_pressure_control_enable(const struct shell *sh, size_t argc, char
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	bool enable = (bool)data;
-	pressure_control_enable(enable);
+	if (enable)
+	{
+		pressure_control_enable();
+	}
+	else
+	{
+		pressure_control_disable();
+	}
 	return 0;
 }
 
@@ -424,7 +432,10 @@ static int cmd_pressure_contol_set_target_pressure(const struct shell *sh, size_
 		return EINVAL;
 	}
 	float pressure = atof(argv[1]);
-	pressure_control_set_target_pressure(pressure);
+	pressure_control_algorithm_init_t init = {
+		.target_pressure = pressure,
+		.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE};
+	pressure_control_update_parameters(&init);
 	return 0;
 }
 
@@ -543,6 +554,22 @@ static int cmd_fire(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
+static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
+	printer_fire(dev);
+}
+
+static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+	printer_sample_function(printhead);
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
 							   SHELL_CMD(printhead_io, NULL, "Test printhead IO", cmd_test_printhead_io),
@@ -557,6 +584,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),
 							   SHELL_CMD(system_state, &system_state_cmds, "Set system state", cmd_system_state),
 							   SHELL_CMD(fire, NULL, "Fire printhead", cmd_fire),
+							   SHELL_CMD(test_fire, NULL, "Test fire", cmd_test_fire),
+							   SHELL_CMD(enable_printhead_clock, NULL, "Enable printhead clock", cmd_enable_printhead_clock),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+enum PressureControlAlgorithm {
+  PressureControlAlgorithm_UNSPECIFIED = 0;
+  PressureControlAlgorithm_TARGET_PRESSURE = 1;
+  PressureControlAlgorithm_FEED_WITH_LIMIT = 2;
+}
+
+enum PressureControlDirection {
+  PressureControlDirection_UNSPECIFIED = 0;
+  PressureControlDirection_VACUUM = 1;
+  PressureControlDirection_PRESSURE = 2;
+}
+
+message PressureControlParameters {
+  bool enabled = 1;
+  PressureControlAlgorithm algorithm = 2;
+  float target_pressure = 3;
+  PressureControlDirection direction = 4;
+  float limit_pressure = 5;
+  float feed_pwm = 6;
+  float feed_time = 7;
+}
+
+message PressureControlSystemState {
+  float pressure = 1;
+  bool enabled = 2;
+  PressureControlParameters parameters = 3;
+  bool done = 4;
+}
