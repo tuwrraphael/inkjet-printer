@@ -1,27 +1,36 @@
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const { DefinePlugin, webpack, HotModuleReplacementPlugin } = require("webpack");
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const CopyPlugin = require('copy-webpack-plugin');
-const LicenseCheckerWebpackPlugin = require("license-checker-webpack-plugin");
-const { InjectManifest } = require("workbox-webpack-plugin");
-const fs = require("fs");
-const path = require('path');
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { CleanWebpackPlugin } from "clean-webpack-plugin";
+import webpack from "webpack";
+import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
+import CopyPlugin from 'copy-webpack-plugin';
+import LicenseCheckerWebpackPlugin from "license-checker-webpack-plugin";
+import { InjectManifest } from "workbox-webpack-plugin";
+import { readFileSync } from "fs";
+import { resolve as _resolve } from 'path';
+import * as sass from "sass";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const {DefinePlugin} = webpack;
+const MiniCssExtractPluginLoader = MiniCssExtractPlugin.loader;
 
 
-const allowedChars = /[^a-zA-Z0-9/]|-/g;
+const allowedChars = /[^a-zA-Z0-9/-]/g;
 function getRevision() {
-    const rev = fs.readFileSync('.git/HEAD').toString();
+    const rev = readFileSync('.git/HEAD').toString();
     if (rev.indexOf(':') === -1) {
         return rev;
     } else {
-        return fs.readFileSync('.git/' + rev.substring(5).replace(allowedChars, "")).toString()
+        return readFileSync('.git/' + rev.substring(5).replace(allowedChars, "")).toString()
             .replace(allowedChars, "");
     }
 }
 
-module.exports = (env, argv) => {
+export default (env, argv) => {
     const production = argv.mode == "production";
     const environment = (env ? env.environment : null) || "local";
     const analyze = env && env.analyze;
@@ -44,6 +53,21 @@ module.exports = (env, argv) => {
     };
 
     const cacheName = production ? getRevision() : "development";
+
+    let scssRules = [
+        { loader: "postcss-loader", options: {} },
+        {
+            loader: "sass-loader", options: {
+                implementation: sass,
+                sassOptions: {
+                    includePaths: ["node_modules"],
+                },
+            }
+        }
+    ];
+
+    let cssLoader = production ? MiniCssExtractPluginLoader : "style-loader";
+
     return {
         target: production ? "browserslist" : "web",
         entry: {
@@ -83,38 +107,52 @@ module.exports = (env, argv) => {
                 },
                 {
                     test: /\.s[ac]ss$/i,
-                    use: [
-                        MiniCssExtractPlugin.loader,
+                    oneOf: [
                         {
-                            loader: "css-loader", options: {
-
-                            }
-                        },
-                        { loader: "postcss-loader", options: {} },
-                        {
-                            loader: "sass-loader", options: {
-                                implementation: require('sass'),
-                                sassOptions: {
-                                    includePaths: ["node_modules"],
+                            assert: {
+                                type: "css"
+                            },
+                            rules: [
+                                {
+                                    loader: "css-loader",
+                                    options: {
+                                        exportType: "string",
+                                    }
                                 },
-                            }
+                                ...scssRules
+                            ]
+                        }, {
+                            use: [
+                                cssLoader,
+                                {
+                                    loader: "css-loader", options: {
+
+                                    }
+                                },
+                                ...scssRules
+                            ]
                         }
                     ]
                 },
+                {
+                    test: /\.wasm/,
+                    type: "asset/resource"
+                }
             ],
         },
         resolve: {
             extensions: ['.tsx', '.ts', '.js'],
         },
         output: {
-            path: path.resolve(__dirname, 'dist'),
+            path: _resolve(__dirname, 'dist'),
             filename: '[contenthash].bundle.js',
             publicPath: base,
             globalObject: "self"
         },
         plugins: [
             new HtmlWebpackPlugin({
-                base: base, title: "dropwatcher",
+                base: base,
+                title: "inkjet-printer",
                 template: 'src/index.html'
             }),
             new LicenseCheckerWebpackPlugin({
@@ -138,8 +176,7 @@ module.exports = (env, argv) => {
             new InjectManifest({
                 swSrc: "./src/sw.ts"
             }),
-            ...(analyze ? [new BundleAnalyzerPlugin()] : []),
-            new HotModuleReplacementPlugin()
+            ...(analyze ? [new BundleAnalyzerPlugin()] : [])
         ],
         optimization: {
             splitChunks: {
@@ -158,8 +195,7 @@ module.exports = (env, argv) => {
                     warnings: false,
                     errors: true
                 }
-            },
-            hot:true
+            }
         }
     };
 }

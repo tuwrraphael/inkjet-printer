@@ -1,4 +1,17 @@
 import "./styles.scss";
+
+// if ("serviceWorker" in navigator) {
+//     window.addEventListener("load", async () => {
+//         navigator.serviceWorker.register("./sw.js").then(registration => {
+//         }).catch(registrationError => {
+//             console.log('SW registration failed: ', registrationError);
+
+            
+//         });
+//     });
+// }
+
+import "./styles.scss";
 import { WebUSBWrapper } from "./webusb";
 import { ChangeDropwatcherParametersRequest, GetPrinterSystemStateRequest, PressureControlDirection, PrinterSystemStateResponse } from "../compiled";
 import { PrinterRequest } from "../compiled";

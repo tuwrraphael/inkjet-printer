@@ -1,7 +1,7 @@
 {
-    "name": "dropwatcher",
-    "short_name": "dropwatcher",
-    "description": "",
+    "name": "inkjet-printer",
+    "short_name": "inkjet-printer",
+    "description": "inkjet-printer",
     "start_url": "./",
     "display": "standalone",
     "icons": [

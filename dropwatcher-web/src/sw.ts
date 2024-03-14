@@ -7,12 +7,13 @@ declare global {
 }
 let cacheNames = {
     code: `code-${__CACHENAME}`,
-    asset: "asset-v1",
-    webfont: "webfont"
+    asset: "asset-v1"
 };
 
+let resources = self.__WB_MANIFEST;
+
 self.addEventListener("install", function (event) {
-    let dividedAssets = self.__WB_MANIFEST.reduce((acc, next) => {
+    let dividedAssets = resources.reduce((acc, next) => {
         if (next.url.indexOf("favicons/") > -1) {
             acc.asset.push(next.url);
         }
@@ -31,18 +32,12 @@ self.addEventListener("install", function (event) {
         {
             name: cacheNames.asset,
             assets: dividedAssets.asset,
-        },
-        {
-            name: cacheNames.webfont,
-            assets: ["https://fonts.googleapis.com/icon?family=Material+Icons",
-                "https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap"
-            ]
         }
     ];
     event.waitUntil((async () => {
         let tasks = definedCaches.map(async c => {
             let cache = await caches.open(c.name);
-            await cache.addAll(c.assets);
+            await cache.addAll(Array.from(new Set(c.assets)));
         });
         await Promise.all(tasks);
     })());
@@ -71,17 +66,14 @@ self.addEventListener("fetch", function (event) {
         return;
     }
     event.respondWith(
-        caches.match(event.request).then(function (response) {
+        caches.match(event.request).then(async (response) => {
             if (response) {
                 return response;
             }
-            else if (["https://fonts.gstatic.com",
-                "https://fonts.googleapis.com"].some(url => event.request.url.startsWith(url))) {
-                event.waitUntil((async () => {
-                    (await caches.open(cacheNames.webfont)).add(event.request);
-                })());
+            else {
+                let res = await fetch(event.request);
+                return res;
             }
-            return fetch(event.request);
         })
     );
 });
