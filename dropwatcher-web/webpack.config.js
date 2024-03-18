@@ -12,10 +12,11 @@ import * as sass from "sass";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const {DefinePlugin} = webpack;
+const { DefinePlugin, HotModuleReplacementPlugin } = webpack;
 const MiniCssExtractPluginLoader = MiniCssExtractPlugin.loader;
 
 
@@ -84,6 +85,9 @@ export default (env, argv) => {
                         options: { ...babelConfig, sourceType: "unambiguous" },
 
                     },
+                    resolve: {
+                        fullySpecified: false
+                    }
                 },
                 {
                     test: /\.tsx?$/,
@@ -141,7 +145,7 @@ export default (env, argv) => {
             ],
         },
         resolve: {
-            extensions: ['.tsx', '.ts', '.js'],
+            extensions: ['.tsx', '.ts', '.js']
         },
         output: {
             path: _resolve(__dirname, 'dist'),
@@ -176,7 +180,8 @@ export default (env, argv) => {
             new InjectManifest({
                 swSrc: "./src/sw.ts"
             }),
-            ...(analyze ? [new BundleAnalyzerPlugin()] : [])
+            ...(analyze ? [new BundleAnalyzerPlugin()] : []),
+            new HotModuleReplacementPlugin()
         ],
         optimization: {
             splitChunks: {
@@ -195,7 +200,8 @@ export default (env, argv) => {
                     warnings: false,
                     errors: true
                 }
-            }
+            },
+            hot: true
         }
     };
 }

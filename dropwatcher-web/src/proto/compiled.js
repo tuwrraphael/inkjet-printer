@@ -1,13 +1,11 @@
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars*/
-"use strict";
-
-var $protobuf = require("protobufjs/minimal");
+import * as $protobuf from "protobufjs/minimal";
 
 // Common aliases
-var $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
+const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
 // Exported root namespace
-var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
+const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
 /**
  * PressureControlAlgorithm enum.
@@ -17,8 +15,8 @@ var $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} PressureControlAlgorithm_TARGET_PRESSURE=1 PressureControlAlgorithm_TARGET_PRESSURE value
  * @property {number} PressureControlAlgorithm_FEED_WITH_LIMIT=2 PressureControlAlgorithm_FEED_WITH_LIMIT value
  */
-$root.PressureControlAlgorithm = (function() {
-    var valuesById = {}, values = Object.create(valuesById);
+export const PressureControlAlgorithm = $root.PressureControlAlgorithm = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
     values[valuesById[0] = "PressureControlAlgorithm_UNSPECIFIED"] = 0;
     values[valuesById[1] = "PressureControlAlgorithm_TARGET_PRESSURE"] = 1;
     values[valuesById[2] = "PressureControlAlgorithm_FEED_WITH_LIMIT"] = 2;
@@ -33,15 +31,15 @@ $root.PressureControlAlgorithm = (function() {
  * @property {number} PressureControlDirection_VACUUM=1 PressureControlDirection_VACUUM value
  * @property {number} PressureControlDirection_PRESSURE=2 PressureControlDirection_PRESSURE value
  */
-$root.PressureControlDirection = (function() {
-    var valuesById = {}, values = Object.create(valuesById);
+export const PressureControlDirection = $root.PressureControlDirection = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
     values[valuesById[0] = "PressureControlDirection_UNSPECIFIED"] = 0;
     values[valuesById[1] = "PressureControlDirection_VACUUM"] = 1;
     values[valuesById[2] = "PressureControlDirection_PRESSURE"] = 2;
     return values;
 })();
 
-$root.PressureControlParameters = (function() {
+export const PressureControlParameters = $root.PressureControlParameters = (() => {
 
     /**
      * Properties of a PressureControlParameters.
@@ -66,7 +64,7 @@ $root.PressureControlParameters = (function() {
      */
     function PressureControlParameters(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -195,9 +193,9 @@ $root.PressureControlParameters = (function() {
     PressureControlParameters.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlParameters();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlParameters();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.enabled = reader.bool();
@@ -309,7 +307,7 @@ $root.PressureControlParameters = (function() {
     PressureControlParameters.fromObject = function fromObject(object) {
         if (object instanceof $root.PressureControlParameters)
             return object;
-        var message = new $root.PressureControlParameters();
+        let message = new $root.PressureControlParameters();
         if (object.enabled != null)
             message.enabled = Boolean(object.enabled);
         switch (object.algorithm) {
@@ -375,7 +373,7 @@ $root.PressureControlParameters = (function() {
     PressureControlParameters.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults) {
             object.enabled = false;
             object.algorithm = options.enums === String ? "PressureControlAlgorithm_UNSPECIFIED" : 0;
@@ -431,7 +429,7 @@ $root.PressureControlParameters = (function() {
     return PressureControlParameters;
 })();
 
-$root.PressureControlSystemState = (function() {
+export const PressureControlSystemState = $root.PressureControlSystemState = (() => {
 
     /**
      * Properties of a PressureControlSystemState.
@@ -453,7 +451,7 @@ $root.PressureControlSystemState = (function() {
      */
     function PressureControlSystemState(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -552,9 +550,9 @@ $root.PressureControlSystemState = (function() {
     PressureControlSystemState.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlSystemState();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlSystemState();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.pressure = reader.float();
@@ -614,7 +612,7 @@ $root.PressureControlSystemState = (function() {
             if (typeof message.enabled !== "boolean")
                 return "enabled: boolean expected";
         if (message.parameters != null && message.hasOwnProperty("parameters")) {
-            var error = $root.PressureControlParameters.verify(message.parameters);
+            let error = $root.PressureControlParameters.verify(message.parameters);
             if (error)
                 return "parameters." + error;
         }
@@ -635,7 +633,7 @@ $root.PressureControlSystemState = (function() {
     PressureControlSystemState.fromObject = function fromObject(object) {
         if (object instanceof $root.PressureControlSystemState)
             return object;
-        var message = new $root.PressureControlSystemState();
+        let message = new $root.PressureControlSystemState();
         if (object.pressure != null)
             message.pressure = Number(object.pressure);
         if (object.enabled != null)
@@ -662,7 +660,7 @@ $root.PressureControlSystemState = (function() {
     PressureControlSystemState.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults) {
             object.pressure = 0;
             object.enabled = false;
@@ -709,7 +707,7 @@ $root.PressureControlSystemState = (function() {
     return PressureControlSystemState;
 })();
 
-$root.GetPrinterSystemStateRequest = (function() {
+export const GetPrinterSystemStateRequest = $root.GetPrinterSystemStateRequest = (() => {
 
     /**
      * Properties of a GetPrinterSystemStateRequest.
@@ -727,7 +725,7 @@ $root.GetPrinterSystemStateRequest = (function() {
      */
     function GetPrinterSystemStateRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -786,9 +784,9 @@ $root.GetPrinterSystemStateRequest = (function() {
     GetPrinterSystemStateRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.GetPrinterSystemStateRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.GetPrinterSystemStateRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             default:
                 reader.skipType(tag & 7);
@@ -884,7 +882,7 @@ $root.GetPrinterSystemStateRequest = (function() {
     return GetPrinterSystemStateRequest;
 })();
 
-$root.ChangePrinterSystemStateRequest = (function() {
+export const ChangePrinterSystemStateRequest = $root.ChangePrinterSystemStateRequest = (() => {
 
     /**
      * Properties of a ChangePrinterSystemStateRequest.
@@ -903,7 +901,7 @@ $root.ChangePrinterSystemStateRequest = (function() {
      */
     function ChangePrinterSystemStateRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -972,9 +970,9 @@ $root.ChangePrinterSystemStateRequest = (function() {
     ChangePrinterSystemStateRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangePrinterSystemStateRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangePrinterSystemStateRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.state = reader.int32();
@@ -1040,7 +1038,7 @@ $root.ChangePrinterSystemStateRequest = (function() {
     ChangePrinterSystemStateRequest.fromObject = function fromObject(object) {
         if (object instanceof $root.ChangePrinterSystemStateRequest)
             return object;
-        var message = new $root.ChangePrinterSystemStateRequest();
+        let message = new $root.ChangePrinterSystemStateRequest();
         switch (object.state) {
         default:
             if (typeof object.state === "number") {
@@ -1084,7 +1082,7 @@ $root.ChangePrinterSystemStateRequest = (function() {
     ChangePrinterSystemStateRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults)
             object.state = options.enums === String ? "PrinterSystemState_UNSPECIFIED" : 0;
         if (message.state != null && message.hasOwnProperty("state"))
@@ -1121,7 +1119,7 @@ $root.ChangePrinterSystemStateRequest = (function() {
     return ChangePrinterSystemStateRequest;
 })();
 
-$root.ChangeDropwatcherParametersRequest = (function() {
+export const ChangeDropwatcherParametersRequest = $root.ChangeDropwatcherParametersRequest = (() => {
 
     /**
      * Properties of a ChangeDropwatcherParametersRequest.
@@ -1141,7 +1139,7 @@ $root.ChangeDropwatcherParametersRequest = (function() {
      */
     function ChangeDropwatcherParametersRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -1220,9 +1218,9 @@ $root.ChangeDropwatcherParametersRequest = (function() {
     ChangeDropwatcherParametersRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeDropwatcherParametersRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeDropwatcherParametersRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.delayNanos = reader.int32();
@@ -1287,7 +1285,7 @@ $root.ChangeDropwatcherParametersRequest = (function() {
     ChangeDropwatcherParametersRequest.fromObject = function fromObject(object) {
         if (object instanceof $root.ChangeDropwatcherParametersRequest)
             return object;
-        var message = new $root.ChangeDropwatcherParametersRequest();
+        let message = new $root.ChangeDropwatcherParametersRequest();
         if (object.delayNanos != null)
             message.delayNanos = object.delayNanos | 0;
         if (object.flashOnTimeNanos != null)
@@ -1307,7 +1305,7 @@ $root.ChangeDropwatcherParametersRequest = (function() {
     ChangeDropwatcherParametersRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults) {
             object.delayNanos = 0;
             object.flashOnTimeNanos = 0;
@@ -1348,7 +1346,7 @@ $root.ChangeDropwatcherParametersRequest = (function() {
     return ChangeDropwatcherParametersRequest;
 })();
 
-$root.CameraFrameRequest = (function() {
+export const CameraFrameRequest = $root.CameraFrameRequest = (() => {
 
     /**
      * Properties of a CameraFrameRequest.
@@ -1366,7 +1364,7 @@ $root.CameraFrameRequest = (function() {
      */
     function CameraFrameRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -1425,9 +1423,9 @@ $root.CameraFrameRequest = (function() {
     CameraFrameRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.CameraFrameRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CameraFrameRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             default:
                 reader.skipType(tag & 7);
@@ -1523,7 +1521,7 @@ $root.CameraFrameRequest = (function() {
     return CameraFrameRequest;
 })();
 
-$root.PressureControlChangeParametersRequest = (function() {
+export const PressureControlChangeParametersRequest = $root.PressureControlChangeParametersRequest = (() => {
 
     /**
      * Properties of a PressureControlChangeParametersRequest.
@@ -1542,7 +1540,7 @@ $root.PressureControlChangeParametersRequest = (function() {
      */
     function PressureControlChangeParametersRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -1611,9 +1609,9 @@ $root.PressureControlChangeParametersRequest = (function() {
     PressureControlChangeParametersRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlChangeParametersRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlChangeParametersRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.parameters = $root.PressureControlParameters.decode(reader, reader.uint32());
@@ -1655,7 +1653,7 @@ $root.PressureControlChangeParametersRequest = (function() {
         if (typeof message !== "object" || message === null)
             return "object expected";
         if (message.parameters != null && message.hasOwnProperty("parameters")) {
-            var error = $root.PressureControlParameters.verify(message.parameters);
+            let error = $root.PressureControlParameters.verify(message.parameters);
             if (error)
                 return "parameters." + error;
         }
@@ -1673,7 +1671,7 @@ $root.PressureControlChangeParametersRequest = (function() {
     PressureControlChangeParametersRequest.fromObject = function fromObject(object) {
         if (object instanceof $root.PressureControlChangeParametersRequest)
             return object;
-        var message = new $root.PressureControlChangeParametersRequest();
+        let message = new $root.PressureControlChangeParametersRequest();
         if (object.parameters != null) {
             if (typeof object.parameters !== "object")
                 throw TypeError(".PressureControlChangeParametersRequest.parameters: object expected");
@@ -1694,7 +1692,7 @@ $root.PressureControlChangeParametersRequest = (function() {
     PressureControlChangeParametersRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults)
             object.parameters = null;
         if (message.parameters != null && message.hasOwnProperty("parameters"))
@@ -1731,7 +1729,7 @@ $root.PressureControlChangeParametersRequest = (function() {
     return PressureControlChangeParametersRequest;
 })();
 
-$root.PrinterRequest = (function() {
+export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
      * Properties of a PrinterRequest.
@@ -1754,7 +1752,7 @@ $root.PrinterRequest = (function() {
      */
     function PrinterRequest(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -1800,7 +1798,7 @@ $root.PrinterRequest = (function() {
     PrinterRequest.prototype.pressureControlChangeParametersRequest = null;
 
     // OneOf field names bound to virtual getters and setters
-    var $oneOfFields;
+    let $oneOfFields;
 
     /**
      * PrinterRequest _getPrinterSystemStateRequest.
@@ -1921,9 +1919,9 @@ $root.PrinterRequest = (function() {
     PrinterRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrinterRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrinterRequest();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.getPrinterSystemStateRequest = $root.GetPrinterSystemStateRequest.decode(reader, reader.uint32());
@@ -1980,11 +1978,11 @@ $root.PrinterRequest = (function() {
     PrinterRequest.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        var properties = {};
+        let properties = {};
         if (message.getPrinterSystemStateRequest != null && message.hasOwnProperty("getPrinterSystemStateRequest")) {
             properties._getPrinterSystemStateRequest = 1;
             {
-                var error = $root.GetPrinterSystemStateRequest.verify(message.getPrinterSystemStateRequest);
+                let error = $root.GetPrinterSystemStateRequest.verify(message.getPrinterSystemStateRequest);
                 if (error)
                     return "getPrinterSystemStateRequest." + error;
             }
@@ -1992,7 +1990,7 @@ $root.PrinterRequest = (function() {
         if (message.changePrinterSystemStateRequest != null && message.hasOwnProperty("changePrinterSystemStateRequest")) {
             properties._changePrinterSystemStateRequest = 1;
             {
-                var error = $root.ChangePrinterSystemStateRequest.verify(message.changePrinterSystemStateRequest);
+                let error = $root.ChangePrinterSystemStateRequest.verify(message.changePrinterSystemStateRequest);
                 if (error)
                     return "changePrinterSystemStateRequest." + error;
             }
@@ -2000,7 +1998,7 @@ $root.PrinterRequest = (function() {
         if (message.changeDropwatcherParametersRequest != null && message.hasOwnProperty("changeDropwatcherParametersRequest")) {
             properties._changeDropwatcherParametersRequest = 1;
             {
-                var error = $root.ChangeDropwatcherParametersRequest.verify(message.changeDropwatcherParametersRequest);
+                let error = $root.ChangeDropwatcherParametersRequest.verify(message.changeDropwatcherParametersRequest);
                 if (error)
                     return "changeDropwatcherParametersRequest." + error;
             }
@@ -2008,7 +2006,7 @@ $root.PrinterRequest = (function() {
         if (message.cameraFrameRequest != null && message.hasOwnProperty("cameraFrameRequest")) {
             properties._cameraFrameRequest = 1;
             {
-                var error = $root.CameraFrameRequest.verify(message.cameraFrameRequest);
+                let error = $root.CameraFrameRequest.verify(message.cameraFrameRequest);
                 if (error)
                     return "cameraFrameRequest." + error;
             }
@@ -2016,7 +2014,7 @@ $root.PrinterRequest = (function() {
         if (message.pressureControlChangeParametersRequest != null && message.hasOwnProperty("pressureControlChangeParametersRequest")) {
             properties._pressureControlChangeParametersRequest = 1;
             {
-                var error = $root.PressureControlChangeParametersRequest.verify(message.pressureControlChangeParametersRequest);
+                let error = $root.PressureControlChangeParametersRequest.verify(message.pressureControlChangeParametersRequest);
                 if (error)
                     return "pressureControlChangeParametersRequest." + error;
             }
@@ -2035,7 +2033,7 @@ $root.PrinterRequest = (function() {
     PrinterRequest.fromObject = function fromObject(object) {
         if (object instanceof $root.PrinterRequest)
             return object;
-        var message = new $root.PrinterRequest();
+        let message = new $root.PrinterRequest();
         if (object.getPrinterSystemStateRequest != null) {
             if (typeof object.getPrinterSystemStateRequest !== "object")
                 throw TypeError(".PrinterRequest.getPrinterSystemStateRequest: object expected");
@@ -2076,7 +2074,7 @@ $root.PrinterRequest = (function() {
     PrinterRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (message.getPrinterSystemStateRequest != null && message.hasOwnProperty("getPrinterSystemStateRequest")) {
             object.getPrinterSystemStateRequest = $root.GetPrinterSystemStateRequest.toObject(message.getPrinterSystemStateRequest, options);
             if (options.oneofs)
@@ -2144,8 +2142,8 @@ $root.PrinterRequest = (function() {
  * @property {number} PrinterSystemState_ERROR=3 PrinterSystemState_ERROR value
  * @property {number} PrinterSystemState_DROPWATCHER=4 PrinterSystemState_DROPWATCHER value
  */
-$root.PrinterSystemState = (function() {
-    var valuesById = {}, values = Object.create(valuesById);
+export const PrinterSystemState = $root.PrinterSystemState = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
     values[valuesById[0] = "PrinterSystemState_UNSPECIFIED"] = 0;
     values[valuesById[1] = "PrinterSystemState_STARTUP"] = 1;
     values[valuesById[2] = "PrinterSystemState_IDLE"] = 2;
@@ -2154,7 +2152,7 @@ $root.PrinterSystemState = (function() {
     return values;
 })();
 
-$root.PrinterSystemStateResponse = (function() {
+export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (() => {
 
     /**
      * Properties of a PrinterSystemStateResponse.
@@ -2175,7 +2173,7 @@ $root.PrinterSystemStateResponse = (function() {
      */
     function PrinterSystemStateResponse(properties) {
         if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
@@ -2264,9 +2262,9 @@ $root.PrinterSystemStateResponse = (function() {
     PrinterSystemStateResponse.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrinterSystemStateResponse();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrinterSystemStateResponse();
         while (reader.pos < end) {
-            var tag = reader.uint32();
+            let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
                     message.state = reader.int32();
@@ -2330,7 +2328,7 @@ $root.PrinterSystemStateResponse = (function() {
             if (!$util.isInteger(message.errorFlags))
                 return "errorFlags: integer expected";
         if (message.pressureControl != null && message.hasOwnProperty("pressureControl")) {
-            var error = $root.PressureControlSystemState.verify(message.pressureControl);
+            let error = $root.PressureControlSystemState.verify(message.pressureControl);
             if (error)
                 return "pressureControl." + error;
         }
@@ -2348,7 +2346,7 @@ $root.PrinterSystemStateResponse = (function() {
     PrinterSystemStateResponse.fromObject = function fromObject(object) {
         if (object instanceof $root.PrinterSystemStateResponse)
             return object;
-        var message = new $root.PrinterSystemStateResponse();
+        let message = new $root.PrinterSystemStateResponse();
         switch (object.state) {
         default:
             if (typeof object.state === "number") {
@@ -2399,7 +2397,7 @@ $root.PrinterSystemStateResponse = (function() {
     PrinterSystemStateResponse.toObject = function toObject(message, options) {
         if (!options)
             options = {};
-        var object = {};
+        let object = {};
         if (options.defaults) {
             object.state = options.enums === String ? "PrinterSystemState_UNSPECIFIED" : 0;
             object.errorFlags = 0;
@@ -2443,4 +2441,4 @@ $root.PrinterSystemStateResponse = (function() {
     return PrinterSystemStateResponse;
 })();
 
-module.exports = $root;
+export { $root as default };

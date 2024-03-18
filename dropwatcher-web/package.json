@@ -40,7 +40,7 @@
     "style-loader": "^3.3.4"
   },
   "scripts": {
-    "build-proto": "pbjs -t static-module -w commonjs -o compiled.js ../inkjet-printer-zephyr/inkjet-printer/app/src/*.proto && pbts -o compiled.d.ts compiled.js",
+    "build-proto": "mkdir -p ./src/proto && pbjs -t static-module -w es6 -o src/proto/compiled.js ../inkjet-printer-zephyr/inkjet-printer/app/src/*.proto && pbts -o src/proto/compiled.d.ts src/proto/compiled.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "start": "webpack serve --mode development --env development"
