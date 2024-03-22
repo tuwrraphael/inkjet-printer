@@ -45,7 +45,7 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
      * Properties of a PressureControlParameters.
      * @exports IPressureControlParameters
      * @interface IPressureControlParameters
-     * @property {boolean|null} [enabled] PressureControlParameters enabled
+     * @property {boolean|null} [enable] PressureControlParameters enable
      * @property {PressureControlAlgorithm|null} [algorithm] PressureControlParameters algorithm
      * @property {number|null} [targetPressure] PressureControlParameters targetPressure
      * @property {PressureControlDirection|null} [direction] PressureControlParameters direction
@@ -70,12 +70,12 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
     }
 
     /**
-     * PressureControlParameters enabled.
-     * @member {boolean} enabled
+     * PressureControlParameters enable.
+     * @member {boolean} enable
      * @memberof PressureControlParameters
      * @instance
      */
-    PressureControlParameters.prototype.enabled = false;
+    PressureControlParameters.prototype.enable = false;
 
     /**
      * PressureControlParameters algorithm.
@@ -149,8 +149,8 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
     PressureControlParameters.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.enabled != null && Object.hasOwnProperty.call(message, "enabled"))
-            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enabled);
+        if (message.enable != null && Object.hasOwnProperty.call(message, "enable"))
+            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enable);
         if (message.algorithm != null && Object.hasOwnProperty.call(message, "algorithm"))
             writer.uint32(/* id 2, wireType 0 =*/16).int32(message.algorithm);
         if (message.targetPressure != null && Object.hasOwnProperty.call(message, "targetPressure"))
@@ -198,7 +198,7 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
-                    message.enabled = reader.bool();
+                    message.enable = reader.bool();
                     break;
                 }
             case 2: {
@@ -260,9 +260,9 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
     PressureControlParameters.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.enabled != null && message.hasOwnProperty("enabled"))
-            if (typeof message.enabled !== "boolean")
-                return "enabled: boolean expected";
+        if (message.enable != null && message.hasOwnProperty("enable"))
+            if (typeof message.enable !== "boolean")
+                return "enable: boolean expected";
         if (message.algorithm != null && message.hasOwnProperty("algorithm"))
             switch (message.algorithm) {
             default:
@@ -308,8 +308,8 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
         if (object instanceof $root.PressureControlParameters)
             return object;
         let message = new $root.PressureControlParameters();
-        if (object.enabled != null)
-            message.enabled = Boolean(object.enabled);
+        if (object.enable != null)
+            message.enable = Boolean(object.enable);
         switch (object.algorithm) {
         default:
             if (typeof object.algorithm === "number") {
@@ -375,7 +375,7 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
             options = {};
         let object = {};
         if (options.defaults) {
-            object.enabled = false;
+            object.enable = false;
             object.algorithm = options.enums === String ? "PressureControlAlgorithm_UNSPECIFIED" : 0;
             object.targetPressure = 0;
             object.direction = options.enums === String ? "PressureControlDirection_UNSPECIFIED" : 0;
@@ -383,8 +383,8 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
             object.feedPwm = 0;
             object.feedTime = 0;
         }
-        if (message.enabled != null && message.hasOwnProperty("enabled"))
-            object.enabled = message.enabled;
+        if (message.enable != null && message.hasOwnProperty("enable"))
+            object.enable = message.enable;
         if (message.algorithm != null && message.hasOwnProperty("algorithm"))
             object.algorithm = options.enums === String ? $root.PressureControlAlgorithm[message.algorithm] === undefined ? message.algorithm : $root.PressureControlAlgorithm[message.algorithm] : message.algorithm;
         if (message.targetPressure != null && message.hasOwnProperty("targetPressure"))

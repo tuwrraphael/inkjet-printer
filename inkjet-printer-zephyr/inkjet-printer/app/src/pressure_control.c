@@ -16,6 +16,8 @@ LOG_MODULE_REGISTER(pressure_control, CONFIG_APP_LOG_LEVEL);
 #define MAX_SENSOR_ERROR_COUNT (10)
 
 K_EVENT_DEFINE(pressure_control_event);
+K_SEM_DEFINE(parameter_change, 0, 1);
+K_SEM_DEFINE(initial_run, 0, 1);
 
 #define EVENT_ALGORITHM_DONE (1 << 0)
 #define EVENT_CANCELED (1 << 1)
@@ -82,7 +84,6 @@ int pressure_control_initialize(pressure_control_init_t *init)
 		LOG_ERR("Pressure sensor not ready");
 	}
 	params.init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
-	params.initial_run = true;
 	k_timer_start(&control_pressure_timer, K_MSEC(MEASURE_MSEC), K_MSEC(MEASURE_MSEC));
 	return 0;
 }
@@ -137,7 +138,13 @@ static void control_pressure_handler(struct k_work *work)
 	params.current_pressure = pressure_kpa * 10 - zero_pressure;
 
 	pressure_control_algorithm_result_t result;
+	params.initial_run = k_sem_take(&initial_run, K_NO_WAIT) == 0;
+	params.parameter_change = k_sem_take(&parameter_change, K_NO_WAIT) == 0;
 	pressure_control_algorithm(&params, &result);
+	if (result.done)
+	{
+		k_event_set(&pressure_control_event, EVENT_ALGORITHM_DONE);
+	}
 	if (result.failure_detected)
 	{
 		motor_stop();
@@ -149,7 +156,6 @@ static void control_pressure_handler(struct k_work *work)
 	{
 		motor_set_action_safe(result.action, result.pwm);
 	}
-	params.initial_run = false;
 }
 
 int pressure_control_wait_for_done()
@@ -206,13 +212,14 @@ void pressure_control_enable()
 {
 	sensor_error_count = 0;
 	k_event_clear(&pressure_control_event, 0xFFFFFFF);
-	params.initial_run = true;
+	k_sem_give(&parameter_change);
 	last_control_time = 0;
 	bool was_disabled = !pressure_control_enabled;
 	disable_pressure_control = false;
 	pressure_control_enabled = true;
 	if (was_disabled)
 	{
+		k_sem_give(&initial_run);
 		k_timer_start(&control_pressure_timer, K_NO_WAIT, K_MSEC(CONTROL_MSEC));
 		LOG_INF("Pressure control enabled");
 	} else {
@@ -222,7 +229,10 @@ void pressure_control_enable()
 
 void pressure_control_update_parameters(pressure_control_algorithm_init_t *init) {
 	k_event_clear(&pressure_control_event, EVENT_ALGORITHM_DONE);
-	params.initial_run = params.initial_run || init->algorithm != params.init.algorithm;
+	if (init->algorithm != params.init.algorithm){
+		k_sem_give(&initial_run);
+	}
+	k_sem_give(&parameter_change);
 	memcpy(&params.init, init, sizeof(pressure_control_algorithm_init_t));
 }
 

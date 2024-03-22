@@ -1,30 +1,40 @@
 
+
 export class WebUSBWrapper extends EventTarget {
     private _device: USBDevice;
     private _interfaceNumber: number;
     private _endpointOut: number;
     private _endpointIn: number;
 
+
     constructor() {
         super();
+
     }
 
-    async hasDevices() {
-        let devices = await navigator.usb.getDevices();
-        return devices.length > 0;
-    }
-
-    async connect() {
-        let devices = await navigator.usb.getDevices();
-        if (devices.length > 0) {
-            this._device = devices[0];
-        } else {
-            this._device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x2FE3, productId: 0x000A }] });
+    async autoconnect(vendorId: number, productId: number) {
+        let d = await this.hasDevice(vendorId, productId);
+        if (d) {
+            await this.connectDevice(d);
         }
-        await this._device.open();
-        this.dispatchEvent(new CustomEvent("connected"));
-        await this._device.selectConfiguration(1);
-        var configurationInterfaces = this._device.configuration.interfaces;
+        navigator.usb.addEventListener("connect", async (ev: USBConnectionEvent) => {
+            console.log("usb connect event");
+            let d = ev.device;
+            if (d.vendorId == vendorId && d.productId == productId) {
+                await this.connectDevice(d);
+            }
+        });
+    }
+
+    async hasDevice(vendorId: number, productId: number) {
+        let devices = await navigator.usb.getDevices();
+        return devices.find(d => d.vendorId == vendorId && d.productId == productId);
+    }
+
+    async connectDevice(d: USBDevice) {
+        await d.open();
+        await d.selectConfiguration(1);
+        var configurationInterfaces = d.configuration.interfaces;
         configurationInterfaces.forEach(element => {
             element.alternates.forEach(elementalt => {
                 if (elementalt.interfaceClass == 0xff) {
@@ -40,8 +50,16 @@ export class WebUSBWrapper extends EventTarget {
                 }
             })
         })
-        await this._device.claimInterface(this._interfaceNumber);
-        await this._device.selectAlternateInterface(this._interfaceNumber, 0);
+        for (let i = 0; i < 3; i++) {
+            try {
+                await d.claimInterface(this._interfaceNumber);
+                break;
+            } catch (e) {
+                console.log(e);
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+        await d.selectAlternateInterface(this._interfaceNumber, 0);
         // await this._device.controlTransferOut({
         //     'requestType': 'class',
         //     'recipient': 'interface',
@@ -49,14 +67,17 @@ export class WebUSBWrapper extends EventTarget {
         //     'value': 0x01,
         //     'index': this._interfaceNumber
         // });
+
+        this.dispatchEvent(new CustomEvent("connected"));
+        this._device = d;
         console.log("usb init done");
         this.receive();
     }
 
 
-    private async receive(){
+    private async receive() {
         let err = false;
-        
+
         while (!err) {
             try {
                 let result = await this._device.transferIn(this._endpointIn, 64);
@@ -65,7 +86,13 @@ export class WebUSBWrapper extends EventTarget {
                 err = true;
                 console.log(e);
                 if (this._device !== undefined) {
-                    this._device.close();
+                    try {
+
+                        await this._device.close();
+                    } catch (e) {
+                        console.log(e);
+                    }
+                    this._device = undefined;
                     this.dispatchEvent(new CustomEvent("disconnected"));
                 }
             }
@@ -76,7 +103,16 @@ export class WebUSBWrapper extends EventTarget {
         await this._device.transferOut(this._endpointOut, data);
     }
 
-    disconnect() {
-        return this._device.close();
+    isConnected() {
+        return this._device !== undefined && this._device.opened;
+    }
+
+    async disconnect() {
+        if (this._device !== undefined) {
+            await this._device.close();
+            this._device = undefined;
+            this.dispatchEvent(new CustomEvent("disconnected"));
+        }
     }
 }
+

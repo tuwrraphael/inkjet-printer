@@ -1,3 +1,5 @@
 export const enum ActionType {
-    TestAction
+    PrinterSystemStateResponseReceived,
+    PrinterUSBConnectionStateChanged,
+    InitializeWorker
 }

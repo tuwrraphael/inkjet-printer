@@ -300,7 +300,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			response.pressure_control.parameters.feed_pwm = pressure_info.algorithm.feed_pwm;
 			response.pressure_control.parameters.feed_time = pressure_info.algorithm.feed_time;
 			response.pressure_control.done = pressure_info.done;
-			response.pressure_control.parameters.enabled = pressure_info.enabled;
+			response.pressure_control.enabled = pressure_info.enabled;
 			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
 			if (status) {
 				// LOG_INF("PrinterSystemStateResponse: length %d", tx_stream.bytes_written);
@@ -385,7 +385,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 				.feed_time = request.parameters.feed_time
 			};
 			pressure_control_update_parameters(&init);
-			if (request.parameters.enabled)
+			if (request.parameters.enable)
 			{
 				pressure_control_enable();
 			}

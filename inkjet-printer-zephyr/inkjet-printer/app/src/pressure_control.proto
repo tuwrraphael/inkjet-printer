@@ -13,7 +13,7 @@ enum PressureControlDirection {
 }
 
 message PressureControlParameters {
-  bool enabled = 1;
+  bool enable = 1;
   PressureControlAlgorithm algorithm = 2;
   float target_pressure = 3;
   PressureControlDirection direction = 4;

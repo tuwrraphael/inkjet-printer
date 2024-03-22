@@ -23,8 +23,8 @@ export class PressureControlParameters implements IPressureControlParameters {
      */
     constructor(properties?: IPressureControlParameters);
 
-    /** PressureControlParameters enabled. */
-    public enabled: boolean;
+    /** PressureControlParameters enable. */
+    public enable: boolean;
 
     /** PressureControlParameters algorithm. */
     public algorithm: PressureControlAlgorithm;

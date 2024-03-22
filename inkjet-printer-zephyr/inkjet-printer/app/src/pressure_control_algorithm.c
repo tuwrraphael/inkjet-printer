@@ -114,22 +114,30 @@ static float feed_time = 0;
 
 static void pressure_control_algorithm_feed_with_limit(const pressure_control_algorithm_params_t *params, pressure_control_algorithm_result_t *result)
 {
+     if (params->initial_run || params->parameter_change)
+    {
+        feed_time = 0;
+    }
     if (feed_time >= params->init.feed_time)
     {
         result->done = true;
         return;
     }
-    feed_time += params->elapsed_time_seconds;
-    if (params->initial_run)
+    feed_time += params->elapsed_time_seconds;   
+    float error = params->init.limit_pressure - params->current_pressure;
+    float max_pwm = p * error;
+    float max_pwm_abs = max_pwm > 0 ? max_pwm : -max_pwm;
+    if (max_pwm_abs > 1)
     {
-        feed_time = 0;
+        max_pwm_abs = 1;
     }
+    float pwm = params->init.feed_pwm > max_pwm_abs ? max_pwm : params->init.feed_pwm;
     if (params->init.direction == PRESSURE_DIRECTION_VACUUM)
     {
-        if (params->current_pressure > params->init.limit_pressure)
+        if (pwm > min_pwm)
         {
             result->action = MOTOR_ACTION_CW;
-            result->pwm = params->init.feed_pwm;
+            result->pwm = pwm;
         }
         else
         {
@@ -138,10 +146,10 @@ static void pressure_control_algorithm_feed_with_limit(const pressure_control_al
     }
     else
     {
-        if (params->current_pressure < params->init.limit_pressure)
+        if (pwm > min_pwm)
         {
             result->action = MOTOR_ACTION_CCW;
-            result->pwm = params->init.feed_pwm;
+            result->pwm = pwm;
         }
         else
         {

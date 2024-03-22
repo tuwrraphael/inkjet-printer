@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
 	pressure_control_algorithm_init_t init;
 	bool initial_run;
+	bool parameter_change;
 	float current_pressure;
     float elapsed_time_seconds;
 } pressure_control_algorithm_params_t;
