@@ -18,6 +18,7 @@
     "@babel/preset-env": "^7.23.9",
     "@types/node": "^20.11.19",
     "@types/w3c-image-capture": "^1.0.9",
+    "@types/w3c-web-serial": "^1.0.6",
     "@types/w3c-web-usb": "^1.0.9",
     "@types/webpack-env": "^1.18.4",
     "autoprefixer": "^10.4.17",

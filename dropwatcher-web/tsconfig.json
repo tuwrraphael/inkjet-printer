@@ -6,7 +6,8 @@
       "es2017",
       "dom",
       "WebWorker",
-      "DOM.Iterable"
+      "DOM.Iterable",
+      "DOM"
     ],
     "noImplicitAny": true,
     "skipLibCheck": true,
@@ -19,7 +20,8 @@
       "@types/node",
       "@types/webpack-env",
       "@types/w3c-image-capture",
-      "@types/w3c-web-usb"
+      "@types/w3c-web-usb",
+      "@types/w3c-web-serial"
     ],
     "allowSyntheticDefaultImports": true
   },

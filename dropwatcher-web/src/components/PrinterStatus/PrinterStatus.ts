@@ -1,6 +1,9 @@
 
+import { MovementStage } from "../../movement-stage";
+import { PrinterUSB } from "../../printer-usb";
 import { State, StateChanges, PrinterSystemState, PressureControlAlgorithm, PressureControlDirection } from "../../state/State";
 import { Store } from "../../state/Store";
+import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrinterStatus.html";
 import "./PrinterStatus.scss";
 
@@ -23,9 +26,16 @@ export class PrinterStatus extends HTMLElement {
     private pressureControlFeedPwm : HTMLSpanElement;
     private pressureControlLimitPressure : HTMLSpanElement;
     private pressureControlAlgorithm : HTMLTableCellElement;
+    private connectUsbButton : HTMLButtonElement;
+    private stageConnected : HTMLTableCellElement;
+    private connectStageButton : HTMLButtonElement;
+    private printerUSB: PrinterUSB;
+    private movementStage: MovementStage;
     constructor() {
         super();
         this.store = Store.getInstance();
+        this.printerUSB = PrinterUSB.getInstance();
+        this.movementStage = MovementStage.getInstance();
     }
 
     connectedCallback() {
@@ -47,8 +57,28 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlFeedPwm = document.querySelector("#pressure-control-feed-pwm");
             this.pressureControlLimitPressure = document.querySelector("#pressure-control-limit-pressure");
             this.pressureControlAlgorithm = document.querySelector("#pressure-control-algorithm");
+            this.connectUsbButton = document.querySelector("#connect-usb");
+            abortableEventListener(this.connectUsbButton, "click", async ev => {
+                ev.preventDefault();
+                await this.connectUsb();
+            }, this.abortController.signal);
+
+            this.stageConnected = document.querySelector("#stage-connected");
+            this.connectStageButton = document.querySelector("#connect-stage");
+            abortableEventListener(this.connectStageButton, "click", async ev => {
+                ev.preventDefault();
+                await this.connectStage();
+            }, this.abortController.signal);
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
+    }
+
+    async connectUsb() {
+        this.printerUSB.connectNew();
+    }
+
+    async connectStage() {
+        this.movementStage.connectNew();
     }
 
     formatState(state : PrinterSystemState) {
@@ -127,6 +157,10 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlFeedPwm.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.feedPwm);
             this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
             this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
+            this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
+
+            this.stageConnected.innerText = s.movementStageState.connected ? "Connected" : "Disconnected";
+            this.connectStageButton.style.display = s.movementStageState.connected ? "none" : "";
         }
     }
 

@@ -53,6 +53,9 @@ export class Store {
                 errors: {
                     flags: 0
                 }, pressureControl: null
+            },
+            movementStageState: {
+                connected: false
             }
         }));
     }

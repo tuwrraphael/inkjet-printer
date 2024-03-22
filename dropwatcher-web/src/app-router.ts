@@ -1,7 +1,7 @@
 import { Router, RouteRenderer, AsyncRouteResolver } from "route-it";
-import { Store } from "./state/Store";
 import "./components/HomeComponent/HomeComponent";
 import "./components/InkControl/InkControl";
+import "./components/MovementControl/MovementControl";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -36,6 +36,8 @@ export class AppRouter {
                 console.log("Resolving route: " + currentRoute);
                 if (/^ink-control$/.test(currentRoute)) {
                     return document.createElement("ink-control");
+                } else if (/^movement-control$/.test(currentRoute)) {
+                    return document.createElement("movement-control");
                 }
                 return document.createElement("home-component");
             }

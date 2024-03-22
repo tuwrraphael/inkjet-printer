@@ -31,6 +31,16 @@ export class WebUSBWrapper extends EventTarget {
         return devices.find(d => d.vendorId == vendorId && d.productId == productId);
     }
 
+    async connectNew(vendorId: number, productId: number) {
+        let d = await this.hasDevice(vendorId, productId);
+        if (d) {
+            console.log("device already connected");
+        } else {
+            d = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId, productId: productId }] });
+        }
+        await this.connectDevice(d);
+    }
+
     async connectDevice(d: USBDevice) {
         await d.open();
         await d.selectConfiguration(1);
@@ -84,7 +94,7 @@ export class WebUSBWrapper extends EventTarget {
                 this.dispatchEvent(new CustomEvent("data", { detail: result.data }));
             } catch (e) {
                 err = true;
-                console.log(e);
+                console.error(e);
                 if (this._device !== undefined) {
                     try {
 

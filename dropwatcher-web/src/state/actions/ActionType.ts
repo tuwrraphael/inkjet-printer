@@ -1,5 +1,6 @@
 export const enum ActionType {
     PrinterSystemStateResponseReceived,
     PrinterUSBConnectionStateChanged,
-    InitializeWorker
+    InitializeWorker,
+    MovementStageConnectionChanged
 }

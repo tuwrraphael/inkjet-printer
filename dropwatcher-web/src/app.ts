@@ -2,6 +2,7 @@ import "./styles.scss";
 import { AppComponent, AppComponentTagName } from "./components/AppComponent/AppComponent";
 import { PrinterUSB } from "./printer-usb";
 import { Store } from "./state/Store";
+import { MovementStage } from "./movement-stage";
 
 // if ("serviceWorker" in navigator) {
 //     window.addEventListener("load", async () => {
@@ -62,6 +63,9 @@ import { Store } from "./state/Store";
 
 let printerUSB = PrinterUSB.getInstance();
 printerUSB.start().catch(console.error);
+
+let movementStage = MovementStage.getInstance();
+movementStage.start().catch(console.error);
 
 let store = Store.getInstance();
 

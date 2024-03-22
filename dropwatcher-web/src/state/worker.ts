@@ -9,10 +9,12 @@ import {
     PressureControlDirection as ProtoPressureControlDirection,
     PressureControlAlgorithm as ProtoPressureControlAlgorithm
 } from "../proto/compiled";
+import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
     | InitializeWorker
+    | MovementStageConnectionChanged
     ;
 let state: State;
 let initialized = false;
@@ -124,6 +126,13 @@ async function handleMessage(msg: Actions) {
             initialized = true;
             console.log("Worker initialized", state);
             self.postMessage([state, Object.keys(state)]);
+            break;
+        case ActionType.MovementStageConnectionChanged:
+            updateState(oldState => ({
+                movementStageState: {
+                    connected: msg.connected
+                }
+            }));
             break;
     }
 }

@@ -37,7 +37,9 @@ export interface State {
                 algorithm: PressureControlAlgorithm;
             }
         },
-
+    },
+    movementStageState: {
+        connected : boolean;
     }
 }
 

@@ -33,6 +33,10 @@ export class PrinterUSB {
         return this.instance;
     }
 
+    async connectNew() {
+        await this.webUsbWrapper.connectNew(0x2FE3, 0x000A);
+    }
+
     async start() {
         await this.webUsbWrapper.autoconnect(0x2FE3, 0x000A);
     }
