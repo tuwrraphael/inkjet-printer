@@ -3,6 +3,7 @@ import { AppComponent, AppComponentTagName } from "./components/AppComponent/App
 import { PrinterUSB } from "./printer-usb";
 import { Store } from "./state/Store";
 import { MovementStage } from "./movement-stage";
+import { TaskRunnerSynchronization } from "./print-tasks/TaskRunnerSynchronization";
 
 // if ("serviceWorker" in navigator) {
 //     window.addEventListener("load", async () => {
@@ -68,6 +69,7 @@ let movementStage = MovementStage.getInstance();
 movementStage.start().catch(console.error);
 
 let store = Store.getInstance();
+TaskRunnerSynchronization.getInstance();
 
 setInterval(async () => {
     if (store.state?.printerSystemState.usbConnected) {

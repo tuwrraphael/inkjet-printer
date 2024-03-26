@@ -6,3 +6,5 @@ export class MovementStageConnectionChanged implements Action {
     constructor(public connected: boolean) { }
     readonly type = ActionType.MovementStageConnectionChanged;
 }
+
+

@@ -55,7 +55,16 @@ export class Store {
                 }, pressureControl: null
             },
             movementStageState: {
-                connected: false
+                connected: false,
+                x: undefined,
+                y: undefined,
+                z: undefined,
+                e: undefined
+            },
+            currentProgram: null,
+            programRunnerState: {
+                state: null,
+                currentTaskIndex: null
             }
         }));
     }

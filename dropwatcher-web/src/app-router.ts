@@ -2,6 +2,10 @@ import { Router, RouteRenderer, AsyncRouteResolver } from "route-it";
 import "./components/HomeComponent/HomeComponent";
 import "./components/InkControl/InkControl";
 import "./components/MovementControl/MovementControl";
+import "./components/Print/Print";
+import { MovementControlTagName } from "./components/MovementControl/MovementControl";
+import { InkControlTagName } from "./components/InkControl/InkControl";
+import { PrintTagName } from "./components/Print/Print";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -31,13 +35,16 @@ export class AppRouter {
 
     constructor() {
         class AppRouteResolver implements AsyncRouteResolver<HTMLElement> {
-            
+
             async resolve(lastRoute: string, currentRoute: string, router: Router<any>, s: { searchParams: URLSearchParams }): Promise<false | HTMLElement> {
                 console.log("Resolving route: " + currentRoute);
                 if (/^ink-control$/.test(currentRoute)) {
-                    return document.createElement("ink-control");
+                    return document.createElement(InkControlTagName);
                 } else if (/^movement-control$/.test(currentRoute)) {
-                    return document.createElement("movement-control");
+                    return document.createElement(MovementControlTagName);
+                }
+                else if (/^print$/.test(currentRoute)) {
+                    return document.createElement(PrintTagName);
                 }
                 return document.createElement("home-component");
             }

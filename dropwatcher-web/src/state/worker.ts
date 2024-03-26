@@ -10,11 +10,15 @@ import {
     PressureControlAlgorithm as ProtoPressureControlAlgorithm
 } from "../proto/compiled";
 import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
+import { MovementStagePositionChanged } from "./actions/MovementStagePositionChanged";
+import { ProgramRunnerStateChanged } from "./actions/ProgramRunnerStateChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
     | InitializeWorker
     | MovementStageConnectionChanged
+    | MovementStagePositionChanged
+    | ProgramRunnerStateChanged
     ;
 let state: State;
 let initialized = false;
@@ -92,7 +96,7 @@ async function handleMessage(msg: Actions) {
 
 
             updateState(oldState => {
-                let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure||0): undefined, timestamp: new Date() }];
+                let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
                 if (pressure.length > maxPressureHistory) {
                     pressure = pressure.slice(pressure.length - maxPressureHistory);
                 }
@@ -101,7 +105,7 @@ async function handleMessage(msg: Actions) {
                         ...oldState.printerSystemState,
                         state: mapPrinterSystemState(msg.response.state),
                         errors: {
-                            flags: msg.response.errorFlags
+                            flags: Number(msg.response.errorFlags || 0)
                         },
                         pressureControl: msg.response.pressureControl ? {
                             pressure: pressure,
@@ -130,8 +134,26 @@ async function handleMessage(msg: Actions) {
         case ActionType.MovementStageConnectionChanged:
             updateState(oldState => ({
                 movementStageState: {
-                    connected: msg.connected
+                    ...oldState.movementStageState,
+                    connected: msg.connected,
                 }
+            }));
+            break;
+        case ActionType.MovementStagePositionChanged:
+            updateState(oldState => ({
+                movementStageState: {
+                    ...oldState.movementStageState,
+                    x: msg.position.x,
+                    y: msg.position.y,
+                    z: msg.position.z,
+                    e: msg.position.e
+                }
+            }));
+            break;
+        case ActionType.ProgramRunnerStateChanged:
+            updateState(oldState => ({
+                programRunnerState: msg.state,
+                currentProgram: msg.program
             }));
             break;
     }

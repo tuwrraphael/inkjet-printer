@@ -1,3 +1,5 @@
+import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
+
 export enum PrinterSystemState {
     Unspecified = 0,
     Startup = 1,
@@ -39,8 +41,14 @@ export interface State {
         },
     },
     movementStageState: {
-        connected : boolean;
+        connected: boolean;
+        x: number;
+        y: number;
+        z: number;
+        e: number;
     }
+    currentProgram: PrinterProgram,
+    programRunnerState : ProgramRunnerState
 }
 
 export type StateChanges = (keyof State)[];

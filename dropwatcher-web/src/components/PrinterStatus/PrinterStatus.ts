@@ -28,6 +28,7 @@ export class PrinterStatus extends HTMLElement {
     private pressureControlAlgorithm : HTMLTableCellElement;
     private connectUsbButton : HTMLButtonElement;
     private stageConnected : HTMLTableCellElement;
+    private stagePosition : HTMLTableCellElement;
     private connectStageButton : HTMLButtonElement;
     private printerUSB: PrinterUSB;
     private movementStage: MovementStage;
@@ -64,6 +65,7 @@ export class PrinterStatus extends HTMLElement {
             }, this.abortController.signal);
 
             this.stageConnected = document.querySelector("#stage-connected");
+            this.stagePosition = document.querySelector("#stage-position");
             this.connectStageButton = document.querySelector("#connect-stage");
             abortableEventListener(this.connectStageButton, "click", async ev => {
                 ev.preventDefault();
@@ -79,6 +81,10 @@ export class PrinterStatus extends HTMLElement {
 
     async connectStage() {
         this.movementStage.connectNew();
+    }
+
+    formatStagePosition(s:State) {
+        return `X: ${this.formatNumber(s.movementStageState.x)} Y: ${this.formatNumber(s.movementStageState.y)} Z: ${this.formatNumber(s.movementStageState.z)} E: ${this.formatNumber(s.movementStageState.e)}`;
     }
 
     formatState(state : PrinterSystemState) {
@@ -138,7 +144,7 @@ export class PrinterStatus extends HTMLElement {
     }
 
     formatNumber(n : number) {
-        if (!n) return "-";
+        if (isNaN(n) || n == undefined) return "-";
         return numberFormat.format(n);
     }
 
@@ -158,7 +164,9 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
             this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
             this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
-
+        }
+        if (c.includes("movementStageState")) {
+            this.stagePosition.innerText = this.formatStagePosition(s);
             this.stageConnected.innerText = s.movementStageState.connected ? "Connected" : "Disconnected";
             this.connectStageButton.style.display = s.movementStageState.connected ? "none" : "";
         }

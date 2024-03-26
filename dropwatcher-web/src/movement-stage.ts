@@ -1,5 +1,7 @@
+import { GCodeRunner } from "./gcode-runner";
 import { Store } from "./state/Store";
 import { MovementStageConnectionChanged } from "./state/actions/MovementStageConnectionChanged";
+import { MovementStagePositionChanged } from "./state/actions/MovementStagePositionChanged";
 import { WebSerialWrapper } from "./webserial";
 
 
@@ -26,6 +28,8 @@ export class MovementStage {
     private static instance: MovementStage;
     private webSerialWrapper: WebSerialWrapper<string>;
     private store: Store;
+    private waiting : () => void;
+    movementExecutor = new GCodeRunner(this);
     static getInstance() {
         if (null == this.instance) {
             this.instance = new MovementStage();
@@ -49,17 +53,60 @@ export class MovementStage {
         this.webSerialWrapper.addEventListener("data", (e: CustomEvent) => {
             // let received: Uint8Array = e.detail;
             // let decoded = new TextDecoder().decode(received);
+            if (this.parsePositionMessage(e.detail, (pos) => {
+                this.store.postAction(new MovementStagePositionChanged(true, pos));
+                if (this.waiting) {
+                    this.waiting();
+                    this.waiting = undefined;
+                }
+            })) {
+                return;
+            }
             console.log(e.detail);
         });
     }
 
+    private parsePositionMessage(msg: string, res: (pos: { x: number, y: number, z: number, e: number }) => void): boolean {
+        // X:0.00Y:0.00Z:0.00E:0.00 Count X: 0.00Y:0.00Z:0.00
+        let regex = /^X:([0-9.-]+)Y:([0-9.-]+)Z:([0-9.-]+)E:([0-9.-]+) Count X: ([0-9.-]+)Y:([0-9.-]+)Z:([0-9.-]+)$/;
+        let match = regex.exec(msg);
+        if (match) {
+            res({
+                x: parseFloat(match[1]),
+                y: parseFloat(match[2]),
+                z: parseFloat(match[3]),
+                e: parseFloat(match[4])
+            });
+            return true;
+        }
+        return false;
+    }
+
     async sendGcode(gcode: string) {
+        if (!gcode.endsWith("\n")) {
+            gcode += "\n";
+        }
         let data = new TextEncoder().encode(gcode);
         await this.webSerialWrapper.send(data);
     }
 
-    async sendHome() {
-        await this.sendGcode("M118 P0 start\nM203 Z10\nG91\nG0 Z10\nG28\nG0 F4500 X102\nM400\nM118 P0 done\n");
+    async sendGcodeAndWaitForFinished(gcode: string): Promise<void> {
+        if (this.waiting) {
+            throw new Error("Already waiting");
+        }
+        if (gcode.indexOf("M114") > 0) {
+            throw new Error("M114 is not allowed in sendGcodeAndWaitForFinished");
+        }
+        if (!gcode.endsWith("\n")) {
+            gcode += "\n";
+        }
+        gcode += "M400\nM114\n";
+        let data = new TextEncoder().encode(gcode);
+        console.log(`Sending\n${gcode}`, gcode);  
+        await this.webSerialWrapper.send(data);
+        await new Promise<void>((resolve) => {
+            this.waiting = resolve;
+        });
     }
 
     async start() {
@@ -69,4 +116,11 @@ export class MovementStage {
     async connectNew() {
         await this.webSerialWrapper.connectNew();
     }
+}
+
+if (module.hot) {
+    module.hot.accept("./gcode-runner", () => {
+        let instance = MovementStage.getInstance();
+        instance.movementExecutor = new GCodeRunner(instance);
+    });
 }

@@ -10,6 +10,7 @@ export class PrinterUSB {
     private static instance: PrinterUSB;
     private store: Store;
     private webUsbWrapper: WebUSBWrapper;
+    private pressureControlWaiting: (v: any) => void;
     constructor() {
         this.store = Store.getInstance();
         this.webUsbWrapper = new WebUSBWrapper();
@@ -22,6 +23,10 @@ export class PrinterUSB {
         this.webUsbWrapper.addEventListener("data", (e: CustomEvent) => {
             let received: DataView = e.detail;
             let response = PrinterSystemStateResponse.decode(new Uint8Array(received.buffer));
+            if (this.pressureControlWaiting && response.pressureControl.done) {
+                this.pressureControlWaiting(response.pressureControl);
+                this.pressureControlWaiting = undefined;
+            }
             this.store.postAction(new PrinterSystemStateResponseReceived(response));
         });
     }
@@ -50,7 +55,17 @@ export class PrinterUSB {
     async sendPressureControlChangeParametersRequest(request: PressureControlChangeParametersRequest) {
         let printerRequest = new PrinterRequest();
         printerRequest.pressureControlChangeParametersRequest = request;
-        console.log("Sending pressure control change parameters request", request);
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendPressureControlChangeParametersRequestAndWaitForDone(request: PressureControlChangeParametersRequest) {
+        if (this.pressureControlWaiting) {
+            throw new Error("Already waiting for pressure control change parameters request");
+        } else {
+            await this.sendPressureControlChangeParametersRequest(request);
+            await new Promise((resolve) => {
+                this.pressureControlWaiting = resolve;
+            });
+        }
     }
 }
