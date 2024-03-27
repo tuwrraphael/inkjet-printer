@@ -1,0 +1,39 @@
+<style>
+    :host {
+        text-align: center;
+    }
+
+    :host>* {
+        cursor: pointer;
+    }
+
+    div {
+        display: block;
+        user-select: none;
+        padding: 0.2em;
+        box-sizing: border-box;
+    }
+
+    input {
+        left: 0;
+        opacity: 0;
+        position: absolute;
+        top: 0;
+    }
+
+    input:checked+div {
+        background-color: #666;
+        color: #ddd;
+    }
+
+    input:focus+div {
+        box-shadow: 0 0 0 1px #ddd;
+    }   
+</style>
+
+<label          for="checkbox">
+    <input type="checkbox" id="checkbox">
+    <div>
+        <slot></slot>
+    </div>
+</label>

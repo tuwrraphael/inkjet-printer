@@ -3,9 +3,11 @@ import "./components/HomeComponent/HomeComponent";
 import "./components/InkControl/InkControl";
 import "./components/MovementControl/MovementControl";
 import "./components/Print/Print";
+import "./components/Dropwatcher/Dropwatcher";
 import { MovementControlTagName } from "./components/MovementControl/MovementControl";
 import { InkControlTagName } from "./components/InkControl/InkControl";
 import { PrintTagName } from "./components/Print/Print";
+import { DropwatcherTagName } from "./components/Dropwatcher/Dropwatcher";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -45,6 +47,8 @@ export class AppRouter {
                 }
                 else if (/^print$/.test(currentRoute)) {
                     return document.createElement(PrintTagName);
+                } else if (/^dropwatcher$/.test(currentRoute)) {
+                    return document.createElement(DropwatcherTagName);
                 }
                 return document.createElement("home-component");
             }
