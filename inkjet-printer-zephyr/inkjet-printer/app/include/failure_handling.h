@@ -7,6 +7,8 @@
 #define ERROR_PRESSURE_CONTROL (1<<0)
 #define ERROR_PRINTHEAD_RESET (1<<1)
 #define ERROR_USER_ABORT (1<<2)
+#define ERROR_PRINTHEAD_COMMUNICATION (1<<3)
+#define ERROR_PRINTHEAD_FIRE (1<<4)
 
 typedef void (*failure_callback_t)(void);
 

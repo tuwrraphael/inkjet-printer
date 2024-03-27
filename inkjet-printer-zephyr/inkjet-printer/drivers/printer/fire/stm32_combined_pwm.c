@@ -42,7 +42,7 @@ struct fire_stm32_combined_pwm_config
 static int fire(const struct device *dev)
 {
 	const struct fire_stm32_combined_pwm_config *config = dev->config;
-	struct fire_stm32_combined_pwm_data *data = dev->data;
+	// struct fire_stm32_combined_pwm_data *data = dev->data;
 	LOG_INF("Fire %x, %x", TIM1->CNT, TIM4->CNT);
 	TIM_TypeDef *timer = config->timer;
 
@@ -54,7 +54,7 @@ static int fire(const struct device *dev)
 
 	/* Write to TIMx SMCR */
 	timer->SMCR = tmpsmcr;
-	return data->irq_counter;
+	return 0;
 }
 
 static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
@@ -116,7 +116,7 @@ static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t d
 }
 
 static const struct printer_fire_api fire_stm32_combined_pwm_api = {
-	.fire = &fire,
+	.request_fire = &fire,
 	.set_light_timing = &set_light_timing};
 
 static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t *tim_clk)

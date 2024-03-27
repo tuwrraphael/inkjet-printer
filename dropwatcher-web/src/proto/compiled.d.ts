@@ -668,6 +668,96 @@ export class PressureControlChangeParametersRequest implements IPressureControlC
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a SetNozzleDataRequest. */
+export class SetNozzleDataRequest implements ISetNozzleDataRequest {
+
+    /**
+     * Constructs a new SetNozzleDataRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ISetNozzleDataRequest);
+
+    /** SetNozzleDataRequest data. */
+    public data: number[];
+
+    /**
+     * Creates a new SetNozzleDataRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns SetNozzleDataRequest instance
+     */
+    public static create(properties?: ISetNozzleDataRequest): SetNozzleDataRequest;
+
+    /**
+     * Encodes the specified SetNozzleDataRequest message. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
+     * @param message SetNozzleDataRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ISetNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified SetNozzleDataRequest message, length delimited. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
+     * @param message SetNozzleDataRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ISetNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a SetNozzleDataRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns SetNozzleDataRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): SetNozzleDataRequest;
+
+    /**
+     * Decodes a SetNozzleDataRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns SetNozzleDataRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): SetNozzleDataRequest;
+
+    /**
+     * Verifies a SetNozzleDataRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a SetNozzleDataRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns SetNozzleDataRequest
+     */
+    public static fromObject(object: { [k: string]: any }): SetNozzleDataRequest;
+
+    /**
+     * Creates a plain object from a SetNozzleDataRequest message. Also converts values to other types if specified.
+     * @param message SetNozzleDataRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: SetNozzleDataRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this SetNozzleDataRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for SetNozzleDataRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterRequest. */
 export class PrinterRequest implements IPrinterRequest {
 
@@ -692,6 +782,9 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest pressureControlChangeParametersRequest. */
     public pressureControlChangeParametersRequest?: (IPressureControlChangeParametersRequest|null);
 
+    /** PrinterRequest setNozzleDataRequest. */
+    public setNozzleDataRequest?: (ISetNozzleDataRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -706,6 +799,9 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _pressureControlChangeParametersRequest. */
     public _pressureControlChangeParametersRequest?: "pressureControlChangeParametersRequest";
+
+    /** PrinterRequest _setNozzleDataRequest. */
+    public _setNozzleDataRequest?: "setNozzleDataRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.

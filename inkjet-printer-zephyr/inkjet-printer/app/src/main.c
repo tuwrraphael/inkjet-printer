@@ -558,8 +558,8 @@ static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
-	printer_fire(dev);
+	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printhead));
+	printer_request_fire(dev);
 }
 
 static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char **argv)
@@ -567,7 +567,7 @@ static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-	printer_sample_function(printhead);
+	printer_clock_enable(printhead);
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,

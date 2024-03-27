@@ -124,7 +124,7 @@ static void printhead_routine_activate_enable_clock_run(void *o)
 {
     const struct device *printhead;
     printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-    printer_sample_function(printhead);
+    printer_clock_enable(printhead);
     LOG_INF("Printhead ready");
     smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_DONE);
 }

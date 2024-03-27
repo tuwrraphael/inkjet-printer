@@ -3,22 +3,40 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/drivers/printer.h>
+#include <zephyr/drivers/printer_fire.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(xaar128, CONFIG_PRINTER_LOG_LEVEL);
 
 struct xaar128_data
 {
-	int state;
+	const struct device *dev;
+	bool ready;
+	struct gpio_callback ready_cb_data;
+	struct k_sem rts_sem;
 };
 
 struct xaar128_config
 {
 	struct gpio_dt_spec nss1_gpio;
 	struct gpio_dt_spec nss2_gpio;
+	struct gpio_dt_spec ready_gpio;
 	const struct pwm_dt_spec pwm_dt;
-	struct spi_dt_spec bus;
+	const struct spi_dt_spec bus;
+	const struct device *printer_fire;
 };
+
+void ready_int_handler(const struct device *dev, struct gpio_callback *cb,
+					   uint32_t pins)
+{
+	struct xaar128_data *data = CONTAINER_OF(cb, struct xaar128_data, ready_cb_data);
+	const struct xaar128_config *config = dev->config;
+	data->ready = gpio_pin_get_dt(&config->ready_gpio);
+	if (data->ready == false)
+	{
+		k_sem_give(&data->rts_sem);
+	}
+}
 
 static int clock_control_pwm_on(const struct device *dev)
 {
@@ -27,7 +45,7 @@ static int clock_control_pwm_on(const struct device *dev)
 	return pwm_set_dt(spec, spec->period, spec->period / 2);
 }
 
-static int xaar128_sample_function(const struct device *dev)
+static int xaar128_clock_enable(const struct device *dev)
 {
 	const struct xaar128_config *config = dev->config;
 
@@ -52,6 +70,7 @@ static int xaar128_sample_function(const struct device *dev)
 
 static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 {
+	struct xaar128_data *data = dev->data;
 	LOG_INF("xaar128_set_pixels");
 	const struct xaar128_config *config = dev->config;
 	struct spi_cs_control cs = {
@@ -91,19 +110,47 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 				ret, config->bus.bus->name);
 		return ret;
 	}
+	k_sem_reset(&data->rts_sem);
 	return 0;
 }
 
+static int xaar128_request_fire(const struct device *dev)
+{
+	const struct xaar128_config *config = dev->config;
+	const struct xaar128_data *data = dev->data;
+	if (!data->ready)
+	{
+		return -EBUSY;
+	}
+	return printer_fire_request_fire(config->printer_fire);
+}
+
+static int xaar128_wait_rts(const struct device *dev, k_timeout_t timeout)
+{
+	struct xaar128_data *data = dev->data;
+	int ret = k_sem_take(&data->rts_sem, timeout);
+	return ret;
+}
+
 static const struct printer_driver_api xaar128_api = {
-	.sample_function = &xaar128_sample_function,
+	.clock_enable = &xaar128_clock_enable,
 	.set_pixels = &xaar128_set_pixels,
-};
+	.request_fire = &xaar128_request_fire,
+	.wait_rts = &xaar128_wait_rts};
 
 static int xaar128_init(const struct device *dev)
 {
 	const struct xaar128_config *config = dev->config;
-	// struct xaar128_data *data = dev->data;
+	struct xaar128_data *data = dev->data;
 
+	k_sem_init(&data->rts_sem, 1, 1);
+
+	data->dev = dev;
+	if (!device_is_ready(config->printer_fire))
+	{
+		LOG_ERR("Printer fire device %s not ready", config->printer_fire->name);
+		return -ENODEV;
+	}
 	if (!spi_is_ready_dt(&config->bus))
 	{
 		LOG_ERR("SPI bus %s not ready", config->bus.bus->name);
@@ -137,38 +184,59 @@ static int xaar128_init(const struct device *dev)
 				ret, config->nss2_gpio.port->name, config->nss2_gpio.pin);
 		return ret;
 	}
-	// if (!device_is_ready(config->input.port)) {
-	// 	LOG_ERR("Input GPIO not ready");
-	// 	return -ENODEV;
-	// }
-
-	// ret = gpio_pin_configure_dt(&config->input, GPIO_INPUT);
-	// if (ret < 0) {
-	// 	LOG_ERR("Could not configure input GPIO (%d)", ret);
-	// 	return ret;
-	// }
-
+	if (!gpio_is_ready_dt(&config->ready_gpio))
+	{
+		LOG_ERR("Error: ready_gpio device %s is not ready\n",
+				config->ready_gpio.port->name);
+		return -ENODEV;
+	}
+	ret = gpio_pin_configure_dt(&config->ready_gpio, GPIO_INPUT);
+	if (ret != 0)
+	{
+		LOG_ERR("Error %d: failed to configure %s pin %d\n",
+				ret, config->ready_gpio.port->name, config->ready_gpio.pin);
+		return ret;
+	}
+	ret = gpio_pin_interrupt_configure_dt(&config->ready_gpio,
+										  GPIO_INT_EDGE_BOTH);
+	if (ret != 0)
+	{
+		LOG_ERR("Error %d: failed to configure interrupt on %s pin %d\n",
+				ret, config->ready_gpio.port->name, config->ready_gpio.pin);
+		return ret;
+	}
+	gpio_init_callback(&data->ready_cb_data, ready_int_handler, BIT(config->ready_gpio.pin));
+	ret = gpio_add_callback(config->ready_gpio.port, &data->ready_cb_data);
+	if (ret != 0)
+	{
+		LOG_ERR("Error %d: failed to add callback on %s pin %d\n",
+				ret, config->ready_gpio.port->name, config->ready_gpio.pin);
+		return ret;
+	}
+	data->ready = gpio_pin_get_dt(&config->ready_gpio);
 	return 0;
 }
 
-#define XAAR128_INIT(i)                                       \
-	static struct xaar128_data xaar128_data_##i;              \
-                                                              \
-	static const struct xaar128_config xaar128_config_##i = { \
-		.bus = SPI_DT_SPEC_INST_GET(i,                        \
-									SPI_OP_MODE_MASTER |      \
-										SPI_WORD_SET(8) |     \
-										SPI_MODE_CPOL |       \
-										SPI_MODE_CPHA |       \
-										SPI_TRANSFER_LSB,     \
-									0),                       \
-		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),    \
-		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),    \
-		.pwm_dt = PWM_DT_SPEC_INST_GET(i)};                   \
-                                                              \
-	DEVICE_DT_INST_DEFINE(i, xaar128_init, NULL,              \
-						  &xaar128_data_##i,                  \
-						  &xaar128_config_##i, POST_KERNEL,   \
+#define XAAR128_INIT(i)                                                                      \
+	static struct xaar128_data xaar128_data_##i;                                             \
+                                                                                             \
+	static const struct xaar128_config xaar128_config_##i = {                                \
+		.bus = SPI_DT_SPEC_INST_GET(i,                                                       \
+									SPI_OP_MODE_MASTER |                                     \
+										SPI_WORD_SET(8) |                                    \
+										SPI_MODE_CPOL |                                      \
+										SPI_MODE_CPHA |                                      \
+										SPI_TRANSFER_LSB,                                    \
+									0),                                                      \
+		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),                                   \
+		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),                                   \
+		.ready_gpio = GPIO_DT_SPEC_INST_GET(i, ready_gpios),                                 \
+		.pwm_dt = PWM_DT_SPEC_INST_GET(i),                                                   \
+		.printer_fire = DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_DRV_INST(i), printer_fires, 0))}; \
+                                                                                             \
+	DEVICE_DT_INST_DEFINE(i, xaar128_init, NULL,                                             \
+						  &xaar128_data_##i,                                                 \
+						  &xaar128_config_##i, POST_KERNEL,                                  \
 						  CONFIG_PRINTER_INIT_PRIORITY, &xaar128_api);
 
 DT_INST_FOREACH_STATUS_OKAY(XAAR128_INIT)

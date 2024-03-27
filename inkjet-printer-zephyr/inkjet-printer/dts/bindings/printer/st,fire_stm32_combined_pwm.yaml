@@ -21,3 +21,8 @@ properties:
   min_mask_period:
     type: int
     required: true
+  "#printer-fire-cells":
+    const: 0
+    type: int
+
+# printer-fire-cells:

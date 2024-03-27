@@ -109,7 +109,9 @@ export class PrinterStatus extends HTMLElement {
         } = {
             "1" : "Printhead Reset",
             "2" : "User Abort",
-            "0" : "Pressure Control" 
+            "0" : "Pressure Control",
+            "3" : "Printhead Communication",
+            "4" : "Printhead Fire Request",
         }
 
         let errors = [];

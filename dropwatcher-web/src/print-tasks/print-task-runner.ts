@@ -7,6 +7,8 @@ import { PrinterProgram, PrinterProgramState, PrinterTask, PrinterTaskHome, Prin
 import { TaskRunnerSynchronization } from "./TaskRunnerSynchronization";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
+import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
+import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -50,7 +52,7 @@ export class PrintTaskRunner {
             state: PrinterProgramState.Running,
             currentTaskIndex: 0
         };
-        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));        
+        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
         while (this.canContinue() && !this.isDone()) {
             let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
             await this.runTask(nextTask);
@@ -68,16 +70,24 @@ export class PrintTaskRunner {
     private async runTask(task: PrinterTasks) {
         switch (task.type) {
             case PrinterTaskType.Home:
-                var homeTaskRunner = new HomeTaskRunner(task, this.movementStage);
+                let homeTaskRunner = new HomeTaskRunner(task, this.movementStage);
                 await homeTaskRunner.run();
                 break;
             case PrinterTaskType.PrimeNozzle:
-                var primeNozzleTaskRunner = new PrimeNozzleTaskRunner(task, this.printerUsb);
+                let primeNozzleTaskRunner = new PrimeNozzleTaskRunner(task, this.printerUsb);
                 await primeNozzleTaskRunner.run();
                 break;
             case PrinterTaskType.SetTargetPressure:
-                var setTargetPressureTaskRunner = new SetTargetPressureTaskRunner(task, this.printerUsb);
+                let setTargetPressureTaskRunner = new SetTargetPressureTaskRunner(task, this.printerUsb);
                 await setTargetPressureTaskRunner.run();
+                break;
+            case PrinterTaskType.SetNozzleData:
+                let setNozzleDataTaskRunner = new SetNozzleDataTaskRunner(task, this.printerUsb);
+                await setNozzleDataTaskRunner.run();
+                break;
+            case PrinterTaskType.RequestFire:
+                let requestFireTaskRunner = new RequestFireTaskRunner(task, this.printerUsb);
+                await requestFireTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

@@ -1,6 +1,6 @@
 #include <zephyr/smf.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/drivers/printer_fire.h>
+#include <zephyr/drivers/printer.h>
 
 #include "printer_system_smf.h"
 #include "printhead_routines.h"
@@ -17,9 +17,9 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_STATE_CHANGE (1 << 1)
 #define PRINTER_SYSTEM_TIMEOUT (1 << 2)
 #define PRINTER_SYSTEM_REQUEST_FIRE (1 << 3)
+#define PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA (1 << 4)
 
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-static const struct device *printer_fire_device = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
 
 static enum printer_system_smf_state requested_state = PRINTER_SYSTEM_STARTUP;
 
@@ -42,6 +42,7 @@ struct printer_system_state_object
 {
     struct smf_ctx ctx;
     int32_t events;
+    uint32_t nozzle_data[4];
 } printer_system_state_object;
 
 static void timeout_timer_handler(struct k_timer *dummy)
@@ -99,23 +100,24 @@ static bool exit_on_error_after_wait()
 static void printer_system_dropwatcher_entry(void *o)
 {
     ARG_UNUSED(o);
-    LOG_INF("Enabling pressure control");
-    pressure_control_algorithm_init_t init;
-    init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
-    init.target_pressure = -7.0f;
-    pressure_control_update_parameters(&init);
-    pressure_control_enable();
-    int ret = pressure_control_wait_for_done();
-    if (exit_on_error_after_wait())
-    {
-        return;
-    }
-    if (ret != 0)
-    {
-        LOG_ERR("Failed to reach target pressure, going to idle state");
-        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
-        return;
-    }
+    int ret;
+    // LOG_INF("Enabling pressure control");
+    // pressure_control_algorithm_init_t init;
+    // init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+    // init.target_pressure = -7.0f;
+    // pressure_control_update_parameters(&init);
+    // pressure_control_enable();
+    // ret = pressure_control_wait_for_done();
+    // if (exit_on_error_after_wait())
+    // {
+    //     return;
+    // }
+    // if (ret != 0)
+    // {
+    //     LOG_ERR("Failed to reach target pressure, going to idle state");
+    //     smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+    //     return;
+    // }
     ret = printhead_routine_smf(PRINTHEAD_ROUTINE_ACTIVATE_INITIAL);
     if (exit_on_error_after_wait())
     {
@@ -144,8 +146,29 @@ static void printer_system_dropwatcher_run(void *o)
     {
         if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_FIRE)
         {
-            LOG_INF("Firing printhead");
-            printer_fire(printer_fire_device);
+            int ret = printer_request_fire(printhead);
+            if (ret != 0)
+            {
+                // TODO check if this is really the best way to inform the program to abort
+                failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
+                LOG_ERR("Failed to fire printhead %d", ret);
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
+            } else {
+                LOG_INF("Firing printhead");
+            }
+        }
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA)
+        {
+            int ret = printer_set_pixels(printhead, printer_system_state_object.nozzle_data);
+            if (ret != 0)
+            {
+                // TODO check if this is really the best way to inform the program to abort
+                failure_handling_set_error_state(ERROR_PRINTHEAD_COMMUNICATION);
+                LOG_ERR("Failed to set nozzle data %d", ret);
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
+            } else {
+                LOG_INF("Setting nozzle data");
+            }
         }
         k_timer_start(&timout_timer, K_SECONDS(60), K_NO_WAIT);
     }
@@ -177,6 +200,11 @@ void go_to_idle()
 void request_printhead_fire()
 {
     event_post(PRINTER_SYSTEM_REQUEST_FIRE);
+}
+
+void request_set_nozzle_data(uint32_t *data) {
+    memcpy(printer_system_state_object.nozzle_data, data, sizeof(printer_system_state_object.nozzle_data));
+    event_post(PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA);
 }
 
 int printer_system_smf()
@@ -211,11 +239,6 @@ int printer_system_smf_init()
     if (!device_is_ready(printhead))
     {
         LOG_ERR("Printhead not ready");
-        return -1;
-    }
-    if (!device_is_ready(printer_fire_device))
-    {
-        LOG_ERR("Printer fire not ready");
         return -1;
     }
     return 0;

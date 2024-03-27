@@ -1,36 +1,44 @@
 export const enum PrinterTaskType {
     Home,
     PrimeNozzle,
-    SetTargetPressure
+    SetTargetPressure,
+    SetNozzleData,
+    RequestFire
 }
 
 export interface PrinterTask {
     readonly type: PrinterTaskType;
 }
 
-export class PrinterTaskHome implements PrinterTask {
-    readonly type = PrinterTaskType.Home;
+export interface PrinterTaskHome extends PrinterTask {
+    readonly type: PrinterTaskType.Home;
 }
 
-export class PrinterTaskPrimeNozzle implements PrinterTask {
-    readonly type = PrinterTaskType.PrimeNozzle;
-    constructor(public feedTime: number,
-        public feedLimitPressure: number,
-        public feedLimitPwm: number) {
-
-    }
+export interface PrinterTaskPrimeNozzle extends PrinterTask {
+    readonly type: PrinterTaskType.PrimeNozzle;
+    feedTime: number;
+    feedLimitPressure: number;
+    feedLimitPwm: number;
 }
 
-export class PrinterTaskSetTargetPressure implements PrinterTask {
-    readonly type = PrinterTaskType.SetTargetPressure;
-    constructor(public targetPressure: number) {
+export interface PrinterTaskSetTargetPressure extends PrinterTask {
+    readonly type: PrinterTaskType.SetTargetPressure;
+    targetPressure: number;
+}
+export interface PrinterTaskSetNozzleData extends PrinterTask {
+    readonly type: PrinterTaskType.SetNozzleData;
+    data: number[];
+}
 
-    }
+export interface PrinterTaskRequestFire extends PrinterTask {
+    readonly type: PrinterTaskType.RequestFire;
 }
 
 export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrimeNozzle
     | PrinterTaskSetTargetPressure
+    | PrinterTaskSetNozzleData
+    | PrinterTaskRequestFire
     ;
 
 

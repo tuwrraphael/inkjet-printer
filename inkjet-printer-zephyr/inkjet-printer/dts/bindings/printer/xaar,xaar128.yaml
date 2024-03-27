@@ -15,3 +15,9 @@ properties:
   nss2-gpios:
     type: phandle-array
     required: true
+  ready-gpios:
+    type: phandle-array
+    required: true
+  printer-fires:
+    type: phandle-array
+    required: true

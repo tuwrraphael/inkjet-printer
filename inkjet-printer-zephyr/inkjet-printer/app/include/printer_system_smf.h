@@ -17,6 +17,8 @@ void go_to_idle();
 
 void request_printhead_fire();
 
+void request_set_nozzle_data(uint32_t *data);
+
 enum printer_system_smf_state printer_system_smf_get_state();
 
 #endif // PRINTER_SYSTEM_SMF_H

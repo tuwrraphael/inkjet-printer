@@ -1,4 +1,5 @@
-import { GetPrinterSystemStateRequest, PressureControlChangeParametersRequest, PrinterRequest, PrinterSystemStateResponse } from "./proto/compiled";
+import { CameraFrameRequest } from "./proto/compiled";
+import { GetPrinterSystemStateRequest, PressureControlChangeParametersRequest, PrinterRequest, PrinterSystemStateResponse, SetNozzleDataRequest } from "./proto/compiled";
 import { Store } from "./state/Store";
 import { PrinterSystemStateResponseReceived } from "./state/actions/PrinterSystemStateResponseReceived";
 import { PrinterUSBConnectionStateChanged } from "./state/actions/PrinterUSBConnectionStateChanged";
@@ -67,5 +68,17 @@ export class PrinterUSB {
                 this.pressureControlWaiting = resolve;
             });
         }
+    }
+
+    async sendSetNozzleDataRequest(request : SetNozzleDataRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.setNozzleDataRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendFireRequest() {
+        let printerRequest = new PrinterRequest();
+        printerRequest.cameraFrameRequest = new CameraFrameRequest();
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 }

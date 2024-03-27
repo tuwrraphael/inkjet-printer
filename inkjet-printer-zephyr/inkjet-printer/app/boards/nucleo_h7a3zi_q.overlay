@@ -119,6 +119,7 @@
 		pulse12_end = <((PRINTHEAD_CLOCK_NS/4) + PRINTHEAD_CLOCK_NS)>;
 		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
 		min_mask_period = <MAX_FIRE_FREQUENCY>;
+		#printer-fire-cells = <0>;
 	};
 };
 
@@ -133,6 +134,8 @@
 		spi-max-frequency = <1000000>;
 		nss1-gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
 		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
+		ready-gpios = <&gpiof 11 GPIO_ACTIVE_HIGH>;
+		printer-fires = <&printer_fire>;
 	};
 };
 
