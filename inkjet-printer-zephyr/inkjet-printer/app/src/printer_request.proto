@@ -19,11 +19,11 @@ message ChangeDropwatcherParametersRequest {
 message CameraFrameRequest {
 }
 
-message PressureControlChangeParametersRequest {
+message ChangePressureControlParametersRequest {
     PressureControlParameters parameters = 1;
 }
 
-message SetNozzleDataRequest {
+message ChangeNozzleDataRequest {
     repeated uint32 data = 1;
 }
 
@@ -33,6 +33,6 @@ message PrinterRequest
     optional ChangePrinterSystemStateRequest change_printer_system_state_request = 2;
     optional ChangeDropwatcherParametersRequest change_dropwatcher_parameters_request = 3;
     optional CameraFrameRequest camera_frame_request = 4;
-    optional PressureControlChangeParametersRequest pressure_control_change_parameters_request = 5;
-    optional SetNozzleDataRequest set_nozzle_data_request = 6;
+    optional ChangePressureControlParametersRequest change_pressure_control_parameter_request = 5;
+    optional ChangeNozzleDataRequest change_nozzle_data_request = 6;
 }

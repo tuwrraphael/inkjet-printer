@@ -371,23 +371,23 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			LOG_ERR("Failed to decode CameraFrameRequest");
 		}
 	}
-	else if (type == SetNozzleDataRequest_fields)
+	else if (type == ChangeNozzleDataRequest_fields)
 	{
-		SetNozzleDataRequest request = {};
-		status = decode_unionmessage_contents(&stream, SetNozzleDataRequest_fields, &request);
+		ChangeNozzleDataRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeNozzleDataRequest_fields, &request);
 		if (status)
 		{
 			request_set_nozzle_data(request.data);
-			LOG_INF("SetNozzleDataRequest: %x, %x, %x, %x", request.data[0], request.data[1], request.data[2], request.data[3]);
+			LOG_INF("ChangeNozzleDataRequest: %x, %x, %x, %x", request.data[0], request.data[1], request.data[2], request.data[3]);
 		}
 		else
 		{
 			LOG_ERR("Failed to decode SetNozzleDataRequest");
 		}
 	}
-	else if (type == PressureControlChangeParametersRequest_fields) {
-		PressureControlChangeParametersRequest request = {};
-		status = decode_unionmessage_contents(&stream, PressureControlChangeParametersRequest_fields, &request);
+	else if (type == ChangePressureControlParametersRequest_fields) {
+		ChangePressureControlParametersRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangePressureControlParametersRequest_fields, &request);
 		if (status)
 		{
 			pressure_control_algorithm_init_t init = {
