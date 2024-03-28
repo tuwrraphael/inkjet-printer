@@ -578,180 +578,180 @@ export class CameraFrameRequest implements ICameraFrameRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
-/** Represents a PressureControlChangeParametersRequest. */
-export class PressureControlChangeParametersRequest implements IPressureControlChangeParametersRequest {
+/** Represents a ChangePressureControlParametersRequest. */
+export class ChangePressureControlParametersRequest implements IChangePressureControlParametersRequest {
 
     /**
-     * Constructs a new PressureControlChangeParametersRequest.
+     * Constructs a new ChangePressureControlParametersRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IPressureControlChangeParametersRequest);
+    constructor(properties?: IChangePressureControlParametersRequest);
 
-    /** PressureControlChangeParametersRequest parameters. */
+    /** ChangePressureControlParametersRequest parameters. */
     public parameters?: (IPressureControlParameters|null);
 
     /**
-     * Creates a new PressureControlChangeParametersRequest instance using the specified properties.
+     * Creates a new ChangePressureControlParametersRequest instance using the specified properties.
      * @param [properties] Properties to set
-     * @returns PressureControlChangeParametersRequest instance
+     * @returns ChangePressureControlParametersRequest instance
      */
-    public static create(properties?: IPressureControlChangeParametersRequest): PressureControlChangeParametersRequest;
+    public static create(properties?: IChangePressureControlParametersRequest): ChangePressureControlParametersRequest;
 
     /**
-     * Encodes the specified PressureControlChangeParametersRequest message. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
-     * @param message PressureControlChangeParametersRequest message or plain object to encode
+     * Encodes the specified ChangePressureControlParametersRequest message. Does not implicitly {@link ChangePressureControlParametersRequest.verify|verify} messages.
+     * @param message ChangePressureControlParametersRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: IPressureControlChangeParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: IChangePressureControlParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Encodes the specified PressureControlChangeParametersRequest message, length delimited. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
-     * @param message PressureControlChangeParametersRequest message or plain object to encode
+     * Encodes the specified ChangePressureControlParametersRequest message, length delimited. Does not implicitly {@link ChangePressureControlParametersRequest.verify|verify} messages.
+     * @param message ChangePressureControlParametersRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encodeDelimited(message: IPressureControlChangeParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encodeDelimited(message: IChangePressureControlParametersRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer.
+     * Decodes a ChangePressureControlParametersRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns PressureControlChangeParametersRequest
+     * @returns ChangePressureControlParametersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PressureControlChangeParametersRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangePressureControlParametersRequest;
 
     /**
-     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer, length delimited.
+     * Decodes a ChangePressureControlParametersRequest message from the specified reader or buffer, length delimited.
      * @param reader Reader or buffer to decode from
-     * @returns PressureControlChangeParametersRequest
+     * @returns ChangePressureControlParametersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PressureControlChangeParametersRequest;
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangePressureControlParametersRequest;
 
     /**
-     * Verifies a PressureControlChangeParametersRequest message.
+     * Verifies a ChangePressureControlParametersRequest message.
      * @param message Plain object to verify
      * @returns `null` if valid, otherwise the reason why it is not
      */
     public static verify(message: { [k: string]: any }): (string|null);
 
     /**
-     * Creates a PressureControlChangeParametersRequest message from a plain object. Also converts values to their respective internal types.
+     * Creates a ChangePressureControlParametersRequest message from a plain object. Also converts values to their respective internal types.
      * @param object Plain object
-     * @returns PressureControlChangeParametersRequest
+     * @returns ChangePressureControlParametersRequest
      */
-    public static fromObject(object: { [k: string]: any }): PressureControlChangeParametersRequest;
+    public static fromObject(object: { [k: string]: any }): ChangePressureControlParametersRequest;
 
     /**
-     * Creates a plain object from a PressureControlChangeParametersRequest message. Also converts values to other types if specified.
-     * @param message PressureControlChangeParametersRequest
+     * Creates a plain object from a ChangePressureControlParametersRequest message. Also converts values to other types if specified.
+     * @param message ChangePressureControlParametersRequest
      * @param [options] Conversion options
      * @returns Plain object
      */
-    public static toObject(message: PressureControlChangeParametersRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+    public static toObject(message: ChangePressureControlParametersRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
 
     /**
-     * Converts this PressureControlChangeParametersRequest to JSON.
+     * Converts this ChangePressureControlParametersRequest to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
 
     /**
-     * Gets the default type url for PressureControlChangeParametersRequest
+     * Gets the default type url for ChangePressureControlParametersRequest
      * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
      * @returns The default type url
      */
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
-/** Represents a SetNozzleDataRequest. */
-export class SetNozzleDataRequest implements ISetNozzleDataRequest {
+/** Represents a ChangeNozzleDataRequest. */
+export class ChangeNozzleDataRequest implements IChangeNozzleDataRequest {
 
     /**
-     * Constructs a new SetNozzleDataRequest.
+     * Constructs a new ChangeNozzleDataRequest.
      * @param [properties] Properties to set
      */
-    constructor(properties?: ISetNozzleDataRequest);
+    constructor(properties?: IChangeNozzleDataRequest);
 
-    /** SetNozzleDataRequest data. */
+    /** ChangeNozzleDataRequest data. */
     public data: number[];
 
     /**
-     * Creates a new SetNozzleDataRequest instance using the specified properties.
+     * Creates a new ChangeNozzleDataRequest instance using the specified properties.
      * @param [properties] Properties to set
-     * @returns SetNozzleDataRequest instance
+     * @returns ChangeNozzleDataRequest instance
      */
-    public static create(properties?: ISetNozzleDataRequest): SetNozzleDataRequest;
+    public static create(properties?: IChangeNozzleDataRequest): ChangeNozzleDataRequest;
 
     /**
-     * Encodes the specified SetNozzleDataRequest message. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
-     * @param message SetNozzleDataRequest message or plain object to encode
+     * Encodes the specified ChangeNozzleDataRequest message. Does not implicitly {@link ChangeNozzleDataRequest.verify|verify} messages.
+     * @param message ChangeNozzleDataRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: ISetNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: IChangeNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Encodes the specified SetNozzleDataRequest message, length delimited. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
-     * @param message SetNozzleDataRequest message or plain object to encode
+     * Encodes the specified ChangeNozzleDataRequest message, length delimited. Does not implicitly {@link ChangeNozzleDataRequest.verify|verify} messages.
+     * @param message ChangeNozzleDataRequest message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encodeDelimited(message: ISetNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encodeDelimited(message: IChangeNozzleDataRequest, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a SetNozzleDataRequest message from the specified reader or buffer.
+     * Decodes a ChangeNozzleDataRequest message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns SetNozzleDataRequest
+     * @returns ChangeNozzleDataRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): SetNozzleDataRequest;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangeNozzleDataRequest;
 
     /**
-     * Decodes a SetNozzleDataRequest message from the specified reader or buffer, length delimited.
+     * Decodes a ChangeNozzleDataRequest message from the specified reader or buffer, length delimited.
      * @param reader Reader or buffer to decode from
-     * @returns SetNozzleDataRequest
+     * @returns ChangeNozzleDataRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): SetNozzleDataRequest;
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangeNozzleDataRequest;
 
     /**
-     * Verifies a SetNozzleDataRequest message.
+     * Verifies a ChangeNozzleDataRequest message.
      * @param message Plain object to verify
      * @returns `null` if valid, otherwise the reason why it is not
      */
     public static verify(message: { [k: string]: any }): (string|null);
 
     /**
-     * Creates a SetNozzleDataRequest message from a plain object. Also converts values to their respective internal types.
+     * Creates a ChangeNozzleDataRequest message from a plain object. Also converts values to their respective internal types.
      * @param object Plain object
-     * @returns SetNozzleDataRequest
+     * @returns ChangeNozzleDataRequest
      */
-    public static fromObject(object: { [k: string]: any }): SetNozzleDataRequest;
+    public static fromObject(object: { [k: string]: any }): ChangeNozzleDataRequest;
 
     /**
-     * Creates a plain object from a SetNozzleDataRequest message. Also converts values to other types if specified.
-     * @param message SetNozzleDataRequest
+     * Creates a plain object from a ChangeNozzleDataRequest message. Also converts values to other types if specified.
+     * @param message ChangeNozzleDataRequest
      * @param [options] Conversion options
      * @returns Plain object
      */
-    public static toObject(message: SetNozzleDataRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+    public static toObject(message: ChangeNozzleDataRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
 
     /**
-     * Converts this SetNozzleDataRequest to JSON.
+     * Converts this ChangeNozzleDataRequest to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
 
     /**
-     * Gets the default type url for SetNozzleDataRequest
+     * Gets the default type url for ChangeNozzleDataRequest
      * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
      * @returns The default type url
      */
@@ -779,11 +779,11 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest cameraFrameRequest. */
     public cameraFrameRequest?: (ICameraFrameRequest|null);
 
-    /** PrinterRequest pressureControlChangeParametersRequest. */
-    public pressureControlChangeParametersRequest?: (IPressureControlChangeParametersRequest|null);
+    /** PrinterRequest changePressureControlParameterRequest. */
+    public changePressureControlParameterRequest?: (IChangePressureControlParametersRequest|null);
 
-    /** PrinterRequest setNozzleDataRequest. */
-    public setNozzleDataRequest?: (ISetNozzleDataRequest|null);
+    /** PrinterRequest changeNozzleDataRequest. */
+    public changeNozzleDataRequest?: (IChangeNozzleDataRequest|null);
 
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
@@ -797,11 +797,11 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest _cameraFrameRequest. */
     public _cameraFrameRequest?: "cameraFrameRequest";
 
-    /** PrinterRequest _pressureControlChangeParametersRequest. */
-    public _pressureControlChangeParametersRequest?: "pressureControlChangeParametersRequest";
+    /** PrinterRequest _changePressureControlParameterRequest. */
+    public _changePressureControlParameterRequest?: "changePressureControlParameterRequest";
 
-    /** PrinterRequest _setNozzleDataRequest. */
-    public _setNozzleDataRequest?: "setNozzleDataRequest";
+    /** PrinterRequest _changeNozzleDataRequest. */
+    public _changeNozzleDataRequest?: "changeNozzleDataRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.

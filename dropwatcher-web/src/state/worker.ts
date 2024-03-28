@@ -12,6 +12,9 @@ import {
 import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
 import { MovementStagePositionChanged } from "./actions/MovementStagePositionChanged";
 import { ProgramRunnerStateChanged } from "./actions/ProgramRunnerStateChanged";
+import { NozzleDataChanged } from "./actions/NozzleDataSet";
+import { DropwatcherParametersChanged } from "./actions/DropwatcherParametersSet";
+import { CameraStateChanged } from "./actions/CameraStateChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -19,6 +22,9 @@ type Actions = PrinterUSBConnectionStateChanged
     | MovementStageConnectionChanged
     | MovementStagePositionChanged
     | ProgramRunnerStateChanged
+    | NozzleDataChanged
+    | DropwatcherParametersChanged
+    | CameraStateChanged
     ;
 let state: State;
 let initialized = false;
@@ -154,6 +160,31 @@ async function handleMessage(msg: Actions) {
             updateState(oldState => ({
                 programRunnerState: msg.state,
                 currentProgram: msg.program
+            }));
+            break;
+        case ActionType.DropwatcherParametersChanged:
+            updateState(oldState => ({
+                dropwatcherState: {
+                    ...oldState.dropwatcherState,
+                    delayNanos: msg.delayNanos,
+                    flashOnTimeNanos: msg.flashOnTimeNanos
+                }
+            }));
+            break;
+        case ActionType.NozzleDataChanged:
+            updateState(oldState => ({
+                dropwatcherState: {
+                    ...oldState.dropwatcherState,
+                    nozzleData: msg.data
+                }
+            }));
+            break;
+        case ActionType.CameraStateChanged:
+            updateState(oldState => ({
+                dropwatcherState: {
+                    ...oldState.dropwatcherState,
+                    ...msg.state
+                }
             }));
             break;
     }

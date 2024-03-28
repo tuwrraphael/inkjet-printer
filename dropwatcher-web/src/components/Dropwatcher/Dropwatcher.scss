@@ -2,3 +2,24 @@
     display: grid;
     grid-template-columns: repeat(16,minmax(2em,min-content));
 }
+
+.video-element {
+    // margin: 0.5em;
+    width: 100%;
+    box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
+    box-sizing: border-box;
+    transform: scaleY(-1);
+}
+
+.video-container {
+    padding: 0.5em 0;
+}
+
+.frame-container {
+    padding: 0.5em 0;
+    & canvas {
+        width: 100%;
+        box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
+        transform: scaleY(-1);
+    }
+}

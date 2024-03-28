@@ -1521,24 +1521,24 @@ export const CameraFrameRequest = $root.CameraFrameRequest = (() => {
     return CameraFrameRequest;
 })();
 
-export const PressureControlChangeParametersRequest = $root.PressureControlChangeParametersRequest = (() => {
+export const ChangePressureControlParametersRequest = $root.ChangePressureControlParametersRequest = (() => {
 
     /**
-     * Properties of a PressureControlChangeParametersRequest.
-     * @exports IPressureControlChangeParametersRequest
-     * @interface IPressureControlChangeParametersRequest
-     * @property {IPressureControlParameters|null} [parameters] PressureControlChangeParametersRequest parameters
+     * Properties of a ChangePressureControlParametersRequest.
+     * @exports IChangePressureControlParametersRequest
+     * @interface IChangePressureControlParametersRequest
+     * @property {IPressureControlParameters|null} [parameters] ChangePressureControlParametersRequest parameters
      */
 
     /**
-     * Constructs a new PressureControlChangeParametersRequest.
-     * @exports PressureControlChangeParametersRequest
-     * @classdesc Represents a PressureControlChangeParametersRequest.
-     * @implements IPressureControlChangeParametersRequest
+     * Constructs a new ChangePressureControlParametersRequest.
+     * @exports ChangePressureControlParametersRequest
+     * @classdesc Represents a ChangePressureControlParametersRequest.
+     * @implements IChangePressureControlParametersRequest
      * @constructor
-     * @param {IPressureControlChangeParametersRequest=} [properties] Properties to set
+     * @param {IChangePressureControlParametersRequest=} [properties] Properties to set
      */
-    function PressureControlChangeParametersRequest(properties) {
+    function ChangePressureControlParametersRequest(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -1546,35 +1546,35 @@ export const PressureControlChangeParametersRequest = $root.PressureControlChang
     }
 
     /**
-     * PressureControlChangeParametersRequest parameters.
+     * ChangePressureControlParametersRequest parameters.
      * @member {IPressureControlParameters|null|undefined} parameters
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @instance
      */
-    PressureControlChangeParametersRequest.prototype.parameters = null;
+    ChangePressureControlParametersRequest.prototype.parameters = null;
 
     /**
-     * Creates a new PressureControlChangeParametersRequest instance using the specified properties.
+     * Creates a new ChangePressureControlParametersRequest instance using the specified properties.
      * @function create
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
-     * @param {IPressureControlChangeParametersRequest=} [properties] Properties to set
-     * @returns {PressureControlChangeParametersRequest} PressureControlChangeParametersRequest instance
+     * @param {IChangePressureControlParametersRequest=} [properties] Properties to set
+     * @returns {ChangePressureControlParametersRequest} ChangePressureControlParametersRequest instance
      */
-    PressureControlChangeParametersRequest.create = function create(properties) {
-        return new PressureControlChangeParametersRequest(properties);
+    ChangePressureControlParametersRequest.create = function create(properties) {
+        return new ChangePressureControlParametersRequest(properties);
     };
 
     /**
-     * Encodes the specified PressureControlChangeParametersRequest message. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
+     * Encodes the specified ChangePressureControlParametersRequest message. Does not implicitly {@link ChangePressureControlParametersRequest.verify|verify} messages.
      * @function encode
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
-     * @param {IPressureControlChangeParametersRequest} message PressureControlChangeParametersRequest message or plain object to encode
+     * @param {IChangePressureControlParametersRequest} message ChangePressureControlParametersRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    PressureControlChangeParametersRequest.encode = function encode(message, writer) {
+    ChangePressureControlParametersRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.parameters != null && Object.hasOwnProperty.call(message, "parameters"))
@@ -1583,33 +1583,33 @@ export const PressureControlChangeParametersRequest = $root.PressureControlChang
     };
 
     /**
-     * Encodes the specified PressureControlChangeParametersRequest message, length delimited. Does not implicitly {@link PressureControlChangeParametersRequest.verify|verify} messages.
+     * Encodes the specified ChangePressureControlParametersRequest message, length delimited. Does not implicitly {@link ChangePressureControlParametersRequest.verify|verify} messages.
      * @function encodeDelimited
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
-     * @param {IPressureControlChangeParametersRequest} message PressureControlChangeParametersRequest message or plain object to encode
+     * @param {IChangePressureControlParametersRequest} message ChangePressureControlParametersRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    PressureControlChangeParametersRequest.encodeDelimited = function encodeDelimited(message, writer) {
+    ChangePressureControlParametersRequest.encodeDelimited = function encodeDelimited(message, writer) {
         return this.encode(message, writer).ldelim();
     };
 
     /**
-     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer.
+     * Decodes a ChangePressureControlParametersRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {PressureControlChangeParametersRequest} PressureControlChangeParametersRequest
+     * @returns {ChangePressureControlParametersRequest} ChangePressureControlParametersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    PressureControlChangeParametersRequest.decode = function decode(reader, length) {
+    ChangePressureControlParametersRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlChangeParametersRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangePressureControlParametersRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -1626,30 +1626,30 @@ export const PressureControlChangeParametersRequest = $root.PressureControlChang
     };
 
     /**
-     * Decodes a PressureControlChangeParametersRequest message from the specified reader or buffer, length delimited.
+     * Decodes a ChangePressureControlParametersRequest message from the specified reader or buffer, length delimited.
      * @function decodeDelimited
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @returns {PressureControlChangeParametersRequest} PressureControlChangeParametersRequest
+     * @returns {ChangePressureControlParametersRequest} ChangePressureControlParametersRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    PressureControlChangeParametersRequest.decodeDelimited = function decodeDelimited(reader) {
+    ChangePressureControlParametersRequest.decodeDelimited = function decodeDelimited(reader) {
         if (!(reader instanceof $Reader))
             reader = new $Reader(reader);
         return this.decode(reader, reader.uint32());
     };
 
     /**
-     * Verifies a PressureControlChangeParametersRequest message.
+     * Verifies a ChangePressureControlParametersRequest message.
      * @function verify
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    PressureControlChangeParametersRequest.verify = function verify(message) {
+    ChangePressureControlParametersRequest.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
         if (message.parameters != null && message.hasOwnProperty("parameters")) {
@@ -1661,35 +1661,35 @@ export const PressureControlChangeParametersRequest = $root.PressureControlChang
     };
 
     /**
-     * Creates a PressureControlChangeParametersRequest message from a plain object. Also converts values to their respective internal types.
+     * Creates a ChangePressureControlParametersRequest message from a plain object. Also converts values to their respective internal types.
      * @function fromObject
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
      * @param {Object.<string,*>} object Plain object
-     * @returns {PressureControlChangeParametersRequest} PressureControlChangeParametersRequest
+     * @returns {ChangePressureControlParametersRequest} ChangePressureControlParametersRequest
      */
-    PressureControlChangeParametersRequest.fromObject = function fromObject(object) {
-        if (object instanceof $root.PressureControlChangeParametersRequest)
+    ChangePressureControlParametersRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangePressureControlParametersRequest)
             return object;
-        let message = new $root.PressureControlChangeParametersRequest();
+        let message = new $root.ChangePressureControlParametersRequest();
         if (object.parameters != null) {
             if (typeof object.parameters !== "object")
-                throw TypeError(".PressureControlChangeParametersRequest.parameters: object expected");
+                throw TypeError(".ChangePressureControlParametersRequest.parameters: object expected");
             message.parameters = $root.PressureControlParameters.fromObject(object.parameters);
         }
         return message;
     };
 
     /**
-     * Creates a plain object from a PressureControlChangeParametersRequest message. Also converts values to other types if specified.
+     * Creates a plain object from a ChangePressureControlParametersRequest message. Also converts values to other types if specified.
      * @function toObject
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
-     * @param {PressureControlChangeParametersRequest} message PressureControlChangeParametersRequest
+     * @param {ChangePressureControlParametersRequest} message ChangePressureControlParametersRequest
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    PressureControlChangeParametersRequest.toObject = function toObject(message, options) {
+    ChangePressureControlParametersRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
         let object = {};
@@ -1701,52 +1701,52 @@ export const PressureControlChangeParametersRequest = $root.PressureControlChang
     };
 
     /**
-     * Converts this PressureControlChangeParametersRequest to JSON.
+     * Converts this ChangePressureControlParametersRequest to JSON.
      * @function toJSON
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @instance
      * @returns {Object.<string,*>} JSON object
      */
-    PressureControlChangeParametersRequest.prototype.toJSON = function toJSON() {
+    ChangePressureControlParametersRequest.prototype.toJSON = function toJSON() {
         return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
     };
 
     /**
-     * Gets the default type url for PressureControlChangeParametersRequest
+     * Gets the default type url for ChangePressureControlParametersRequest
      * @function getTypeUrl
-     * @memberof PressureControlChangeParametersRequest
+     * @memberof ChangePressureControlParametersRequest
      * @static
      * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
      * @returns {string} The default type url
      */
-    PressureControlChangeParametersRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+    ChangePressureControlParametersRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
         if (typeUrlPrefix === undefined) {
             typeUrlPrefix = "type.googleapis.com";
         }
-        return typeUrlPrefix + "/PressureControlChangeParametersRequest";
+        return typeUrlPrefix + "/ChangePressureControlParametersRequest";
     };
 
-    return PressureControlChangeParametersRequest;
+    return ChangePressureControlParametersRequest;
 })();
 
-export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
+export const ChangeNozzleDataRequest = $root.ChangeNozzleDataRequest = (() => {
 
     /**
-     * Properties of a SetNozzleDataRequest.
-     * @exports ISetNozzleDataRequest
-     * @interface ISetNozzleDataRequest
-     * @property {Array.<number>|null} [data] SetNozzleDataRequest data
+     * Properties of a ChangeNozzleDataRequest.
+     * @exports IChangeNozzleDataRequest
+     * @interface IChangeNozzleDataRequest
+     * @property {Array.<number>|null} [data] ChangeNozzleDataRequest data
      */
 
     /**
-     * Constructs a new SetNozzleDataRequest.
-     * @exports SetNozzleDataRequest
-     * @classdesc Represents a SetNozzleDataRequest.
-     * @implements ISetNozzleDataRequest
+     * Constructs a new ChangeNozzleDataRequest.
+     * @exports ChangeNozzleDataRequest
+     * @classdesc Represents a ChangeNozzleDataRequest.
+     * @implements IChangeNozzleDataRequest
      * @constructor
-     * @param {ISetNozzleDataRequest=} [properties] Properties to set
+     * @param {IChangeNozzleDataRequest=} [properties] Properties to set
      */
-    function SetNozzleDataRequest(properties) {
+    function ChangeNozzleDataRequest(properties) {
         this.data = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -1755,35 +1755,35 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     }
 
     /**
-     * SetNozzleDataRequest data.
+     * ChangeNozzleDataRequest data.
      * @member {Array.<number>} data
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @instance
      */
-    SetNozzleDataRequest.prototype.data = $util.emptyArray;
+    ChangeNozzleDataRequest.prototype.data = $util.emptyArray;
 
     /**
-     * Creates a new SetNozzleDataRequest instance using the specified properties.
+     * Creates a new ChangeNozzleDataRequest instance using the specified properties.
      * @function create
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
-     * @param {ISetNozzleDataRequest=} [properties] Properties to set
-     * @returns {SetNozzleDataRequest} SetNozzleDataRequest instance
+     * @param {IChangeNozzleDataRequest=} [properties] Properties to set
+     * @returns {ChangeNozzleDataRequest} ChangeNozzleDataRequest instance
      */
-    SetNozzleDataRequest.create = function create(properties) {
-        return new SetNozzleDataRequest(properties);
+    ChangeNozzleDataRequest.create = function create(properties) {
+        return new ChangeNozzleDataRequest(properties);
     };
 
     /**
-     * Encodes the specified SetNozzleDataRequest message. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
+     * Encodes the specified ChangeNozzleDataRequest message. Does not implicitly {@link ChangeNozzleDataRequest.verify|verify} messages.
      * @function encode
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
-     * @param {ISetNozzleDataRequest} message SetNozzleDataRequest message or plain object to encode
+     * @param {IChangeNozzleDataRequest} message ChangeNozzleDataRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    SetNozzleDataRequest.encode = function encode(message, writer) {
+    ChangeNozzleDataRequest.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.data != null && message.data.length) {
@@ -1796,33 +1796,33 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     };
 
     /**
-     * Encodes the specified SetNozzleDataRequest message, length delimited. Does not implicitly {@link SetNozzleDataRequest.verify|verify} messages.
+     * Encodes the specified ChangeNozzleDataRequest message, length delimited. Does not implicitly {@link ChangeNozzleDataRequest.verify|verify} messages.
      * @function encodeDelimited
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
-     * @param {ISetNozzleDataRequest} message SetNozzleDataRequest message or plain object to encode
+     * @param {IChangeNozzleDataRequest} message ChangeNozzleDataRequest message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    SetNozzleDataRequest.encodeDelimited = function encodeDelimited(message, writer) {
+    ChangeNozzleDataRequest.encodeDelimited = function encodeDelimited(message, writer) {
         return this.encode(message, writer).ldelim();
     };
 
     /**
-     * Decodes a SetNozzleDataRequest message from the specified reader or buffer.
+     * Decodes a ChangeNozzleDataRequest message from the specified reader or buffer.
      * @function decode
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {SetNozzleDataRequest} SetNozzleDataRequest
+     * @returns {ChangeNozzleDataRequest} ChangeNozzleDataRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    SetNozzleDataRequest.decode = function decode(reader, length) {
+    ChangeNozzleDataRequest.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.SetNozzleDataRequest();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeNozzleDataRequest();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -1846,30 +1846,30 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     };
 
     /**
-     * Decodes a SetNozzleDataRequest message from the specified reader or buffer, length delimited.
+     * Decodes a ChangeNozzleDataRequest message from the specified reader or buffer, length delimited.
      * @function decodeDelimited
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @returns {SetNozzleDataRequest} SetNozzleDataRequest
+     * @returns {ChangeNozzleDataRequest} ChangeNozzleDataRequest
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    SetNozzleDataRequest.decodeDelimited = function decodeDelimited(reader) {
+    ChangeNozzleDataRequest.decodeDelimited = function decodeDelimited(reader) {
         if (!(reader instanceof $Reader))
             reader = new $Reader(reader);
         return this.decode(reader, reader.uint32());
     };
 
     /**
-     * Verifies a SetNozzleDataRequest message.
+     * Verifies a ChangeNozzleDataRequest message.
      * @function verify
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    SetNozzleDataRequest.verify = function verify(message) {
+    ChangeNozzleDataRequest.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
         if (message.data != null && message.hasOwnProperty("data")) {
@@ -1883,20 +1883,20 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     };
 
     /**
-     * Creates a SetNozzleDataRequest message from a plain object. Also converts values to their respective internal types.
+     * Creates a ChangeNozzleDataRequest message from a plain object. Also converts values to their respective internal types.
      * @function fromObject
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
      * @param {Object.<string,*>} object Plain object
-     * @returns {SetNozzleDataRequest} SetNozzleDataRequest
+     * @returns {ChangeNozzleDataRequest} ChangeNozzleDataRequest
      */
-    SetNozzleDataRequest.fromObject = function fromObject(object) {
-        if (object instanceof $root.SetNozzleDataRequest)
+    ChangeNozzleDataRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangeNozzleDataRequest)
             return object;
-        let message = new $root.SetNozzleDataRequest();
+        let message = new $root.ChangeNozzleDataRequest();
         if (object.data) {
             if (!Array.isArray(object.data))
-                throw TypeError(".SetNozzleDataRequest.data: array expected");
+                throw TypeError(".ChangeNozzleDataRequest.data: array expected");
             message.data = [];
             for (let i = 0; i < object.data.length; ++i)
                 message.data[i] = object.data[i] >>> 0;
@@ -1905,15 +1905,15 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     };
 
     /**
-     * Creates a plain object from a SetNozzleDataRequest message. Also converts values to other types if specified.
+     * Creates a plain object from a ChangeNozzleDataRequest message. Also converts values to other types if specified.
      * @function toObject
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
-     * @param {SetNozzleDataRequest} message SetNozzleDataRequest
+     * @param {ChangeNozzleDataRequest} message ChangeNozzleDataRequest
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    SetNozzleDataRequest.toObject = function toObject(message, options) {
+    ChangeNozzleDataRequest.toObject = function toObject(message, options) {
         if (!options)
             options = {};
         let object = {};
@@ -1928,32 +1928,32 @@ export const SetNozzleDataRequest = $root.SetNozzleDataRequest = (() => {
     };
 
     /**
-     * Converts this SetNozzleDataRequest to JSON.
+     * Converts this ChangeNozzleDataRequest to JSON.
      * @function toJSON
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @instance
      * @returns {Object.<string,*>} JSON object
      */
-    SetNozzleDataRequest.prototype.toJSON = function toJSON() {
+    ChangeNozzleDataRequest.prototype.toJSON = function toJSON() {
         return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
     };
 
     /**
-     * Gets the default type url for SetNozzleDataRequest
+     * Gets the default type url for ChangeNozzleDataRequest
      * @function getTypeUrl
-     * @memberof SetNozzleDataRequest
+     * @memberof ChangeNozzleDataRequest
      * @static
      * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
      * @returns {string} The default type url
      */
-    SetNozzleDataRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+    ChangeNozzleDataRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
         if (typeUrlPrefix === undefined) {
             typeUrlPrefix = "type.googleapis.com";
         }
-        return typeUrlPrefix + "/SetNozzleDataRequest";
+        return typeUrlPrefix + "/ChangeNozzleDataRequest";
     };
 
-    return SetNozzleDataRequest;
+    return ChangeNozzleDataRequest;
 })();
 
 export const PrinterRequest = $root.PrinterRequest = (() => {
@@ -1966,8 +1966,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {IChangePrinterSystemStateRequest|null} [changePrinterSystemStateRequest] PrinterRequest changePrinterSystemStateRequest
      * @property {IChangeDropwatcherParametersRequest|null} [changeDropwatcherParametersRequest] PrinterRequest changeDropwatcherParametersRequest
      * @property {ICameraFrameRequest|null} [cameraFrameRequest] PrinterRequest cameraFrameRequest
-     * @property {IPressureControlChangeParametersRequest|null} [pressureControlChangeParametersRequest] PrinterRequest pressureControlChangeParametersRequest
-     * @property {ISetNozzleDataRequest|null} [setNozzleDataRequest] PrinterRequest setNozzleDataRequest
+     * @property {IChangePressureControlParametersRequest|null} [changePressureControlParameterRequest] PrinterRequest changePressureControlParameterRequest
+     * @property {IChangeNozzleDataRequest|null} [changeNozzleDataRequest] PrinterRequest changeNozzleDataRequest
      */
 
     /**
@@ -2018,20 +2018,20 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     PrinterRequest.prototype.cameraFrameRequest = null;
 
     /**
-     * PrinterRequest pressureControlChangeParametersRequest.
-     * @member {IPressureControlChangeParametersRequest|null|undefined} pressureControlChangeParametersRequest
+     * PrinterRequest changePressureControlParameterRequest.
+     * @member {IChangePressureControlParametersRequest|null|undefined} changePressureControlParameterRequest
      * @memberof PrinterRequest
      * @instance
      */
-    PrinterRequest.prototype.pressureControlChangeParametersRequest = null;
+    PrinterRequest.prototype.changePressureControlParameterRequest = null;
 
     /**
-     * PrinterRequest setNozzleDataRequest.
-     * @member {ISetNozzleDataRequest|null|undefined} setNozzleDataRequest
+     * PrinterRequest changeNozzleDataRequest.
+     * @member {IChangeNozzleDataRequest|null|undefined} changeNozzleDataRequest
      * @memberof PrinterRequest
      * @instance
      */
-    PrinterRequest.prototype.setNozzleDataRequest = null;
+    PrinterRequest.prototype.changeNozzleDataRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -2081,24 +2081,24 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
-     * PrinterRequest _pressureControlChangeParametersRequest.
-     * @member {"pressureControlChangeParametersRequest"|undefined} _pressureControlChangeParametersRequest
+     * PrinterRequest _changePressureControlParameterRequest.
+     * @member {"changePressureControlParameterRequest"|undefined} _changePressureControlParameterRequest
      * @memberof PrinterRequest
      * @instance
      */
-    Object.defineProperty(PrinterRequest.prototype, "_pressureControlChangeParametersRequest", {
-        get: $util.oneOfGetter($oneOfFields = ["pressureControlChangeParametersRequest"]),
+    Object.defineProperty(PrinterRequest.prototype, "_changePressureControlParameterRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changePressureControlParameterRequest"]),
         set: $util.oneOfSetter($oneOfFields)
     });
 
     /**
-     * PrinterRequest _setNozzleDataRequest.
-     * @member {"setNozzleDataRequest"|undefined} _setNozzleDataRequest
+     * PrinterRequest _changeNozzleDataRequest.
+     * @member {"changeNozzleDataRequest"|undefined} _changeNozzleDataRequest
      * @memberof PrinterRequest
      * @instance
      */
-    Object.defineProperty(PrinterRequest.prototype, "_setNozzleDataRequest", {
-        get: $util.oneOfGetter($oneOfFields = ["setNozzleDataRequest"]),
+    Object.defineProperty(PrinterRequest.prototype, "_changeNozzleDataRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changeNozzleDataRequest"]),
         set: $util.oneOfSetter($oneOfFields)
     });
 
@@ -2134,10 +2134,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.ChangeDropwatcherParametersRequest.encode(message.changeDropwatcherParametersRequest, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         if (message.cameraFrameRequest != null && Object.hasOwnProperty.call(message, "cameraFrameRequest"))
             $root.CameraFrameRequest.encode(message.cameraFrameRequest, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
-        if (message.pressureControlChangeParametersRequest != null && Object.hasOwnProperty.call(message, "pressureControlChangeParametersRequest"))
-            $root.PressureControlChangeParametersRequest.encode(message.pressureControlChangeParametersRequest, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
-        if (message.setNozzleDataRequest != null && Object.hasOwnProperty.call(message, "setNozzleDataRequest"))
-            $root.SetNozzleDataRequest.encode(message.setNozzleDataRequest, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+        if (message.changePressureControlParameterRequest != null && Object.hasOwnProperty.call(message, "changePressureControlParameterRequest"))
+            $root.ChangePressureControlParametersRequest.encode(message.changePressureControlParameterRequest, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
+        if (message.changeNozzleDataRequest != null && Object.hasOwnProperty.call(message, "changeNozzleDataRequest"))
+            $root.ChangeNozzleDataRequest.encode(message.changeNozzleDataRequest, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
         return writer;
     };
 
@@ -2189,11 +2189,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     break;
                 }
             case 5: {
-                    message.pressureControlChangeParametersRequest = $root.PressureControlChangeParametersRequest.decode(reader, reader.uint32());
+                    message.changePressureControlParameterRequest = $root.ChangePressureControlParametersRequest.decode(reader, reader.uint32());
                     break;
                 }
             case 6: {
-                    message.setNozzleDataRequest = $root.SetNozzleDataRequest.decode(reader, reader.uint32());
+                    message.changeNozzleDataRequest = $root.ChangeNozzleDataRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -2264,20 +2264,20 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "cameraFrameRequest." + error;
             }
         }
-        if (message.pressureControlChangeParametersRequest != null && message.hasOwnProperty("pressureControlChangeParametersRequest")) {
-            properties._pressureControlChangeParametersRequest = 1;
+        if (message.changePressureControlParameterRequest != null && message.hasOwnProperty("changePressureControlParameterRequest")) {
+            properties._changePressureControlParameterRequest = 1;
             {
-                let error = $root.PressureControlChangeParametersRequest.verify(message.pressureControlChangeParametersRequest);
+                let error = $root.ChangePressureControlParametersRequest.verify(message.changePressureControlParameterRequest);
                 if (error)
-                    return "pressureControlChangeParametersRequest." + error;
+                    return "changePressureControlParameterRequest." + error;
             }
         }
-        if (message.setNozzleDataRequest != null && message.hasOwnProperty("setNozzleDataRequest")) {
-            properties._setNozzleDataRequest = 1;
+        if (message.changeNozzleDataRequest != null && message.hasOwnProperty("changeNozzleDataRequest")) {
+            properties._changeNozzleDataRequest = 1;
             {
-                let error = $root.SetNozzleDataRequest.verify(message.setNozzleDataRequest);
+                let error = $root.ChangeNozzleDataRequest.verify(message.changeNozzleDataRequest);
                 if (error)
-                    return "setNozzleDataRequest." + error;
+                    return "changeNozzleDataRequest." + error;
             }
         }
         return null;
@@ -2315,15 +2315,15 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 throw TypeError(".PrinterRequest.cameraFrameRequest: object expected");
             message.cameraFrameRequest = $root.CameraFrameRequest.fromObject(object.cameraFrameRequest);
         }
-        if (object.pressureControlChangeParametersRequest != null) {
-            if (typeof object.pressureControlChangeParametersRequest !== "object")
-                throw TypeError(".PrinterRequest.pressureControlChangeParametersRequest: object expected");
-            message.pressureControlChangeParametersRequest = $root.PressureControlChangeParametersRequest.fromObject(object.pressureControlChangeParametersRequest);
+        if (object.changePressureControlParameterRequest != null) {
+            if (typeof object.changePressureControlParameterRequest !== "object")
+                throw TypeError(".PrinterRequest.changePressureControlParameterRequest: object expected");
+            message.changePressureControlParameterRequest = $root.ChangePressureControlParametersRequest.fromObject(object.changePressureControlParameterRequest);
         }
-        if (object.setNozzleDataRequest != null) {
-            if (typeof object.setNozzleDataRequest !== "object")
-                throw TypeError(".PrinterRequest.setNozzleDataRequest: object expected");
-            message.setNozzleDataRequest = $root.SetNozzleDataRequest.fromObject(object.setNozzleDataRequest);
+        if (object.changeNozzleDataRequest != null) {
+            if (typeof object.changeNozzleDataRequest !== "object")
+                throw TypeError(".PrinterRequest.changeNozzleDataRequest: object expected");
+            message.changeNozzleDataRequest = $root.ChangeNozzleDataRequest.fromObject(object.changeNozzleDataRequest);
         }
         return message;
     };
@@ -2361,15 +2361,15 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (options.oneofs)
                 object._cameraFrameRequest = "cameraFrameRequest";
         }
-        if (message.pressureControlChangeParametersRequest != null && message.hasOwnProperty("pressureControlChangeParametersRequest")) {
-            object.pressureControlChangeParametersRequest = $root.PressureControlChangeParametersRequest.toObject(message.pressureControlChangeParametersRequest, options);
+        if (message.changePressureControlParameterRequest != null && message.hasOwnProperty("changePressureControlParameterRequest")) {
+            object.changePressureControlParameterRequest = $root.ChangePressureControlParametersRequest.toObject(message.changePressureControlParameterRequest, options);
             if (options.oneofs)
-                object._pressureControlChangeParametersRequest = "pressureControlChangeParametersRequest";
+                object._changePressureControlParameterRequest = "changePressureControlParameterRequest";
         }
-        if (message.setNozzleDataRequest != null && message.hasOwnProperty("setNozzleDataRequest")) {
-            object.setNozzleDataRequest = $root.SetNozzleDataRequest.toObject(message.setNozzleDataRequest, options);
+        if (message.changeNozzleDataRequest != null && message.hasOwnProperty("changeNozzleDataRequest")) {
+            object.changeNozzleDataRequest = $root.ChangeNozzleDataRequest.toObject(message.changeNozzleDataRequest, options);
             if (options.oneofs)
-                object._setNozzleDataRequest = "setNozzleDataRequest";
+                object._changeNozzleDataRequest = "changeNozzleDataRequest";
         }
         return object;
     };

@@ -4,6 +4,7 @@ import { PrinterUSB } from "./printer-usb";
 import { Store } from "./state/Store";
 import { MovementStage } from "./movement-stage";
 import { TaskRunnerSynchronization } from "./print-tasks/TaskRunnerSynchronization";
+import { CameraAccess } from "./camera-access";
 
 // if ("serviceWorker" in navigator) {
 //     window.addEventListener("load", async () => {
@@ -70,6 +71,7 @@ movementStage.start().catch(console.error);
 
 let store = Store.getInstance();
 TaskRunnerSynchronization.getInstance();
+CameraAccess.getInstance();
 
 setInterval(async () => {
     if (store.state?.printerSystemState.usbConnected) {

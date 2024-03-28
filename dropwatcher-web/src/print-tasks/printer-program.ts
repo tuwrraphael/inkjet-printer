@@ -27,7 +27,7 @@ export interface PrinterTaskSetTargetPressure extends PrinterTask {
 }
 export interface PrinterTaskSetNozzleData extends PrinterTask {
     readonly type: PrinterTaskType.SetNozzleData;
-    data: number[];
+    data: Uint32Array;
 }
 
 export interface PrinterTaskRequestFire extends PrinterTask {

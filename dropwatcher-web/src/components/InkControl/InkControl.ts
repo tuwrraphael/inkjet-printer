@@ -2,7 +2,7 @@ import template from "./InkControl.html";
 import "./InkControl.scss";
 import "../Chart/Chart";
 import { abortableEventListener } from "../../utils/abortableEventListener";
-import { PressureControlAlgorithm, PressureControlChangeParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
+import { PressureControlAlgorithm, ChangePressureControlParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
 import { PrinterUSB } from "../../printer-usb";
 
 export class InkControl extends HTMLElement {
@@ -57,7 +57,7 @@ export class InkControl extends HTMLElement {
             let values = new FormData(this.inkControlForm);
             console.log("Start", ...values);
             let action = values.get("action");
-            let changeParametersRequest = new PressureControlChangeParametersRequest();
+            let changeParametersRequest = new ChangePressureControlParametersRequest();
             let parameters = new PressureControlParameters();
             changeParametersRequest.parameters = parameters;
             switch (action) {
@@ -68,13 +68,13 @@ export class InkControl extends HTMLElement {
                     parameters.limitPressure = parseFloat(values.get("feed-limit-pressure") as string);
                     parameters.feedTime = parseFloat(values.get("feed-time") as string);
                     parameters.enable = true;
-                    await this.printerUSB.sendPressureControlChangeParametersRequest(changeParametersRequest);
+                    await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
                     break;
                 case "targetpressure":
                     parameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
                     parameters.targetPressure = parseFloat(values.get("target-pressure") as string);
                     parameters.enable = true;
-                    await this.printerUSB.sendPressureControlChangeParametersRequest(changeParametersRequest);
+                    await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
                     break;
                 default:
                     console.error("Unknown action", action);
@@ -87,13 +87,13 @@ export class InkControl extends HTMLElement {
     }
 
     private async stop() {
-        let changeParametersRequest = new PressureControlChangeParametersRequest();
+        let changeParametersRequest = new ChangePressureControlParametersRequest();
         let parameters = new PressureControlParameters();
         changeParametersRequest.parameters = parameters;
         parameters.enable = false;
-        await this.printerUSB.sendPressureControlChangeParametersRequest(changeParametersRequest);
+        await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
     }
-    
+
     disconnectedCallback() {
         this.abortController.abort();
     }

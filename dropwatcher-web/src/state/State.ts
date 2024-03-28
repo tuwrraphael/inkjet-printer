@@ -48,7 +48,19 @@ export interface State {
         e: number;
     }
     currentProgram: PrinterProgram,
-    programRunnerState : ProgramRunnerState
+    programRunnerState : ProgramRunnerState,
+    dropwatcherState: {
+        nozzleData: Uint32Array;
+        delayNanos:number;
+        flashOnTimeNanos:number;
+        cameraOn:boolean;
+        exposureTime:number;
+        canChangeExposure:{
+            min:number;
+            max:number;
+            step:number;
+        };
+    }
 }
 
 export type StateChanges = (keyof State)[];

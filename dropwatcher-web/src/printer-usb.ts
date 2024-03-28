@@ -1,6 +1,14 @@
-import { CameraFrameRequest } from "./proto/compiled";
-import { GetPrinterSystemStateRequest, PressureControlChangeParametersRequest, PrinterRequest, PrinterSystemStateResponse, SetNozzleDataRequest } from "./proto/compiled";
+import {
+    CameraFrameRequest,
+    ChangeDropwatcherParametersRequest,
+    ChangePressureControlParametersRequest,
+    GetPrinterSystemStateRequest,
+    PrinterRequest,
+    PrinterSystemStateResponse,
+    ChangeNozzleDataRequest
+} from "./proto/compiled";
 import { Store } from "./state/Store";
+import { NozzleDataChanged } from "./state/actions/NozzleDataSet";
 import { PrinterSystemStateResponseReceived } from "./state/actions/PrinterSystemStateResponseReceived";
 import { PrinterUSBConnectionStateChanged } from "./state/actions/PrinterUSBConnectionStateChanged";
 import { WebUSBWrapper } from "./webusb";
@@ -53,26 +61,34 @@ export class PrinterUSB {
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 
-    async sendPressureControlChangeParametersRequest(request: PressureControlChangeParametersRequest) {
+    async sendChangePressureControlParametersRequest(request: ChangePressureControlParametersRequest) {
         let printerRequest = new PrinterRequest();
-        printerRequest.pressureControlChangeParametersRequest = request;
+        printerRequest.changePressureControlParameterRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 
-    async sendPressureControlChangeParametersRequestAndWaitForDone(request: PressureControlChangeParametersRequest) {
+    async sendChangePressureControlParametersRequestAndWait(request: ChangePressureControlParametersRequest) {
         if (this.pressureControlWaiting) {
             throw new Error("Already waiting for pressure control change parameters request");
         } else {
-            await this.sendPressureControlChangeParametersRequest(request);
+            await this.sendChangePressureControlParametersRequest(request);
             await new Promise((resolve) => {
                 this.pressureControlWaiting = resolve;
             });
         }
     }
 
-    async sendSetNozzleDataRequest(request : SetNozzleDataRequest) {
+    async sendChangeNozzleDataRequest(data: Uint32Array) {
         let printerRequest = new PrinterRequest();
-        printerRequest.setNozzleDataRequest = request;
+        printerRequest.changeNozzleDataRequest = new ChangeNozzleDataRequest();
+        printerRequest.changeNozzleDataRequest.data = Array.from(data);
+        this.store.postAction(new NozzleDataChanged(data));
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeDropwatcherParametersRequest(request: ChangeDropwatcherParametersRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeDropwatcherParametersRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 

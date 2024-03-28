@@ -1,18 +1,44 @@
 <h1>Dropwatcher</h1>
-<div>
-    Camera
+<h2>Live Camera</h2>
+<button id="camera-start-stop">Toggle Camera</button>
+<div class="video-container">
+    <video id="video-element" autoplay playsinline class="video-element"></video>
 </div>
+<div>
+    Exposure Time: <span id="exposure-time"></span> ms
+    <input type="range" id="exposure-ms">
+</div>
+<h2>Capture Frame</h2>
+<button id="capture-single-frame">Capture Frame</button>
+<div class="frame-container">
+    <canvas id="canvas" class="canvas"></canvas>
+</div>
+<h2>Movement</h2>
 <div>
     <button>Activate Dropwatcher Mode</button>
     <button>Move to Dropwatcher</button>
 </div>
-<div>
-    
-    <form id="nozzle-form">
-        <button id="set-all-nozzles">Activate All</button>
-        <button id="clear-all-nozzles">Deactivate All</button>
-        <div class="nozzle-select">
-        </div>
-        <button id="set-nozzles">Send</button>
-    </form>
-</div>
+<h2>Nozzles</h2>
+<form id="nozzle-form">
+    <button id="set-all-nozzles">Activate All</button>
+    <button id="clear-all-nozzles">Deactivate All</button>
+    <div class="nozzle-select">
+    </div>
+    <button id="set-nozzles">Send to Printer</button>
+</form>
+<h2>
+    Flashlight
+</h2>
+<form id="flash-form">
+    <div>
+        <label for="delay-us">Delay</label>
+        <input type="number" name="delay-us" required="required" id="delay-us" value="0.125" min="0.0625" step="0.0625">
+        us
+    </div>
+    <div>
+        <label for="flash-on-time-us">Flash On-Time</label>
+        <input type="number" name="flash-on-time-us" required="required" id="flash-on-time-us" value="0.125" min="0.125"
+            step="0.0625" max="4095.875"> us
+    </div>
+    <button id="set-light">Send to Printer</button>
+</form>

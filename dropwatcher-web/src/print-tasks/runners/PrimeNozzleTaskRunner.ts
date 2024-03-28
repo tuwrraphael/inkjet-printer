@@ -1,5 +1,5 @@
 import { PrinterUSB } from "../../printer-usb";
-import { PressureControlAlgorithm, PressureControlChangeParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
+import { PressureControlAlgorithm, ChangePressureControlParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
 import { PrinterTaskPrimeNozzle } from "../printer-program";
 
 
@@ -7,7 +7,7 @@ export class PrimeNozzleTaskRunner {
     constructor(private task: PrinterTaskPrimeNozzle, private printerUSB: PrinterUSB) {
     }
     async run() {
-        let changeParametersRequest = new PressureControlChangeParametersRequest();
+        let changeParametersRequest = new ChangePressureControlParametersRequest();
         let parameters = new PressureControlParameters();
         changeParametersRequest.parameters = parameters;
         parameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
@@ -16,6 +16,6 @@ export class PrimeNozzleTaskRunner {
         parameters.limitPressure = this.task.feedLimitPressure;
         parameters.feedTime = this.task.feedTime;
         parameters.enable = true;
-        await this.printerUSB.sendPressureControlChangeParametersRequestAndWaitForDone(changeParametersRequest);
+        await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
     }
 }

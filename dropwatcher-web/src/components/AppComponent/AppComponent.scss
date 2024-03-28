@@ -1,4 +1,9 @@
 .app-container {
     display: grid;
     grid-template-columns: 8fr 4fr;
+    height: 100vh;
+}
+
+.content {
+    padding: 0.5em;
 }

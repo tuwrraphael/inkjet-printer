@@ -1,5 +1,6 @@
+import { CameraAccess } from "../../camera-access";
 import { PrinterUSB } from "../../printer-usb";
-import { SetNozzleDataRequest } from "../../proto/compiled";
+import { ChangeDropwatcherParametersRequest } from "../../proto/compiled";
 import { PrinterSystemState, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
@@ -18,10 +19,19 @@ export class DropwatcherComponent extends HTMLElement {
     private setNozzlesButton: HTMLButtonElement;
     private printerUsb: PrinterUSB;
     private store: Store;
+    private flashForm: HTMLFormElement;
+    private cameraStartStopBtn: HTMLButtonElement;
+    private videoElement: HTMLVideoElement;
+    private cameraAccess: CameraAccess;
+    private videoActive = false;
+    private exposureInput: HTMLInputElement;
+    private exposureTimeDisplay: HTMLSpanElement;
+    private canvas: HTMLCanvasElement;
     constructor() {
         super();
         this.printerUsb = PrinterUSB.getInstance();
         this.store = Store.getInstance();
+        this.cameraAccess = CameraAccess.getInstance();
     }
 
     connectedCallback() {
@@ -41,16 +51,79 @@ export class DropwatcherComponent extends HTMLElement {
                 this.setAllNozzles(false);
             }, this.abortController.signal);
             this.setNozzlesButton = this.querySelector("#set-nozzles");
-            abortableEventListener(this.setNozzlesButton, "click", (e) => {
+            abortableEventListener(this.nozzleForm, "submit", (e) => {
                 e.preventDefault();
-                this.setNozzles();
+                this.setNozzles().catch(console.error);
             }, this.abortController.signal);
+            this.flashForm = this.querySelector("#flash-form");
+            abortableEventListener(this.flashForm, "submit", (e) => {
+                e.preventDefault();
+                this.changeDropwatcherParameters().catch(console.error);
+            }, this.abortController.signal);
+            this.cameraStartStopBtn = this.querySelector("#camera-start-stop");
             this.store.subscribe((state, changed) => this.update(state, changed), this.abortController.signal);
+            abortableEventListener(this.cameraStartStopBtn, "click", (e) => {
+                e.preventDefault();
+                this.toggleCamera().catch(console.error);
+            }, this.abortController.signal);
+            this.videoElement = this.querySelector("#video-element");
+            this.exposureInput = this.querySelector("#exposure-ms");
+            this.exposureTimeDisplay = this.querySelector("#exposure-time");
+            abortableEventListener(this.exposureInput, "change", (e) => {
+                this.cameraAccess.setExposureTime(parseFloat(this.exposureInput.value)).catch(console.error);
+            }, this.abortController.signal);
+            this.canvas = this.querySelector("#canvas");
+            abortableEventListener(this.querySelector("#capture-single-frame"), "click", (e) => {
+                e.preventDefault();
+                this.captureSingleFrame().catch(console.error);
+            }, this.abortController.signal);
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
     }
+    private async toggleCamera() {
+        if (this.store.state.dropwatcherState.cameraOn) {
+            await this.cameraAccess.stop();
+        } else {
+            await this.cameraAccess.start();
+        }
+    }
+    private async changeDropwatcherParameters() {
+        let formData = new FormData(this.flashForm);
+        let request = new ChangeDropwatcherParametersRequest();
+        request.delayNanos = parseFloat(formData.get("delay-us") as string) * 1000;
+        request.flashOnTimeNanos = parseFloat(formData.get("flash-on-time-us") as string) * 1000;
+        await this.printerUsb.sendChangeDropwatcherParametersRequest(request);
+    }
     private update(state: State, changed: StateChanges): void {
-        this.setNozzlesButton.disabled = !state.printerSystemState?.usbConnected || state.printerSystemState.state != PrinterSystemState.Dropwatcher;
+        if (!state) {
+            return;
+        }
+        this.setNozzlesButton.disabled = !state.printerSystemState?.usbConnected || state.printerSystemState?.state != PrinterSystemState.Dropwatcher;
+        if (changed.includes("dropwatcherState")) {
+            let nozzleData = state.dropwatcherState?.nozzleData;
+            if (nozzleData) {
+                for (let i = 0; i < NumNozzles; i++) {
+                    let checkBox = this.querySelector(`[name="nozzle${i}"]`) as NozzleCheckBox;
+                    checkBox.value = (nozzleData[Math.floor(i / 32)] & (1 << (i % 32))) != 0;
+                }
+            }
+            this.cameraStartStopBtn.innerText = state.dropwatcherState.cameraOn ? "Stop Camera" : "Start Camera";
+            if (!this.videoActive && state.dropwatcherState.cameraOn) {
+                this.videoElement.srcObject = this.cameraAccess.getStream();
+                this.videoActive = true;
+            } else if (this.videoActive && !state.dropwatcherState.cameraOn) {
+                this.videoElement.srcObject = null;
+                this.videoActive = false;
+            }
+            this.exposureTimeDisplay.innerText = (state.dropwatcherState.exposureTime ? (state.dropwatcherState.exposureTime / 10).toString() : "-");
+            if (state.dropwatcherState.canChangeExposure) {
+                this.exposureInput.min = (state.dropwatcherState.canChangeExposure.min).toString();
+                this.exposureInput.max = (state.dropwatcherState.canChangeExposure.max).toString();
+                this.exposureInput.step = state.dropwatcherState.canChangeExposure.step.toString();
+                this.exposureInput.value = state.dropwatcherState.exposureTime?.toString() || "0";
+            }
+            this.exposureInput.disabled = !state.dropwatcherState.cameraOn || !state.dropwatcherState.canChangeExposure;
+        }
     }
 
     private setNozzle(id: number, value: boolean, data: Uint32Array) {
@@ -63,17 +136,14 @@ export class DropwatcherComponent extends HTMLElement {
         }
     }
 
-    private setNozzles() {
+    private async setNozzles() {
         let formData = new FormData(this.nozzleForm);
         let nozzleData = new Uint32Array(4);
         for (let i = 0; i < NumNozzles; i++) {
             let value = formData.get(`nozzle${i}`) === "on";
             this.setNozzle(i, value, nozzleData);
         }
-        let setNozzleDataRequest = new SetNozzleDataRequest();
-        setNozzleDataRequest.data = Array.from(nozzleData);
-        console.log(setNozzleDataRequest);
-        this.printerUsb.sendSetNozzleDataRequest(setNozzleDataRequest);
+        await this.printerUsb.sendChangeNozzleDataRequest(nozzleData);
     }
     private setAllNozzles(arg0: boolean) {
         for (let i = 0; i < NumNozzles; i++) {
@@ -89,6 +159,25 @@ export class DropwatcherComponent extends HTMLElement {
             checkBox.innerText = `${(i + 1)}`;
             this.nozzleSelectContainer.appendChild(checkBox);
         }
+    }
+
+    private waitForNextVideoFrame() {
+        return new Promise<void>((resolve, reject) => {
+            this.videoElement.requestVideoFrameCallback(() => {
+                resolve();
+            })
+        });
+    }
+
+    private async captureSingleFrame() {
+        await this.waitForNextVideoFrame();
+        await this.printerUsb.sendFireRequest();
+        await this.waitForNextVideoFrame();
+        let frame = await createImageBitmap(this.videoElement);
+        this.canvas.width = frame.width;
+        this.canvas.height = frame.height;
+        let ctx = this.canvas.getContext("2d");
+        ctx.drawImage(frame, 0, 0);
     }
 
     disconnectedCallback() {

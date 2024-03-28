@@ -4,5 +4,8 @@ export const enum ActionType {
     InitializeWorker,
     MovementStageConnectionChanged,
     MovementStagePositionChanged,
-    ProgramRunnerStateChanged
+    ProgramRunnerStateChanged,
+    NozzleDataChanged,
+    DropwatcherParametersChanged,
+    CameraStateChanged
 }

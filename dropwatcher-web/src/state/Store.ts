@@ -2,6 +2,7 @@ import { PrinterSystemState } from "./State";
 import { Action } from "./actions/Action";
 import { InitializeWorker } from "./actions/InitializeWorker";
 import { State } from "./State";
+import { DefaultState } from "./DefaultState";
 
 interface Subscription<State> {
     call(a: State, changes: (keyof State)[]): void;
@@ -46,27 +47,7 @@ export class Store {
         console.log("Creating worker");
         this.worker = createWorkerFn();
         this.worker.addEventListener("message", this.onMessageFn);
-        this.postAction(new InitializeWorker(this.state || {
-            printerSystemState: {
-                usbConnected: false,
-                state: PrinterSystemState.Unspecified,
-                errors: {
-                    flags: 0
-                }, pressureControl: null
-            },
-            movementStageState: {
-                connected: false,
-                x: undefined,
-                y: undefined,
-                z: undefined,
-                e: undefined
-            },
-            currentProgram: null,
-            programRunnerState: {
-                state: null,
-                currentTaskIndex: null
-            }
-        }));
+        this.postAction(new InitializeWorker(this.state || DefaultState));
     }
 
     private onMessage(ev: MessageEvent<any>) {
@@ -107,4 +88,13 @@ if (module.hot) {
         let store: Store = ((<any>window).storeInstance);
         store.createWorker();
     }
+
+    function applyDefault(state: State) {
+        return { ...DefaultState, ...state };
+    }
+
+    module.hot.accept("./DefaultState", () => {
+        let store = Store.getInstance();
+        store.postAction(new InitializeWorker(applyDefault(store.state)));
+    });
 }
