@@ -170,7 +170,7 @@ static void printer_system_dropwatcher_run(void *o)
                 LOG_INF("Setting nozzle data");
             }
         }
-        k_timer_start(&timout_timer, K_SECONDS(60), K_NO_WAIT);
+        k_timer_start(&timout_timer, K_SECONDS(300), K_NO_WAIT);
     }
 }
 

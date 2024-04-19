@@ -30,7 +30,7 @@ void ready_int_handler(const struct device *dev, struct gpio_callback *cb,
 					   uint32_t pins)
 {
 	struct xaar128_data *data = CONTAINER_OF(cb, struct xaar128_data, ready_cb_data);
-	const struct xaar128_config *config = dev->config;
+	const struct xaar128_config *config = data->dev->config;
 	data->ready = gpio_pin_get_dt(&config->ready_gpio);
 	if (data->ready == false)
 	{
@@ -68,6 +68,10 @@ static int xaar128_clock_enable(const struct device *dev)
 	return 0;
 }
 
+static uint32_t reverse32(uint32_t nozzles) {
+    return ((nozzles & 0xFF) << 24) | (((nozzles & 0xFF00)) << 8) | (((nozzles & 0xFF0000)) >> 8) | ((nozzles & 0xFF000000) >> 24);
+}
+
 static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 {
 	struct xaar128_data *data = dev->data;
@@ -79,8 +83,12 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	cs.gpio.port = config->nss2_gpio.port;
 	cs.gpio.pin = config->nss2_gpio.pin;
 
+	uint32_t reversed_pixels[2];
+	reversed_pixels[0] = reverse32(pixels[3]);
+	reversed_pixels[1] = reverse32(pixels[2]);
+
 	struct spi_buf buf = {
-		.buf = &pixels[2],
+		.buf = &reversed_pixels,
 		.len = sizeof(uint32_t) * 2,
 	};
 	struct spi_buf_set tx = {
@@ -102,7 +110,8 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	cs.gpio.port = config->nss1_gpio.port;
 	cs.gpio.pin = config->nss1_gpio.pin;
 	spi_config.cs = cs;
-	buf.buf = pixels;
+	reversed_pixels[0] = reverse32(pixels[1]);
+	reversed_pixels[1] = reverse32(pixels[0]);
 	ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
@@ -226,7 +235,7 @@ static int xaar128_init(const struct device *dev)
 										SPI_WORD_SET(8) |                                    \
 										SPI_MODE_CPOL |                                      \
 										SPI_MODE_CPHA |                                      \
-										SPI_TRANSFER_LSB,                                    \
+										SPI_TRANSFER_MSB,                                    \
 									0),                                                      \
 		.nss1_gpio = GPIO_DT_SPEC_INST_GET(i, nss1_gpios),                                   \
 		.nss2_gpio = GPIO_DT_SPEC_INST_GET(i, nss2_gpios),                                   \
