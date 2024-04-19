@@ -6,3 +6,5 @@ cp -f -r ~/inkjet-printer/symbols ~/inkjet-printer-mnt/
 cp -f -r ~/inkjet-printer/Xaar128-Adapter ~/inkjet-printer-mnt/
 cp -f -r ~/inkjet-printer/Xaar128-Driver ~/inkjet-printer-mnt/
 cp -f -r ~/inkjet-printer/3dmodels ~/inkjet-printer-mnt/
+cp -f -r ~/inkjet-printer/pump ~/inkjet-printer-mnt/
+cp -f -r ~/inkjet-printer/pressure-sensor ~/inkjet-printer-mnt/
