@@ -7,5 +7,6 @@ export const enum ActionType {
     ProgramRunnerStateChanged,
     NozzleDataChanged,
     DropwatcherParametersChanged,
-    CameraStateChanged
+    CameraStateChanged,
+    DropwatcherNozzlePosChanged
 }

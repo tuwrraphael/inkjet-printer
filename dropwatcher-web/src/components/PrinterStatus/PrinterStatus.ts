@@ -84,7 +84,7 @@ export class PrinterStatus extends HTMLElement {
     }
 
     formatStagePosition(s:State) {
-        return `X: ${this.formatNumber(s.movementStageState.x)} Y: ${this.formatNumber(s.movementStageState.y)} Z: ${this.formatNumber(s.movementStageState.z)} E: ${this.formatNumber(s.movementStageState.e)}`;
+        return `X: ${this.formatNumber(s.movementStageState.pos?.x)} Y: ${this.formatNumber(s.movementStageState.pos?.y)} Z: ${this.formatNumber(s.movementStageState.pos?.z)} E: ${this.formatNumber(s.movementStageState.e)}`;
     }
 
     formatState(state : PrinterSystemState) {

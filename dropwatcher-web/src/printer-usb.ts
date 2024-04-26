@@ -5,7 +5,8 @@ import {
     GetPrinterSystemStateRequest,
     PrinterRequest,
     PrinterSystemStateResponse,
-    ChangeNozzleDataRequest
+    ChangeNozzleDataRequest,
+    ChangePrinterSystemStateRequest
 } from "./proto/compiled";
 import { Store } from "./state/Store";
 import { NozzleDataChanged } from "./state/actions/NozzleDataSet";
@@ -95,6 +96,12 @@ export class PrinterUSB {
     async sendFireRequest() {
         let printerRequest = new PrinterRequest();
         printerRequest.cameraFrameRequest = new CameraFrameRequest();
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeSystemStateRequest(request: ChangePrinterSystemStateRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changePrinterSystemStateRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 }

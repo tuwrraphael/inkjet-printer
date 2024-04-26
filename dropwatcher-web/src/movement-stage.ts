@@ -102,7 +102,7 @@ export class MovementStage {
         }
         gcode += "M400\nM114\n";
         let data = new TextEncoder().encode(gcode);
-        console.log(`Sending\n${gcode}`, gcode);  
+        // console.log(`Sending\n${gcode}`, gcode);  
         await this.webSerialWrapper.send(data);
         await new Promise<void>((resolve) => {
             this.waiting = resolve;

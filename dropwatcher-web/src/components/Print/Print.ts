@@ -1,5 +1,5 @@
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
-import { HomeProgram } from "../../print-tasks/default-programs";
+import { HelloWorldProgram, HomeProgram, MoveTestProgram } from "../../print-tasks/default-programs";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
@@ -29,7 +29,7 @@ export class PrintComponent extends HTMLElement {
             this.currentProgram = document.querySelector("#current-program");
             abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {
                 ev.preventDefault();
-                TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(HomeProgram));
+                TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(HelloWorldProgram));
             }, this.abortController.signal);
         }
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);

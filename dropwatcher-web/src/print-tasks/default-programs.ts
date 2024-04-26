@@ -1,10 +1,11 @@
+import { HelloWorldProgamSteps } from "./HelloWorldProgram";
 import { PrinterProgram, PrinterTaskHome, PrinterTaskPrimeNozzle, PrinterTaskSetTargetPressure, PrinterTaskType } from "./printer-program";
 
 export const HomeProgram: PrinterProgram = {
     tasks: [
-        {
-            type: PrinterTaskType.Home
-        },
+        // {
+        //     type: PrinterTaskType.Home
+        // },
         {
             type: PrinterTaskType.PrimeNozzle,
             feedLimitPressure: 20,
@@ -13,7 +14,7 @@ export const HomeProgram: PrinterProgram = {
         },
         {
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: 10
+            targetPressure: -5
         }
         // new PrinterTaskSetTargetPressure(0),
         // {
@@ -45,6 +46,35 @@ export const HomeProgram: PrinterProgram = {
         //     type: PrinterTaskType.SetNozzleData,
         //     data: [0x1, 0xFFFFFFFF, 0xFFFFFFFF, 0xAF5]
         // },
+    ]
+};
+
+export const MoveTestProgram: PrinterProgram = {
+    tasks: [
+        {
+            type: PrinterTaskType.Home,
+        },
+        {
+            type: PrinterTaskType.Move,
+            x: 100,
+            y: 100,
+            z: 0,
+            feedRate: 400
+        },
+        {
+            type: PrinterTaskType.Move,
+            x: 0,
+            y: 0,
+            z: 0,
+            feedRate: 400
+        }
+    ]
+};
+
+export const HelloWorldProgram : PrinterProgram = {
+    tasks: [
+        { type:PrinterTaskType.Home},
+        ...HelloWorldProgamSteps
     ]
 };
 
