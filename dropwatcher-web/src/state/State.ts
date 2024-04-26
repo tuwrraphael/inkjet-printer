@@ -19,6 +19,12 @@ export enum PressureControlAlgorithm {
     FeedwithLimit = 2
 }
 
+export interface StagePos {
+    x: number;
+    y: number;
+    z: number;
+}
+
 export interface State {
     printerSystemState: {
         usbConnected: boolean;
@@ -42,24 +48,26 @@ export interface State {
     },
     movementStageState: {
         connected: boolean;
-        x: number;
-        y: number;
-        z: number;
+        pos: StagePos;
         e: number;
     }
     currentProgram: PrinterProgram,
-    programRunnerState : ProgramRunnerState,
+    programRunnerState: ProgramRunnerState,
     dropwatcherState: {
         nozzleData: Uint32Array;
-        delayNanos:number;
-        flashOnTimeNanos:number;
-        cameraOn:boolean;
-        exposureTime:number;
-        canChangeExposure:{
-            min:number;
-            max:number;
-            step:number;
+        delayNanos: number;
+        flashOnTimeNanos: number;
+        cameraOn: boolean;
+        exposureTime: number;
+        canChangeExposure: {
+            min: number;
+            max: number;
+            step: number;
         };
+        nozzlePos: {
+            first: StagePos,
+            last: StagePos
+        }
     }
 }
 

@@ -21,7 +21,8 @@
       "@types/webpack-env",
       "@types/w3c-image-capture",
       "@types/w3c-web-usb",
-      "@types/w3c-web-serial"
+      "@types/w3c-web-serial",
+      "@types/dom-mediacapture-transform"
     ],
     "allowSyntheticDefaultImports": true
   },

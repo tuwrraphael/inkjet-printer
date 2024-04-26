@@ -3,6 +3,7 @@ import { PrinterUSB } from "../printer-usb";
 import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
+import { MoveTaskRunner } from "./runners/MoveTaskRunner";
 import { PrinterProgram, PrinterProgramState, PrinterTask, PrinterTaskHome, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
 import { TaskRunnerSynchronization } from "./TaskRunnerSynchronization";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
@@ -88,6 +89,10 @@ export class PrintTaskRunner {
             case PrinterTaskType.RequestFire:
                 let requestFireTaskRunner = new RequestFireTaskRunner(task, this.printerUsb);
                 await requestFireTaskRunner.run();
+                break;
+            case PrinterTaskType.Move:
+                let moveTaskRunner = new MoveTaskRunner(task, this.movementStage);
+                await moveTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

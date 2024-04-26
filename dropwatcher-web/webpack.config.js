@@ -4,7 +4,6 @@ import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import webpack from "webpack";
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import CopyPlugin from 'copy-webpack-plugin';
-import LicenseCheckerWebpackPlugin from "license-checker-webpack-plugin";
 import { InjectManifest } from "workbox-webpack-plugin";
 import { readFileSync } from "fs";
 import { resolve as _resolve } from 'path';
@@ -145,7 +144,14 @@ export default (env, argv) => {
             ],
         },
         resolve: {
-            extensions: ['.tsx', '.ts', '.js']
+            extensions: ['.tsx', '.ts', '.js'],
+
+            fallback: {
+                fs: false,
+                path: false,
+                crypto: false,
+            },
+
         },
         output: {
             path: _resolve(__dirname, 'dist'),
@@ -159,10 +165,10 @@ export default (env, argv) => {
                 title: "inkjet-printer",
                 template: 'src/index.html'
             }),
-            new LicenseCheckerWebpackPlugin({
-                outputFilename: "licenses.txt",
-                allow: "(Apache-2.0 OR BSD-2-Clause OR BSD-3-Clause OR MIT OR ISC)"
-            }),
+            // new LicenseCheckerWebpackPlugin({
+            //     outputFilename: "licenses.txt",
+            //     allow: "(Apache-2.0 OR BSD-2-Clause OR BSD-3-Clause OR MIT OR ISC)"
+            // }),
             new MiniCssExtractPlugin({
                 filename: '[name].[contenthash].css'
             }),

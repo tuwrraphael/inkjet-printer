@@ -46,10 +46,12 @@ export class InkControl extends HTMLElement {
     }
     private actionChanged() {
         let action = this.action.value;
-        this.nozzlePrimingGroup.style.display = action == "priming" ? "" : "none";
-        this.nozzlePrimingGroup.disabled = action != "priming";
-        this.targetPressureGroup.style.display = action == "targetpressure" ? "" : "none";
-        this.targetPressureGroup.disabled = action != "targetpressure";
+        let showNozzlePrimingGroup = ["fillflushtank", "priming"].includes(action);
+        let showTargetPressureGroup = ["targetpressure"].includes(action);
+        this.nozzlePrimingGroup.style.display = showNozzlePrimingGroup ? "" : "none";
+        this.nozzlePrimingGroup.disabled = !showNozzlePrimingGroup;
+        this.targetPressureGroup.style.display = showTargetPressureGroup ? "" : "none";
+        this.targetPressureGroup.disabled = !showTargetPressureGroup;
     }
 
     private async start() {
@@ -64,6 +66,15 @@ export class InkControl extends HTMLElement {
                 case "priming":
                     parameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
                     parameters.direction = PressureControlDirection.PressureControlDirection_PRESSURE;
+                    parameters.feedPwm = parseFloat(values.get("feed-limit-pwm") as string);
+                    parameters.limitPressure = parseFloat(values.get("feed-limit-pressure") as string);
+                    parameters.feedTime = parseFloat(values.get("feed-time") as string);
+                    parameters.enable = true;
+                    await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
+                    break;
+                case "fillflushtank":
+                    parameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
+                    parameters.direction = PressureControlDirection.PressureControlDirection_VACUUM;
                     parameters.feedPwm = parseFloat(values.get("feed-limit-pwm") as string);
                     parameters.limitPressure = parseFloat(values.get("feed-limit-pressure") as string);
                     parameters.feedTime = parseFloat(values.get("feed-time") as string);

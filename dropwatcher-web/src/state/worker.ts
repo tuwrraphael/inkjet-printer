@@ -12,6 +12,7 @@ import {
 import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
 import { MovementStagePositionChanged } from "./actions/MovementStagePositionChanged";
 import { ProgramRunnerStateChanged } from "./actions/ProgramRunnerStateChanged";
+import { DropwatcherNozzlePosChanged } from "./actions/DropwatcherNozzlePosChanged";
 import { NozzleDataChanged } from "./actions/NozzleDataSet";
 import { DropwatcherParametersChanged } from "./actions/DropwatcherParametersSet";
 import { CameraStateChanged } from "./actions/CameraStateChanged";
@@ -25,6 +26,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | NozzleDataChanged
     | DropwatcherParametersChanged
     | CameraStateChanged
+    | DropwatcherNozzlePosChanged
     ;
 let state: State;
 let initialized = false;
@@ -149,9 +151,11 @@ async function handleMessage(msg: Actions) {
             updateState(oldState => ({
                 movementStageState: {
                     ...oldState.movementStageState,
-                    x: msg.position.x,
-                    y: msg.position.y,
-                    z: msg.position.z,
+                    pos: {
+                        x: msg.position.x,
+                        y: msg.position.y,
+                        z: msg.position.z
+                    },
                     e: msg.position.e
                 }
             }));
@@ -184,6 +188,17 @@ async function handleMessage(msg: Actions) {
                 dropwatcherState: {
                     ...oldState.dropwatcherState,
                     ...msg.state
+                }
+            }));
+            break;
+        case ActionType.DropwatcherNozzlePosChanged:
+            updateState(oldState => ({
+                dropwatcherState: {
+                    ...oldState.dropwatcherState,
+                    nozzlePos: {
+                        first: msg.firstNozzlePos || oldState.dropwatcherState.nozzlePos.first,
+                        last: msg.lastNozzlePos || oldState.dropwatcherState.nozzlePos.last
+                    }
                 }
             }));
             break;

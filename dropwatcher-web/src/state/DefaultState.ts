@@ -11,9 +11,7 @@ export const DefaultState: State =
     },
     movementStageState: {
         connected: false,
-        x: undefined,
-        y: undefined,
-        z: undefined,
+        pos: null,
         e: undefined
     },
     currentProgram: null,
@@ -27,6 +25,10 @@ export const DefaultState: State =
         flashOnTimeNanos: undefined,
         cameraOn: false,
         exposureTime: undefined,
-        canChangeExposure: undefined
+        canChangeExposure: undefined,
+        nozzlePos: {
+            first: null,
+            last: null
+        }
     }
 };

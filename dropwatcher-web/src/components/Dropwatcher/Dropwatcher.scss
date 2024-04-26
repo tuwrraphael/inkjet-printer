@@ -5,10 +5,9 @@
 
 .video-element {
     // margin: 0.5em;
-    width: 100%;
-    box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
+    width: 50%;
+    // box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
     box-sizing: border-box;
-    transform: scaleY(-1);
 }
 
 .video-container {
@@ -18,8 +17,8 @@
 .frame-container {
     padding: 0.5em 0;
     & canvas {
-        width: 100%;
-        box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
-        transform: scaleY(-1);
+        width: 50%;
+        // box-shadow: 0 0 5px 0 rgba(0,0,0,0.2);
+        // transform: scaleY(-1);
     }
 }
