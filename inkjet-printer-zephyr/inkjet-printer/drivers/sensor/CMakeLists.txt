@@ -1,1 +1,2 @@
+add_subdirectory_ifdef(CONFIG_QDEC_STM32_LINEAR qdec_stm32_linear)
 add_subdirectory_ifdef(CONFIG_ABP_PRESSURE_SENSOR abp)

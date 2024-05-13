@@ -1,0 +1,7 @@
+config QDEC_STM32_LINEAR
+	bool "STM32 QDEC driver with linear output"
+	default y
+	depends on DT_HAS_ST_STM32_QDEC_LINEAR_ENABLED
+	select USE_STM32_LL_TIM
+	help
+	  STM32 family Quadrature Decoder driver with linear output

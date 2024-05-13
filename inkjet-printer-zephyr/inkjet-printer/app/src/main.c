@@ -46,6 +46,22 @@ static struct gpio_dt_spec READY = GPIO_DT_SPEC_GET(DT_NODELABEL(ready), gpios);
 
 static struct gpio_callback READY_cb_data;
 
+void encoder_debug_timer_handler(struct k_timer *timer) {
+	const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(qdec));
+		if (!device_is_ready(dev)) {
+		printk("Qdec device is not ready\n");
+		return;
+	}
+	struct sensor_value val;
+	int rc = sensor_sample_fetch(dev);
+	rc = sensor_channel_get(dev, SENSOR_CHAN_POS_DX, &val);
+	if (rc != 0) {
+			printk("Failed to get data (%d)\n", rc);
+			return;
+		}
+	printk("Encoder value: %d\n", val.val1);
+}
+
 void pressure_debug_timer_handler(struct k_timer *timer)
 {
 	double pressure = pressure_control_get_pressure();
@@ -59,6 +75,8 @@ void print_fire_timer_handler(struct k_timer *timer);
 K_TIMER_DEFINE(pressure_debug_timer, pressure_debug_timer_handler, NULL);
 
 K_TIMER_DEFINE(print_fire_timer, print_fire_timer_handler, NULL);
+
+K_TIMER_DEFINE(encoder_debug_timer, encoder_debug_timer_handler, NULL);
 
 static uint32_t pattern[4] = {0, 0, 0, 1};
 
@@ -458,6 +476,25 @@ static int cmd_pressure_control_print_pressure(const struct shell *sh, size_t ar
 SHELL_SUBCMD_DICT_SET_CREATE(pressure_control_print_pressure_cmds, cmd_pressure_control_print_pressure,
 							 (enable, true, "enable"), (disable, false, "disable"));
 
+static int cmd_encoder_print(const struct shell *sh, size_t argc, char **argv, void *data)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	bool enable = (bool)data;
+	if (enable)
+	{
+		k_timer_start(&encoder_debug_timer, K_SECONDS(1), K_SECONDS(1));
+	}
+	else
+	{
+		k_timer_stop(&encoder_debug_timer);
+	}
+	return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(encoder_print_cmds, cmd_encoder_print,
+							 (enable, true, "enable"), (disable, false, "disable"));
+
 static int cmd_pressure_control_calibrate_zero_pressure(const struct shell *sh, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
@@ -579,6 +616,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(pressure_control_enable, &pressure_control_enable_cmds, "Enable/disable pressure control", NULL),
 							   SHELL_CMD(pressure_control_set_target_pressure, NULL, "Set target pressure", cmd_pressure_contol_set_target_pressure),
 							   SHELL_CMD(pressure_control_print_pressure, &pressure_control_print_pressure_cmds, "Print pressure", NULL),
+							   SHELL_CMD(encoder_print, &encoder_print_cmds, "Print encoder", NULL),
 							   SHELL_CMD(pressure_control_calibrate_zero_pressure, NULL, "Calibrate zero pressure", cmd_pressure_control_calibrate_zero_pressure),
 							   SHELL_CMD(pump_motor, &pump_motor_cmds, "Test pump motor", cmd_test_pump),
 							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),

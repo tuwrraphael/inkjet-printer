@@ -1,3 +1,4 @@
 if SENSOR
 rsource "abp/Kconfig"
+rsource "qdec_stm32_linear/Kconfig"
 endif # SENSOR

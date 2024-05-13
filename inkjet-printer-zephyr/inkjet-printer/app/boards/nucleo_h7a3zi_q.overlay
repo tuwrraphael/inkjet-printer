@@ -123,6 +123,22 @@
 	};
 };
 
+&timers3 {
+	st,prescaler = <0>; // apb 1
+	status = "okay";
+
+	qdec: qdec {
+		compatible = "st,stm32-qdec-linear";
+		status = "okay";
+		pinctrl-0 = <&tim3_ch1_pb4 &tim3_ch2_pc7>;
+		pinctrl-names = "default";
+		//st,input-polarity-inverted;
+		st,input-filter-level = <15>; // f/32, n=8
+		st,counts-per-revolution = <360>;
+		st,encoder-mode = <3>;
+	};
+};
+
 &spi1 {
 	status = "okay";
 	pinctrl-names = "default";
