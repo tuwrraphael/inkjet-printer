@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <export version="E">
   <design>
-    <source>/home/raphael/inkjet-printer/Xaar128-Driver/Xaar128-Driver.kicad_sch</source>
-    <date>Mo 08 Jän 2024 18:19:35</date>
-    <tool>Eeschema 7.0.9-7.0.9~ubuntu22.04.1</tool>
+    <source>C:\Users\Diplomandenrechner 2\Documents\inkjet-printer\Xaar128-Driver\Xaar128-Driver.kicad_sch</source>
+    <date>21.05.2024 17:22:30</date>
+    <tool>Eeschema 7.0.8</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>Xaar 128 Driver</title>
@@ -1719,11 +1719,11 @@
       <value>NUCLEO-H743ZI2</value>
       <footprint>Xaar-Driver:NUCLEO-H743</footprint>
       <fields>
-        <field name="RSBestNr">193-9787</field>
+        <field name="RSBestNr">198-8645</field>
         <field name="Supplier">RS</field>
       </fields>
-      <libsource lib="Xaar_Driver" part="NUCLEO-H743-Arduino" description=""/>
-      <property name="RSBestNr" value="193-9787"/>
+      <libsource lib="Xaar_Driver" part="NUCLEO-H7A3-Arduino" description=""/>
+      <property name="RSBestNr" value="198-8645"/>
       <property name="Supplier" value="RS"/>
       <property name="Sheetname" value="MCU"/>
       <property name="Sheetfile" value="mcu.kicad_sch"/>
@@ -2448,12 +2448,14 @@
       <value>10u &gt; 16V Tantal</value>
       <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B_Pad1.50x2.35mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">136-0203</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="RSBestNr" value="136-0203"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2466,11 +2468,13 @@
       <value>100n &gt;16V Cer</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2483,11 +2487,13 @@
       <value>100n &gt;16V Cer</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2500,11 +2506,13 @@
       <value>100n &gt;16V Cer</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2517,11 +2525,13 @@
       <value>100n &gt;16V Cer</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2534,12 +2544,14 @@
       <value>10u &gt; 16V Tantal</value>
       <footprint>Capacitor_Tantalum_SMD:CP_EIA-3528-21_Kemet-B_Pad1.50x2.35mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">136-0203</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
       <property name="RSBestNr" value="136-0203"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2552,11 +2564,13 @@
       <value>100n &gt;16V Cer</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2692,11 +2706,13 @@
       <value>10k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2709,11 +2725,13 @@
       <value>10k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2726,11 +2744,13 @@
       <value>10k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2743,12 +2763,14 @@
       <value>100k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">678-9673</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value="678-9673"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2761,11 +2783,13 @@
       <value>2.2k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2778,12 +2802,14 @@
       <value>12k</value>
       <footprint>Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">812-1795</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value="812-1795"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2796,11 +2822,13 @@
       <value>3k</value>
       <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value=""/>
       <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2813,12 +2841,14 @@
       <value>100k</value>
       <footprint>Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">678-9673</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value="678-9673"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2831,12 +2861,14 @@
       <value>12k</value>
       <footprint>Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder</footprint>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">812-1795</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="RSBestNr" value="812-1795"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -2992,12 +3024,14 @@
       <footprint>Package_TO_SOT_SMD:SOT-23-6_Handsoldering</footprint>
       <datasheet>http://ww1.microchip.com/downloads/en/DeviceDoc/22039d.pdf</datasheet>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">669-6290</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Analog_DAC" part="MCP4725xxx-xCH" description="12-bit Digital-to-Analog Converter, integrated EEPROM, I2C interface, SOT-23-6"/>
       <property name="RSBestNr" value="669-6290"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -3007,20 +3041,22 @@
       <tstamps>55b008b8-1484-493f-9eed-3a5044ed0333</tstamps>
     </comp>
     <comp ref="U14">
-      <value>ISO1540</value>
+      <value>ISO1541</value>
       <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
       <datasheet>http://www.ti.com/lit/ds/symlink/iso1541.pdf</datasheet>
       <fields>
-        <field name="RSBestNr">825-3079</field>
+        <field name="Extension">Regulator</field>
+        <field name="RSBestNr">825-3075</field>
         <field name="Supplier">RS</field>
       </fields>
-      <libsource lib="Isolator" part="ISO1540" description="I2C Isolator, 2.5 kVrms, Bidirectional clock and data, SOIC-8"/>
-      <property name="RSBestNr" value="825-3079"/>
+      <libsource lib="Isolator" part="ISO1541" description="I2C Isolator, 2.5 kVrms, Unidirectional Clock, Bidirectional data, SOIC-8"/>
+      <property name="RSBestNr" value="825-3075"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
-      <property name="ki_description" value="I2C Isolator, 2.5 kVrms, Bidirectional clock and data, SOIC-8"/>
+      <property name="ki_description" value="I2C Isolator, 2.5 kVrms, Unidirectional Clock, Bidirectional data, SOIC-8"/>
       <property name="ki_keywords" value="digital isolator i2c"/>
       <sheetpath names="/Regulator/" tstamps="/48b639c9-d588-4ad3-b95b-9aa4a2d6905e/"/>
       <tstamps>38e6af4d-7b4d-4e9c-9bdf-61dc8057d233</tstamps>
@@ -3030,12 +3066,14 @@
       <footprint>Package_TO_SOT_THT:TO-220-3_Vertical</footprint>
       <datasheet>http://www.st.com/content/ccc/resource/technical/document/datasheet/41/4f/b3/b0/12/d4/47/88/CD00000444.pdf/files/CD00000444.pdf/jcr:content/translations/en.CD00000444.pdf</datasheet>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">298-8564</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Regulator_Linear" part="L7824" description="Positive 1.5A 40V Linear Regulator, Fixed Output 24V, TO-220/TO-263/TO-252"/>
       <property name="RSBestNr" value="298-8564"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -3049,12 +3087,14 @@
       <footprint>Xaar-Driver:SOT-89-3</footprint>
       <datasheet>https://www.onsemi.com/pub/Collateral/MC78L00A-D.PDF</datasheet>
       <fields>
+        <field name="Extension">Regulator</field>
         <field name="RSBestNr">714-0679</field>
         <field name="Supplier">RS</field>
       </fields>
       <libsource lib="Regulator_Linear" part="MC78L05_SOT89" description="Positive 100mA 30V Linear Regulator, Fixed Output 5V, SOT-89"/>
       <property name="RSBestNr" value="714-0679"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -3068,11 +3108,13 @@
       <footprint>Package_DIP:DIP-8_W7.62mm</footprint>
       <datasheet>http://www.ti.com/lit/ds/symlink/tlc272.pdf</datasheet>
       <fields>
-        <field name="Supplier">Elekroplatz</field>
+        <field name="Extension">Regulator</field>
+        <field name="Supplier">Elektroplatz</field>
       </fields>
       <libsource lib="Amplifier_Operational" part="TLC272" description="Dual LinCMOS Precision Dual Operational Amplifiers, DIP-8/SOIC-8/SSOP-8"/>
       <property name="RSBestNr" value=""/>
-      <property name="Supplier" value="Elekroplatz"/>
+      <property name="Supplier" value="Elektroplatz"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -3090,6 +3132,7 @@
         <field name="Description">
 10 Bit Analog to Digital Converter 1 Input 1 SAR SOT-23-5
 </field>
+        <field name="Extension">Regulator</field>
         <field name="MF">RCA</field>
         <field name="MP">MCP3021</field>
         <field name="Package">SOT-753 RCA</field>
@@ -3109,6 +3152,7 @@
       <property name="Check_prices" value="https://www.snapeda.com/parts/MCP3021/RCA/view-part/?ref=eda"/>
       <property name="RSBestNr" value="738-6011"/>
       <property name="Supplier" value="RS"/>
+      <property name="Extension" value="Regulator"/>
       <property name="Sheetname" value="Regulator"/>
       <property name="Sheetfile" value="regulator.kicad_sch"/>
       <property name="dnp"/>
@@ -3707,25 +3751,25 @@
         <pin num="8" name="" type="passive"/>
       </pins>
     </libpart>
-    <libpart lib="Isolator" part="ISO1540">
-      <description>I2C Isolator, 2.5 kVrms, Bidirectional clock and data, SOIC-8</description>
+    <libpart lib="Isolator" part="ISO1541">
+      <description>I2C Isolator, 2.5 kVrms, Unidirectional Clock, Bidirectional data, SOIC-8</description>
       <docs>http://www.ti.com/lit/ds/symlink/iso1541.pdf</docs>
       <footprints>
         <fp>SOIC*3.9x4.9mm*P1.27mm*</fp>
       </footprints>
       <fields>
         <field name="Reference">U</field>
-        <field name="Value">ISO1540</field>
+        <field name="Value">ISO1541</field>
         <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
         <field name="Datasheet">http://www.ti.com/lit/ds/symlink/iso1541.pdf</field>
       </fields>
       <pins>
         <pin num="1" name="VCC1" type="power_in"/>
         <pin num="2" name="SDA1" type="bidirectional"/>
-        <pin num="3" name="SCL1" type="bidirectional"/>
+        <pin num="3" name="SCL1" type="input"/>
         <pin num="4" name="GND1" type="power_in"/>
         <pin num="5" name="GND2" type="power_in"/>
-        <pin num="6" name="SCL2" type="bidirectional"/>
+        <pin num="6" name="SCL2" type="output"/>
         <pin num="7" name="SDA2" type="bidirectional"/>
         <pin num="8" name="VCC2" type="power_in"/>
       </pins>
@@ -4059,7 +4103,7 @@
         <pin num="16" name="VCC" type="power_in"/>
       </pins>
     </libpart>
-    <libpart lib="Xaar_Driver" part="NUCLEO-H743-Arduino">
+    <libpart lib="Xaar_Driver" part="NUCLEO-H7A3-Arduino">
       <fields>
         <field name="Reference">U</field>
         <field name="Value">NUCLEO-H743-Arduino</field>
@@ -4078,19 +4122,19 @@
         <pin num="11" name="PC3" type="bidirectional"/>
         <pin num="12" name="PB1" type="bidirectional"/>
         <pin num="13" name="PC2" type="bidirectional"/>
-        <pin num="14" name="PF10" type="bidirectional"/>
+        <pin num="14" name="PF11" type="bidirectional"/>
         <pin num="15" name="PB7" type="bidirectional"/>
         <pin num="16" name="PB6" type="bidirectional"/>
         <pin num="17" name="PG14" type="bidirectional"/>
         <pin num="18" name="PE13" type="bidirectional"/>
         <pin num="19" name="PE14" type="bidirectional"/>
         <pin num="20" name="PE11" type="bidirectional"/>
-        <pin num="21" name="PE9" type="bidirectional"/>
+        <pin num="21" name="PA8" type="bidirectional"/>
         <pin num="22" name="PG12" type="bidirectional"/>
-        <pin num="23" name="PF3" type="bidirectional"/>
+        <pin num="23" name="PG9" type="bidirectional"/>
         <pin num="24" name="PD15" type="bidirectional"/>
         <pin num="25" name="PD14" type="bidirectional"/>
-        <pin num="26" name="PB5" type="bidirectional"/>
+        <pin num="26" name="PA7" type="bidirectional"/>
         <pin num="27" name="PA6" type="bidirectional"/>
         <pin num="28" name="PA5" type="bidirectional"/>
         <pin num="29" name="GND" type="power_in"/>
@@ -4110,49 +4154,49 @@
   </libparts>
   <libraries>
     <library logical="Amplifier_Operational">
-      <uri>/usr/share/kicad/symbols//Amplifier_Operational.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Amplifier_Operational.kicad_sym</uri>
     </library>
     <library logical="Analog_DAC">
-      <uri>/usr/share/kicad/symbols//Analog_DAC.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Analog_DAC.kicad_sym</uri>
     </library>
     <library logical="Connector">
-      <uri>/usr/share/kicad/symbols//Connector.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Connector.kicad_sym</uri>
     </library>
     <library logical="Connector_Generic">
-      <uri>/usr/share/kicad/symbols//Connector_Generic.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Connector_Generic.kicad_sym</uri>
     </library>
     <library logical="Device">
-      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Device.kicad_sym</uri>
     </library>
     <library logical="Diode">
-      <uri>/usr/share/kicad/symbols//Diode.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Diode.kicad_sym</uri>
     </library>
     <library logical="Isolator">
-      <uri>/usr/share/kicad/symbols//Isolator.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Isolator.kicad_sym</uri>
     </library>
     <library logical="Jumper">
-      <uri>/usr/share/kicad/symbols//Jumper.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Jumper.kicad_sym</uri>
     </library>
     <library logical="Logic_LevelTranslator">
-      <uri>/usr/share/kicad/symbols//Logic_LevelTranslator.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Logic_LevelTranslator.kicad_sym</uri>
     </library>
     <library logical="MCP3021">
-      <uri>/home/raphael/inkjet-printer/Xaar128-Driver/../symbols/MCP3021.kicad_sym</uri>
+      <uri>C:\Users\Diplomandenrechner 2\Documents\inkjet-printer\Xaar128-Driver/../symbols/MCP3021.kicad_sym</uri>
     </library>
     <library logical="Mechanical">
-      <uri>/usr/share/kicad/symbols//Mechanical.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Mechanical.kicad_sym</uri>
     </library>
     <library logical="Regulator_Linear">
-      <uri>/usr/share/kicad/symbols//Regulator_Linear.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Regulator_Linear.kicad_sym</uri>
     </library>
     <library logical="Sensor_Motion">
-      <uri>/usr/share/kicad/symbols//Sensor_Motion.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Sensor_Motion.kicad_sym</uri>
     </library>
     <library logical="Transistor_FET">
-      <uri>/usr/share/kicad/symbols//Transistor_FET.kicad_sym</uri>
+      <uri>C:\Program Files\KiCad\7.0\share\kicad\symbols\/Transistor_FET.kicad_sym</uri>
     </library>
     <library logical="Xaar_Driver">
-      <uri>/home/raphael/inkjet-printer/Xaar128-Driver/Xaar_Driver.kicad_sym</uri>
+      <uri>C:\Users\Diplomandenrechner 2\Documents\inkjet-printer\Xaar128-Driver/Xaar_Driver.kicad_sym</uri>
     </library>
   </libraries>
   <nets>
@@ -4235,7 +4279,7 @@
     <net code="6" name="/ACC/SCL">
       <node ref="JP20" pin="2" pinfunction="B" pintype="passive"/>
       <node ref="R35" pin="2" pintype="passive"/>
-      <node ref="U14" pin="3" pinfunction="SCL1" pintype="bidirectional"/>
+      <node ref="U14" pin="3" pinfunction="SCL1" pintype="input"/>
       <node ref="U4" pin="32" pinfunction="PB8" pintype="bidirectional"/>
     </net>
     <net code="7" name="/ACC/SDA">
@@ -4348,7 +4392,7 @@
     </net>
     <net code="26" name="/Level Shift/READY_OUT">
       <node ref="U10" pin="8" pinfunction="3Y" pintype="output"/>
-      <node ref="U4" pin="14" pinfunction="PF10" pintype="bidirectional"/>
+      <node ref="U4" pin="14" pinfunction="PF11" pintype="bidirectional"/>
       <node ref="U7" pin="10" pinfunction="B4" pintype="bidirectional"/>
     </net>
     <net code="27" name="/Level Shift/RESET_DISABLE_CP_IN">
@@ -4436,7 +4480,7 @@
       <node ref="U8" pin="11" pinfunction="4Y" pintype="output"/>
     </net>
     <net code="41" name="/Level Shift/nSS2_IN">
-      <node ref="U4" pin="23" pinfunction="PF3" pintype="bidirectional"/>
+      <node ref="U4" pin="23" pinfunction="PG9" pintype="bidirectional"/>
       <node ref="U6" pin="2" pinfunction="A1" pintype="bidirectional"/>
       <node ref="U9" pin="2" pinfunction="1A" pintype="input"/>
     </net>
@@ -4684,7 +4728,7 @@
     </net>
     <net code="72" name="Net-(JP9-A)">
       <node ref="JP9" pin="1" pinfunction="A" pintype="passive"/>
-      <node ref="U4" pin="26" pinfunction="PB5" pintype="bidirectional"/>
+      <node ref="U4" pin="26" pinfunction="PA7" pintype="bidirectional"/>
     </net>
     <net code="73" name="Net-(JP10-B)">
       <node ref="JP10" pin="2" pinfunction="B" pintype="passive"/>
@@ -4696,7 +4740,7 @@
     </net>
     <net code="75" name="Net-(JP12-A)">
       <node ref="JP12" pin="1" pinfunction="A" pintype="passive"/>
-      <node ref="U4" pin="21" pinfunction="PE9" pintype="bidirectional"/>
+      <node ref="U4" pin="21" pinfunction="PA8" pintype="bidirectional"/>
     </net>
     <net code="76" name="Net-(JP13-B)">
       <node ref="JP13" pin="2" pinfunction="B" pintype="passive"/>
@@ -4940,7 +4984,7 @@
       <node ref="R34" pin="2" pintype="passive"/>
       <node ref="TP12" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U13" pin="5" pinfunction="SCL" pintype="input"/>
-      <node ref="U14" pin="6" pinfunction="SCL2" pintype="bidirectional"/>
+      <node ref="U14" pin="6" pinfunction="SCL2" pintype="output"/>
       <node ref="U18" pin="5" pinfunction="SCL" pintype="bidirectional"/>
     </net>
     <net code="129" name="SDA_HV">
