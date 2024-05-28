@@ -1,0 +1,24 @@
+config INKJETCONTROL
+	bool "Support for inkjetcontrol library"
+	help
+	  This option enables the 'inkjetcontrol' library
+
+config CUSTOM_GET_VALUE_DEFAULT
+	int "custom_get_value() default return value"
+	depends on INKJETCONTROL
+	default 0
+	help
+	  This option primarily exists as an example of a library Kconfig
+	  setting.
+
+	  This option specifies the value for custom_get_value() to return
+	  when the input parameter is zero. (Otherwise the function returns the
+	  input parameter value.)
+
+if INKJETCONTROL
+
+module = INKJETCONTROL
+module-str = inkjetcontrol
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # INKJETCONTROL
