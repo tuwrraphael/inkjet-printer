@@ -2,26 +2,26 @@
 
 #include <zephyr/ztest.h>
 
-#include <lib/inkjetcontrol.h>
+#include <lib/inkjetcontrol/encoder.h>
 
 static int32_t encoder_value = 0;
 static uint32_t fire_abort_called = 0;
 static int32_t load_line_called_with = 0;
 static bool last_fire_aborted = false;
 
-static int32_t get_value(void)
+static int32_t get_value(void *inst)
 {
     return encoder_value;
 }
 
-static void fire_abort(void)
+static void fire_abort(void *inst)
 {
     fire_abort_called++;
     last_fire_aborted = true;
     return;
 }
 
-static void load_line(uint32_t line)
+static void load_line(void *inst, uint32_t line)
 {
     load_line_called_with = line;
     return;
@@ -48,7 +48,7 @@ static void fire_until_aborted(encoder_print_status_t *status)
             printf("fire_loop >= MAX_FIRE_LOOP");
             ztest_test_fail();
         }
-        printhead_fired_handler(status);
+        encoder_printhead_fired_handler(status);
         fire_loop++;
     }
     last_fire_aborted = false;
@@ -103,7 +103,7 @@ ZTEST(encoder_print_x_per_x_ticks, test_270dpi_missed_tick)
     encoder_tick_handler(&encoder_print_status); // -- encoder 1 (plan to print 0, 1, 2)
     encoder_value++;
     encoder_tick_handler(&encoder_print_status); // -- encoder 2 (skip)
-    encoder_advance(&encoder_print_status, 1); // -- encoder 3 (plan to print 3, 4, 5)
+    encoder_advance(&encoder_print_status, 1);   // -- encoder 3 (plan to print 3, 4, 5)
     zassert_equal(encoder_print_status.last_printed_line, 2, "last_printed_line not 2");
     encoder_advance(&encoder_print_status, 1); // -- encoder 4 (skip), detect
     zassert_equal(encoder_print_status.last_printed_line, 2, "last_printed_line not 2");
@@ -113,7 +113,7 @@ ZTEST(encoder_print_x_per_x_ticks, test_270dpi_missed_tick)
     zassert_equal(encoder_print_status.lost_lines[1], 4, "lost_lines[1] not 4");
     zassert_equal(encoder_print_status.lost_lines[2], 5, "lost_lines[2] not 5");
     encoder_advance(&encoder_print_status, 1); // -- encoder 5 (plan to print 6, 7, 8)
-    zassert_equal(encoder_print_status.last_printed_line, 8, "last_printed_line not 8"); 
+    zassert_equal(encoder_print_status.last_printed_line, 8, "last_printed_line not 8");
 }
 
 ZTEST_SUITE(encoder_print_x_per_x_ticks, NULL, NULL, before, NULL, NULL);

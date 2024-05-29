@@ -7,9 +7,10 @@
 
 typedef struct
 {
-    int32_t (*get_value)(void);
-    void (*fire_abort)(void);
-    void (*load_line)(uint32_t line);
+    int32_t (*get_value)(void *inst);
+    void (*fire_abort)(void *inst);
+    void (*load_line)(void *inst, uint32_t line);
+    void *inst;
     uint32_t sequential_fires;
     uint32_t fire_every_ticks;
     uint32_t print_first_line_after_encoder_tick;
@@ -29,6 +30,6 @@ typedef struct
 void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *init);
 
 void encoder_tick_handler(encoder_print_status_t *status);
-void printhead_fired_handler(encoder_print_status_t *status);
+void encoder_printhead_fired_handler(encoder_print_status_t *status);
 
 #endif /* INKJET_CONTROL_H */

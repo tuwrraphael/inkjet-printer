@@ -2,26 +2,26 @@
 
 #include <zephyr/ztest.h>
 
-#include <lib/inkjetcontrol.h>
+#include <lib/inkjetcontrol/encoder.h>
 
 static int32_t encoder_value = 0;
 static uint32_t fire_abort_called = 0;
 static int32_t load_line_called_with = 0;
 static bool last_fire_aborted = false;
 
-static int32_t get_value(void)
+static int32_t get_value(void *inst)
 {
 	return encoder_value;
 }
 
-static void fire_abort(void)
+static void fire_abort(void *inst)
 {
 	fire_abort_called++;
 	last_fire_aborted = true;
 	return;
 }
 
-static void load_line(uint32_t line)
+static void load_line(void *inst, uint32_t line)
 {
 	load_line_called_with = line;
 	return;
@@ -39,7 +39,7 @@ static void fire_if_not_aborted(encoder_print_status_t *status)
 {
 	if (!last_fire_aborted)
 	{
-		printhead_fired_handler(status);
+		encoder_printhead_fired_handler(status);
 	}
 	last_fire_aborted = false;
 }
@@ -159,7 +159,7 @@ ZTEST(encoder_print_once_per_tick, test_missed_single_tick)
 	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
 	zassert_equal(fire_abort_called, 1, "fire_abort not called 1 time");
 	encoder_value++;
-	encoder_tick_handler(&encoder_print_status); // -- encoder 3 (plan to print 2), detect 
+	encoder_tick_handler(&encoder_print_status); // -- encoder 3 (plan to print 2), detect
 	fire_if_not_aborted(&encoder_print_status);
 	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
 	zassert_equal(fire_abort_called, 2, "fire_abort not called after jump detected");
@@ -196,7 +196,7 @@ ZTEST(encoder_print_once_per_tick, test_missed_two_ticks)
 	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
 	zassert_equal(fire_abort_called, 1, "fire_abort not called 1 time");
 	encoder_value++;
-	encoder_tick_handler(&encoder_print_status); // -- encoder 4 (plan to print 3), detect 
+	encoder_tick_handler(&encoder_print_status); // -- encoder 4 (plan to print 3), detect
 	fire_if_not_aborted(&encoder_print_status);
 	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
 	zassert_equal(fire_abort_called, 2, "fire_abort not called after jump detected");

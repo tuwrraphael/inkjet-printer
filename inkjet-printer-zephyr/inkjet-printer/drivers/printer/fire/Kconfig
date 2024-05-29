@@ -9,3 +9,14 @@ config FIRE_STM32_COMBINED_PWM
 	select USE_STM32_HAL_TIM_EX
 	help
 	  Enable STM32 combined PWM drive for printer fire
+
+
+
+if FIRE_STM32_COMBINED_PWM
+
+config FIRE_STM32_COMBINED_PWM_MAX_ENCODER_COUNT
+	int "maximum encoder count"
+	depends on FIRE_STM32_COMBINED_PWM
+	default 32767
+
+endif # FIRE_STM32_COMBINED_PWM

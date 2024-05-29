@@ -1,12 +1,12 @@
 #include <zephyr/logging/log.h>
 
-#include <lib/inkjetcontrol.h>
+#include <lib/inkjetcontrol/encoder.h>
 
-LOG_MODULE_REGISTER(inkjetcontrol, CONFIG_INKJETCONTROL_LOG_LEVEL);
+LOG_MODULE_REGISTER(encoder, CONFIG_INKJETCONTROL_LOG_LEVEL);
 
 static void load_line(encoder_print_status_t *status, uint32_t line)
 {
-	status->init.load_line(line);
+	status->init.load_line(status->init.inst, line);
 	status->last_loaded_line = line;
 	LOG_INF("Loaded line %d", line);
 }
@@ -28,7 +28,7 @@ void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *in
 
 void encoder_tick_handler(encoder_print_status_t *status)
 {
-	int32_t encoder_value = status->init.get_value();
+	int32_t encoder_value = status->init.get_value(status->init.inst);
 	LOG_INF("Encoder tick handler %d", encoder_value);
 
 	if (status->remaining_sequential_fires > 0)
@@ -40,12 +40,12 @@ void encoder_tick_handler(encoder_print_status_t *status)
 		LOG_INF("Encoder tick %d, expected %d", encoder_value, status->expected_encoder_value);
 		if (encoder_value < status->expected_encoder_value)
 		{
-			status->init.fire_abort();
+			status->init.fire_abort(status->init.inst);
 			LOG_INF("Encoder jumped back, stop timer");
 		}
 		else if (encoder_value > status->expected_encoder_value)
 		{
-			status->init.fire_abort();
+			status->init.fire_abort(status->init.inst);
 			uint32_t next_printable_encoder_value = status->init.print_first_line_after_encoder_tick + ((encoder_value - status->init.print_first_line_after_encoder_tick) / status->init.fire_every_ticks) * status->init.fire_every_ticks + status->init.fire_every_ticks;
 			uint32_t next_printable_line = ((next_printable_encoder_value - status->init.print_first_line_after_encoder_tick) / status->init.fire_every_ticks) * status->init.sequential_fires;
 			LOG_INF("Encoder jumped forward, next %d, %d", next_printable_encoder_value, next_printable_line);
@@ -69,7 +69,7 @@ void encoder_tick_handler(encoder_print_status_t *status)
 		}
 	}
 }
-void printhead_fired_handler(encoder_print_status_t *status)
+void encoder_printhead_fired_handler(encoder_print_status_t *status)
 {
 	LOG_INF("printed line %d", status->last_loaded_line);
 	status->last_printed_line = status->last_loaded_line;
@@ -81,7 +81,7 @@ void printhead_fired_handler(encoder_print_status_t *status)
 	else if (status->remaining_sequential_fires == 1)
 	{
 		status->remaining_sequential_fires--;
-		status->init.fire_abort();
+		status->init.fire_abort(status->init.inst);
 		status->expected_encoder_value += status->init.fire_every_ticks;
 		LOG_INF("Stop printing, expected %d", status->expected_encoder_value);
 	}

@@ -14,19 +14,38 @@
 #include <zephyr/drivers/reset.h>
 #include <zephyr/irq.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <lib/inkjetcontrol/encoder.h>
+#include <zephyr/kernel.h>
+
 LOG_MODULE_REGISTER(fire_stm32_combined_pwm, CONFIG_PRINTER_LOG_LEVEL);
+
+typedef enum
+{
+	PRINTER_FIRE_MODE_NONE,
+	PRINTER_FIRE_MODE_MANUAL,
+	PRINTER_FIRE_MODE_ENCODER,
+} printer_fire_mode_t;
+
+static void load_line_handler(struct k_work *work);
 
 struct fire_stm32_combined_pwm_data
 {
+	struct k_work load_line_work;
+	uint32_t line_to_load;
 	const struct reset_dt_spec reset;
 	uint32_t freq;
 	uint32_t tim_clk;
-	uint32_t irq_counter;
+	encoder_print_status_t encoder_print_status;
+	printer_fire_mode_t mode;
+	void (*load_line_cb)(uint32_t line);
 };
 
 struct fire_stm32_combined_pwm_config
 {
 	TIM_TypeDef *timer;
+	TIM_TypeDef *encoder_timer;
+	uint32_t encoder_timer_trigger;
+	uint32_t clock_timer_trigger;
 	uint32_t prescaler;
 	struct stm32_pclken pclken;
 	void (*irq_config_func)(const struct device *dev);
@@ -38,6 +57,100 @@ struct fire_stm32_combined_pwm_config
 	uint32_t pulse34_end;
 	uint32_t min_mask_period;
 };
+
+static int fire_manual_mode(const struct device *dev)
+{
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
+	TIM_HandleTypeDef htim1;
+	htim1.Instance = timer;
+	TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+	sSlaveConfig.InputTrigger = cfg->clock_timer_trigger;
+	if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+	{
+		LOG_ERR("Timer SlaveConfigSynchro failed");
+		return -ENODEV;
+	}
+	data->mode = PRINTER_FIRE_MODE_MANUAL;
+	return 0;
+}
+
+static void fire_abort(void *inst)
+{
+	const struct device *dev = (const struct device *)inst;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
+	timer->CR1 &= ~TIM_CR1_CEN;
+}
+
+static int32_t get_value(void *inst)
+{
+	const struct device *dev = (const struct device *)inst;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *encoder_timer = cfg->encoder_timer;
+	if (IS_TIM_32B_COUNTER_INSTANCE(encoder_timer))
+	{
+		int64_t encoder_value = encoder_timer->CNT;
+		if (encoder_value > CONFIG_FIRE_STM32_COMBINED_PWM_MAX_ENCODER_COUNT)
+		{
+			encoder_value = encoder_value - ((int64_t)(UINT32_MAX) + 1);
+		}
+		return (int32_t)encoder_value;
+	}
+	else
+	{
+		int32_t encoder_value = encoder_timer->CNT;
+		if (encoder_value > CONFIG_FIRE_STM32_COMBINED_PWM_MAX_ENCODER_COUNT)
+		{
+			encoder_value = encoder_value - ((int32_t)(UINT16_MAX) + 1);
+		}
+		return encoder_value;
+	}
+}
+
+static void load_line_handler(struct k_work *work)
+{
+	struct fire_stm32_combined_pwm_data *data = CONTAINER_OF(work, struct fire_stm32_combined_pwm_data, load_line_work);
+	data->load_line_cb(data->line_to_load);
+}
+
+static void load_line(void *inst, uint32_t line)
+{
+	const struct device *dev = (const struct device *)inst;
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	data->line_to_load = line;
+	k_work_submit(&data->load_line_work);
+}
+
+static int fire_encoder_mode(const struct device *dev, printer_fire_encoder_mode_init_t *init)
+{
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
+	TIM_HandleTypeDef htim1;
+	htim1.Instance = timer;
+	TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+	sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+	sSlaveConfig.InputTrigger = cfg->encoder_timer_trigger;
+	if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+	{
+		LOG_ERR("Timer SlaveConfigSynchro failed");
+		return -ENODEV;
+	}
+	data->load_line_cb = init->load_line_cb;
+	encoder_print_init_t init_encoder = {
+		.fire_abort = &fire_abort,
+		.get_value = &get_value,
+		.load_line = &load_line,
+		.inst = (void *)dev,
+		.fire_every_ticks = init->fire_every_ticks,
+		.print_first_line_after_encoder_tick = init->print_first_line_after_encoder_tick,
+		.sequential_fires = init->sequential_fires};
+	encoder_print_init(&data->encoder_print_status, &init_encoder);
+	data->mode = PRINTER_FIRE_MODE_ENCODER;
+	return 0;
+}
 
 static int fire(const struct device *dev)
 {
@@ -69,7 +182,6 @@ static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t d
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
 
-
 	uint32_t min_mask_cycles = (uint32_t)((cycles_per_sec * cfg->min_mask_period) / (1000 * 1000 * 1000));
 	uint32_t pulse34_start_cycles = (uint32_t)((cycles_per_sec * (cfg->pulse12_start + delay)) / (1000 * 1000 * 1000));
 	uint32_t pulse34_end_cycles = (uint32_t)((cycles_per_sec * (cfg->pulse12_start + delay + duration)) / (1000 * 1000 * 1000));
@@ -84,31 +196,6 @@ static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t d
 	TIM_HandleTypeDef htim1;
 	htim1.Instance = timer;
 
-	// TIM_OC_InitTypeDef sConfigOC = {0};
-	// sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM2;
-	// sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-	// sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-	// sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-	// sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-	// sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	// sConfigOC.Pulse = pulse34_start_cycles;
-	// if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-	// {
-	// 	LOG_ERR("Timer PWM ConfigChannel 3 failed");
-	// 	return -ENODEV;
-	// }
-	// sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
-	// sConfigOC.Pulse = pulse34_end_cycles;
-	// if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-	// {
-	// 	LOG_ERR("Timer PWM ConfigChannel 4 failed");
-	// 	return -ENODEV;
-	// }
-
-	// HAL_TIM_
-
-	// 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	// HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse34_start_cycles);
 	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, pulse34_end_cycles);
 	__HAL_TIM_SET_AUTORELOAD(&htim1, mask_cycles - 1);
@@ -117,7 +204,10 @@ static int set_light_timing(const struct device *dev, uint32_t delay, uint32_t d
 
 static const struct printer_fire_api fire_stm32_combined_pwm_api = {
 	.request_fire = &fire,
-	.set_light_timing = &set_light_timing};
+	.set_light_timing = &set_light_timing,
+	.encoder_mode = &fire_encoder_mode,
+	.manual_mode = &fire_manual_mode,
+};
 
 static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t *tim_clk)
 {
@@ -237,7 +327,9 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 {
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	struct fire_stm32_combined_pwm_data *data = dev->data;
-	data->irq_counter = 0;
+
+	k_work_init(&data->load_line_work, load_line_handler);
+
 	TIM_TypeDef *timer = cfg->timer;
 	TIM_HandleTypeDef htim1;
 	uint32_t tim_clk;
@@ -273,7 +365,6 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	cfg->irq_config_func(dev);
 
 	TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-	TIM_SlaveConfigTypeDef sSlaveConfig = {0};
 
 	TIM_OC_InitTypeDef sConfigOC = {0};
 	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -289,7 +380,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	uint32_t mask_cycles = pulse12_end_cycles > pulse34_end_cycles ? pulse12_end_cycles : pulse34_end_cycles;
 	mask_cycles = mask_cycles > min_mask_cycles ? mask_cycles : min_mask_cycles;
 
-		LOG_INF("Mask cycles: %d | Pulse12 %d - %d | Pulse34 %d - %d", mask_cycles, pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles);
+	LOG_INF("Mask cycles: %d | Pulse12 %d - %d | Pulse34 %d - %d", mask_cycles, pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles);
 
 	htim1.Instance = timer;
 	htim1.Init.Prescaler = cfg->prescaler;
@@ -320,13 +411,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 		LOG_ERR("Timer OnePulse Init failed");
 		return -ENODEV;
 	}
-	sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
-	sSlaveConfig.InputTrigger = TIM_TS_ITR3;
-	if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
-	{
-		LOG_ERR("Timer SlaveConfigSynchro failed");
-		return -ENODEV;
-	}
+	fire_manual_mode(dev);
 	// sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	// sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
 	// sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
@@ -398,6 +483,8 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_TRIGGER);
+	// __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
+	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC2);
 	// // __HAL_TIM_ENABLE(&htim1);
 
 	TIM_HandleTypeDef htim4;
@@ -423,56 +510,56 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	return 0;
 }
 
-void timer_irq_handler(const struct device *dev)
+static void timer_update_irq_handler(const struct device *dev)
+{
+	// struct fire_stm32_combined_pwm_data *data = dev->data;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
+	if (timer->SR & TIM_SR_UIF)
+	{
+		timer->SR &= ~TIM_SR_UIF;
+	}
+}
+
+static void timer_cc_irq_handler(const struct device *dev)
 {
 	struct fire_stm32_combined_pwm_data *data = dev->data;
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	TIM_TypeDef *timer = cfg->timer;
-	// if (timer->SR & TIM_SR_UIF)
-	// {
-	// 	LOG_INF("Timer update");
-	// 	// //disable the timer
-	// 	// bool was_enabled = timer->CR1 & TIM_CR1_CEN;
-	// 	// // timer->CR1 &= ~(TIM_CR1_CEN);
+	if (timer->SR & TIM_SR_CC2IF)
+	{
+		timer->SR &= ~TIM_SR_CC2IF;
+		encoder_printhead_fired_handler(&data->encoder_print_status);
+	}
+}
 
-	// 	// /* Get the TIMx SMCR register value */
-	// 	// uint32_t tmpsmcr = timer->SMCR;
-
-	// 	// /* Reset the slave mode Bits */
-	// 	// tmpsmcr &= ~TIM_SMCR_SMS;
-
-	// 	// timer->SMCR = tmpsmcr;
-	// 	// // clear the interrupt flag
-	// 	timer->SR &= ~TIM_SR_UIF;
-	// 	// LOG_INF("Timer IRQ %x, %d", TIM1->CNT, was_enabled);
-	// 	//
-	// }
-	// if (timer->SR & TIM_SR_CC1IF)
-	// {
-	// 	/* Get the TIMx SMCR register value */
-
-	// 	LOG_INF("Timer CC1");
-	// 	timer->SR &= ~TIM_SR_CC1IF;
-	// }
+static void timer_irq_handler(const struct device *dev)
+{
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
+	TIM_TypeDef *timer = cfg->timer;
 	if (timer->SR & TIM_SR_TIF)
 	{
-		uint32_t tmpsmcr = timer->SMCR;
-
-		/* Reset the slave mode Bits */
-		tmpsmcr &= ~TIM_SMCR_SMS;
-
-		timer->SMCR = tmpsmcr;
-		data->irq_counter++;
-		LOG_INF("Timer trigger %d", data->irq_counter);
 		timer->SR &= ~TIM_SR_TIF;
+		if (data->mode == PRINTER_FIRE_MODE_ENCODER)
+		{
+			encoder_tick_handler(&data->encoder_print_status);
+		}
+		else
+		{
+			// reset the slave mode
+			uint32_t tmpsmcr = timer->SMCR;
+			tmpsmcr &= ~TIM_SMCR_SMS;
+			timer->SMCR = tmpsmcr;
+		}
 	}
-	// LOG_INF("Timer IRQ %x, %x", TIM1->CNT, TIM4->CNT);
 }
 
 #define TIMER(idx) DT_INST_PARENT(idx)
 
 /** TIMx instance from DT */
 #define TIM(idx) ((TIM_TypeDef *)DT_REG_ADDR(TIMER(idx)))
+#define ENCODER_TIMER(idx) ((TIM_TypeDef *)DT_REG_ADDR(DT_PROP(DT_DRV_INST(idx), encoder_timer)))
 
 #define FIRE_STM32_COMBINED_PWM_INIT(idx)                                                            \
 	static struct fire_stm32_combined_pwm_data fire_stm32_combined_pwm_data##idx = {                 \
@@ -487,6 +574,18 @@ void timer_irq_handler(const struct device *dev)
 					DEVICE_DT_INST_GET(idx),                                                         \
 					0);                                                                              \
 		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq));                                         \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), up, irq),                                             \
+					DT_IRQ_BY_NAME(TIMER(idx), up, priority),                                        \
+					timer_update_irq_handler,                                                        \
+					DEVICE_DT_INST_GET(idx),                                                         \
+					0);                                                                              \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), up, irq));                                             \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), cc, irq),                                             \
+					DT_IRQ_BY_NAME(TIMER(idx), cc, priority),                                        \
+					timer_cc_irq_handler,                                                            \
+					DEVICE_DT_INST_GET(idx),                                                         \
+					0);                                                                              \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), cc, irq));                                             \
 	};                                                                                               \
 	PINCTRL_DT_INST_DEFINE(idx);                                                                     \
                                                                                                      \
@@ -502,6 +601,9 @@ void timer_irq_handler(const struct device *dev)
 		.pulse12_end = DT_PROP(DT_DRV_INST(idx), pulse12_end),                                       \
 		.pulse34_end = DT_PROP(DT_DRV_INST(idx), pulse34_end),                                       \
 		.min_mask_period = DT_PROP(DT_DRV_INST(idx), min_mask_period),                               \
+		.encoder_timer = ENCODER_TIMER(idx),                                                         \
+		.encoder_timer_trigger = DT_PROP(DT_DRV_INST(idx), encoder_timer_trigger),                   \
+		.clock_timer_trigger = DT_PROP(DT_DRV_INST(idx), clock_timer_trigger),                       \
 	};                                                                                               \
                                                                                                      \
 	DEVICE_DT_INST_DEFINE(idx, fire_stm32_combined_pwm_init, NULL,                                   \
