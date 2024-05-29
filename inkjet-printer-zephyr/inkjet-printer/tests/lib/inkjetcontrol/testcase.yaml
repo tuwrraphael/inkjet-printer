@@ -1,0 +1,8 @@
+common:
+  tags: extensibility
+  integration_platforms:
+    - native_posix
+tests:
+  lib.inkjetcontrol: {}
+  lib.inkjetcontrol.non_default:
+    extra_args: CONFIG_CUSTOM_GET_VALUE_DEFAULT=6

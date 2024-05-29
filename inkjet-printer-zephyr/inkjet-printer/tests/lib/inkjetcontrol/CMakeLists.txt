@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20.0)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(app_lib_inkjetcontrol_test)
+
+target_sources(app PRIVATE src/once_per_tick.c)
+target_sources(app PRIVATE src/once_per_x_ticks.c)
+target_sources(app PRIVATE src/x_per_tick.c)
+target_sources(app PRIVATE src/x_per_x_ticks.c)

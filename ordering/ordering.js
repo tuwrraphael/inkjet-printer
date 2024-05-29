@@ -38,6 +38,10 @@ let internalSuppliers = [
     "None"
 ]
 
+let orderExtensions = [
+    "Regulator"
+];
+
 function writeOrders() {
     let newordered = ordered.map(o => {
         let usedqty = used.get(o.RSBestNr) || 0;
@@ -111,7 +115,7 @@ function isFootprintChecked(value, footprint, rsbestnr) {
 for (let bomfile of bomfor) {
     let bom = await readBom(path.join(process.cwd(), "../", `${bomfile}/${bomfile}.csv`));
     for (let entry of bom) {
-        if (entry.DNP == "DNP") {
+        if (entry.DNP == "DNP" && !orderExtensions.includes(entry.Extension)) {
             result.push({ ...entry, done: true });
             continue;
         }
@@ -212,6 +216,7 @@ for (let bomfile of bomfor) {
                 });
         }
     }
+    writeOrders();
 }
 
 // find unused
