@@ -27,7 +27,10 @@ struct qdec_stm32_dev_cfg
 {
 	const struct pinctrl_dev_config *pin_config;
 	struct stm32_pclken pclken;
+	struct stm32_pclken encoder_xor_timer_pclken;
 	TIM_TypeDef *timer_inst;
+	TIM_TypeDef *encoder_xor_timer;
+	uint32_t encoder_xor_timer_remap;
 	uint32_t encoder_mode;
 	bool is_input_polarity_inverted;
 	uint8_t input_filtering_level;
@@ -138,14 +141,8 @@ static int qdec_stm32_initialize(const struct device *dev)
 	LL_TIM_EnableCounter(dev_cfg->timer_inst);
 	LL_TIM_EnableIT_CC1(dev_cfg->timer_inst);
 
-
-struct stm32_pclken timer15_pclken = {
-	.bus = STM32_CLOCK_BUS_APB2,
-	.enr = 0x00010000,
-};
-
 	retval = clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
-							  (clock_control_subsys_t)&timer15_pclken);
+							  (clock_control_subsys_t)&dev_cfg->encoder_xor_timer_pclken);
 
 	LL_TIM_InitTypeDef TIM_InitStruct;
 	LL_TIM_StructInit(&TIM_InitStruct);
@@ -154,7 +151,7 @@ struct stm32_pclken timer15_pclken = {
 	TIM_InitStruct.Autoreload = 10000;
 	TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
 	TIM_InitStruct.RepetitionCounter = 0;
-	LL_TIM_Init(TIM15, &TIM_InitStruct);
+	LL_TIM_Init(dev_cfg->encoder_xor_timer, &TIM_InitStruct);
 
 	LL_TIM_IC_InitTypeDef icinit;
 	LL_TIM_IC_StructInit(&icinit);
@@ -164,14 +161,12 @@ struct stm32_pclken timer15_pclken = {
 	// icinit.ICPrescaler = LL_TIM_ICPSC_DIV1;
 	icinit.ICFilter = dev_cfg->input_filtering_level * LL_TIM_IC_FILTER_FDIV1_N2;
 
-
-	LL_TIM_IC_Init(TIM15,LL_TIM_CHANNEL_CH1, &icinit);
-	LL_TIM_SetTriggerOutput(TIM15, LL_TIM_TRGO_CC1IF);
-	LL_TIM_SetRemap(TIM15, LL_TIM_TIM15_TI1_RMP_TIM3_CH1|LL_TIM_TIM15_TI2_RMP_TIM3_CH2);
-	// LL_TIM_SetRemap(TIM15, );
-	LL_TIM_IC_EnableXORCombination(TIM15);
-	LL_TIM_SetAutoReload(TIM15, 10000);
-	LL_TIM_EnableCounter(TIM15);
+	LL_TIM_IC_Init(dev_cfg->encoder_xor_timer, LL_TIM_CHANNEL_CH1, &icinit);
+	LL_TIM_SetTriggerOutput(dev_cfg->encoder_xor_timer, LL_TIM_TRGO_CC1IF);
+	LL_TIM_SetRemap(dev_cfg->encoder_xor_timer, dev_cfg->encoder_xor_timer_remap);
+	LL_TIM_IC_EnableXORCombination(dev_cfg->encoder_xor_timer);
+	LL_TIM_SetAutoReload(dev_cfg->encoder_xor_timer, 10000);
+	LL_TIM_EnableCounter(dev_cfg->encoder_xor_timer);
 
 	return 0;
 }
@@ -184,6 +179,7 @@ static const struct sensor_driver_api qdec_stm32_driver_api = {
 static void timer_irq_handler(const struct device *dev)
 {
 	struct qdec_stm32_dev_data *data = dev->data;
+
 	const struct qdec_stm32_dev_cfg *cfg = dev->config;
 	TIM_TypeDef *timer = cfg->timer_inst;
 	// // if (timer->SR & TIM_SR_UIF)
@@ -230,43 +226,46 @@ static void timer_irq_handler(const struct device *dev)
 	if (timer->SR & TIM_SR_CC1IF)
 	{
 		timer->SR &= ~TIM_SR_CC1IF;
-		uint32_t timer15_cnt = TIM15->CNT;
-		LOG_INF("Timer IRQ, %d, %d", timer->CNT, timer15_cnt);
+		uint32_t timer_cnt = cfg->encoder_xor_timer->CNT;
+		LOG_INF("Timer IRQ, %d, %d", timer->CNT, timer_cnt);
 	}
 }
-
 #define TIMER(n) DT_INST_PARENT(n)
-
-#define QDEC_STM32_INIT(n)                                                              \
-	BUILD_ASSERT(!(DT_INST_PROP(n, st_encoder_mode) & ~TIM_SMCR_SMS),                   \
-				 "Encoder mode is not supported by this MCU");                          \
-	static void qdec_##n##_stm32_irq_config(const struct device *dev)                   \
-	{                                                                                   \
-		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(n), global, irq),                              \
-					DT_IRQ_BY_NAME(TIMER(n), global, priority),                         \
-					timer_irq_handler,                                                  \
-					DEVICE_DT_INST_GET(n),                                              \
-					0);                                                                 \
-		irq_enable(DT_IRQ_BY_NAME(TIMER(n), global, irq));                              \
-	};                                                                                  \
-                                                                                        \
-	PINCTRL_DT_INST_DEFINE(n);                                                          \
-	static const struct qdec_stm32_dev_cfg qdec##n##_stm32_config = {                   \
-		.pin_config = PINCTRL_DT_INST_DEV_CONFIG_GET(n),                                \
-		.timer_inst = ((TIM_TypeDef *)DT_REG_ADDR(DT_INST_PARENT(n))),                  \
-		.pclken = {.bus = DT_CLOCKS_CELL(DT_INST_PARENT(n), bus),                       \
-				   .enr = DT_CLOCKS_CELL(DT_INST_PARENT(n), bits)},                     \
-		.encoder_mode = DT_INST_PROP(n, st_encoder_mode),                               \
-		.is_input_polarity_inverted = DT_INST_PROP(n, st_input_polarity_inverted),      \
-		.input_filtering_level = DT_INST_PROP(n, st_input_filter_level),                \
-		.irq_config_func = qdec_##n##_stm32_irq_config,                                 \
-		.irqn = DT_IRQN(TIMER(n)),                                                      \
-	};                                                                                  \
-                                                                                        \
-	static struct qdec_stm32_dev_data qdec##n##_stm32_data;                             \
-                                                                                        \
-	SENSOR_DEVICE_DT_INST_DEFINE(n, qdec_stm32_initialize, NULL, &qdec##n##_stm32_data, \
-								 &qdec##n##_stm32_config, POST_KERNEL,                  \
+#define ENCODER_XOR_TIMER(idx) ((TIM_TypeDef *)DT_REG_ADDR(DT_PROP(DT_DRV_INST(idx), encoder_xor_timer)))
+#define QDEC_STM32_INIT(n)                                                                                     \
+	BUILD_ASSERT(!(DT_INST_PROP(n, st_encoder_mode) & ~TIM_SMCR_SMS),                                          \
+				 "Encoder mode is not supported by this MCU");                                                 \
+	static void qdec_##n##_stm32_irq_config(const struct device *dev)                                          \
+	{                                                                                                          \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(n), global, irq),                                                     \
+					DT_IRQ_BY_NAME(TIMER(n), global, priority),                                                \
+					timer_irq_handler,                                                                         \
+					DEVICE_DT_INST_GET(n),                                                                     \
+					0);                                                                                        \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(n), global, irq));                                                     \
+	};                                                                                                         \
+                                                                                                               \
+	PINCTRL_DT_INST_DEFINE(n);                                                                                 \
+	static const struct qdec_stm32_dev_cfg qdec##n##_stm32_config = {                                          \
+		.pin_config = PINCTRL_DT_INST_DEV_CONFIG_GET(n),                                                       \
+		.timer_inst = ((TIM_TypeDef *)DT_REG_ADDR(DT_INST_PARENT(n))),                                         \
+		.pclken = {.bus = DT_CLOCKS_CELL(DT_INST_PARENT(n), bus),                                              \
+				   .enr = DT_CLOCKS_CELL(DT_INST_PARENT(n), bits)},                                            \
+		.encoder_xor_timer = ENCODER_XOR_TIMER(n),                                                             \
+		.encoder_xor_timer_pclken = {.bus = DT_CLOCKS_CELL(DT_PROP(DT_DRV_INST(n), encoder_xor_timer), bus),   \
+									 .enr = DT_CLOCKS_CELL(DT_PROP(DT_DRV_INST(n), encoder_xor_timer), bits)}, \
+		.encoder_xor_timer_remap = DT_INST_PROP(n, encoder_xor_timer_remap),                                   \
+		.encoder_mode = DT_INST_PROP(n, st_encoder_mode),                                                      \
+		.is_input_polarity_inverted = DT_INST_PROP(n, st_input_polarity_inverted),                             \
+		.input_filtering_level = DT_INST_PROP(n, st_input_filter_level),                                       \
+		.irq_config_func = qdec_##n##_stm32_irq_config,                                                        \
+		.irqn = DT_IRQN(TIMER(n)),                                                                             \
+	};                                                                                                         \
+                                                                                                               \
+	static struct qdec_stm32_dev_data qdec##n##_stm32_data;                                                    \
+                                                                                                               \
+	SENSOR_DEVICE_DT_INST_DEFINE(n, qdec_stm32_initialize, NULL, &qdec##n##_stm32_data,                        \
+								 &qdec##n##_stm32_config, POST_KERNEL,                                         \
 								 CONFIG_SENSOR_INIT_PRIORITY, &qdec_stm32_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(QDEC_STM32_INIT)

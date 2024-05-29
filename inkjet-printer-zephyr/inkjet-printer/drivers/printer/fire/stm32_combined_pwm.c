@@ -44,6 +44,7 @@ struct fire_stm32_combined_pwm_config
 {
 	TIM_TypeDef *timer;
 	TIM_TypeDef *encoder_timer;
+	TIM_TypeDef *clock_timer;
 	uint32_t encoder_timer_trigger;
 	uint32_t clock_timer_trigger;
 	uint32_t prescaler;
@@ -156,7 +157,6 @@ static int fire(const struct device *dev)
 {
 	const struct fire_stm32_combined_pwm_config *config = dev->config;
 	// struct fire_stm32_combined_pwm_data *data = dev->data;
-	LOG_INF("Fire %x, %x", TIM1->CNT, TIM4->CNT);
 	TIM_TypeDef *timer = config->timer;
 
 	/* Get the TIMx SMCR register value */
@@ -487,25 +487,10 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC2);
 	// // __HAL_TIM_ENABLE(&htim1);
 
-	TIM_HandleTypeDef htim4;
-	htim4.Instance = TIM4;
-	TIM_MasterConfigTypeDef sMasterConfig = {0};
-	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
-	// if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-	// {
-	// 	LOG_ERR("Timer MasterConfigSynchronization failed");
-	// 	return -ENODEV;
-	// }
-
-	/* Reset the MMS Bits */
-	uint32_t tmpcr2 = TIM4->CR2;
+	uint32_t tmpcr2 = cfg->clock_timer->CR2;
 	tmpcr2 &= ~TIM_CR2_MMS;
-	/* Select the TRGO source */
-	tmpcr2 |= sMasterConfig.MasterOutputTrigger;
-
-	/* Update TIMx CR2 */
-	TIM4->CR2 = tmpcr2;
+	tmpcr2 |= TIM_TRGO_UPDATE;
+	cfg->clock_timer->CR2 = tmpcr2;
 
 	return 0;
 }
@@ -560,6 +545,7 @@ static void timer_irq_handler(const struct device *dev)
 /** TIMx instance from DT */
 #define TIM(idx) ((TIM_TypeDef *)DT_REG_ADDR(TIMER(idx)))
 #define ENCODER_TIMER(idx) ((TIM_TypeDef *)DT_REG_ADDR(DT_PROP(DT_DRV_INST(idx), encoder_timer)))
+#define CLOCK_TIMER(idx) ((TIM_TypeDef *)DT_REG_ADDR(DT_PROP(DT_DRV_INST(idx), clock_timer)))
 
 #define FIRE_STM32_COMBINED_PWM_INIT(idx)                                                            \
 	static struct fire_stm32_combined_pwm_data fire_stm32_combined_pwm_data##idx = {                 \
@@ -602,6 +588,7 @@ static void timer_irq_handler(const struct device *dev)
 		.pulse34_end = DT_PROP(DT_DRV_INST(idx), pulse34_end),                                       \
 		.min_mask_period = DT_PROP(DT_DRV_INST(idx), min_mask_period),                               \
 		.encoder_timer = ENCODER_TIMER(idx),                                                         \
+		.clock_timer = CLOCK_TIMER(idx),                                                             \
 		.encoder_timer_trigger = DT_PROP(DT_DRV_INST(idx), encoder_timer_trigger),                   \
 		.clock_timer_trigger = DT_PROP(DT_DRV_INST(idx), clock_timer_trigger),                       \
 	};                                                                                               \

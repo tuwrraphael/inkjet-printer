@@ -11,6 +11,12 @@ include:
   - name: pinctrl-device.yaml
 
 properties:
+  encoder-xor-timer:
+    type: phandle
+    required: true
+  encoder-xor-timer-remap:
+    type: int
+    required: true
   pinctrl-0:
     required: true
 

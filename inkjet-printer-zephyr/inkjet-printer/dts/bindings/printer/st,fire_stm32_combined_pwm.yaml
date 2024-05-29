@@ -24,6 +24,9 @@ properties:
   encoder_timer:
     type: phandle
     required: true
+  clock_timer:
+    type: phandle
+    required: true
   encoder_timer_trigger:
     type: int
     required: true

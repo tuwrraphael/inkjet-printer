@@ -121,6 +121,7 @@
 		min_mask_period = <MAX_FIRE_FREQUENCY>;
 		#printer-fire-cells = <0>;
 		encoder_timer = <&timers3>;
+		clock_timer = <&timers4>;
 		encoder_timer_trigger = <0>; // ITR0 -> timer15
 		clock_timer_trigger = <((1<<4)|(2<<4))>; // ITR3 -> timer4
 	};
@@ -138,6 +139,8 @@
 		//st,input-polarity-inverted;
 		st,input-filter-level = <15>; // f/32, n=8
 		st,encoder-mode = <3>;
+		encoder-xor-timer = <&timers15>;
+		encoder-xor-timer-remap = <((2<<0)|(2<<8))>; // LL_TIM_TIM15_TI1_RMP_TIM3_CH1 | LL_TIM_TIM15_TI2_RMP_TIM3_CH2
 	};
 };
 
