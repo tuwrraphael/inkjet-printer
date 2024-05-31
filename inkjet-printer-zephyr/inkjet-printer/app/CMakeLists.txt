@@ -30,5 +30,6 @@ target_sources(app PRIVATE src/webusb.c)
 target_sources(app PRIVATE src/webusb_initialize.c)
 target_sources(app PRIVATE src/dropwatcher_light.c)
 target_sources(app PRIVATE src/moving_average.c)
+target_sources(app PRIVATE src/print_control.c)
 include_directories(include)
 

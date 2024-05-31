@@ -5,3 +5,12 @@ config QDEC_STM32_LINEAR
 	select USE_STM32_LL_TIM
 	help
 	  STM32 family Quadrature Decoder driver with linear output
+
+if QDEC_STM32_LINEAR
+
+config QDEC_STM32_LINEAR_MAX_ENCODER_COUNT
+	int "maximum encoder count"
+	depends on QDEC_STM32_LINEAR
+	default 10000
+
+endif # QDEC_STM32_LINEAR

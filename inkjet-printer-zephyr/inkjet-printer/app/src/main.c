@@ -19,6 +19,7 @@
 #include "printhead_routines.h"
 #include "printer_system_smf.h"
 #include "failure_handling.h"
+#include "print_control.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -46,19 +47,22 @@ static struct gpio_dt_spec READY = GPIO_DT_SPEC_GET(DT_NODELABEL(ready), gpios);
 
 static struct gpio_callback READY_cb_data;
 
-void encoder_debug_timer_handler(struct k_timer *timer) {
+void encoder_debug_timer_handler(struct k_timer *timer)
+{
 	const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(qdec));
-		if (!device_is_ready(dev)) {
+	if (!device_is_ready(dev))
+	{
 		printk("Qdec device is not ready\n");
 		return;
 	}
 	struct sensor_value val;
 	int rc = sensor_sample_fetch(dev);
 	rc = sensor_channel_get(dev, SENSOR_CHAN_POS_DX, &val);
-	if (rc != 0) {
-			printk("Failed to get data (%d)\n", rc);
-			return;
-		}
+	if (rc != 0)
+	{
+		printk("Failed to get data (%d)\n", rc);
+		return;
+	}
 	printk("Encoder value: %d\n", val.val1);
 }
 
@@ -595,8 +599,8 @@ static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printhead));
-	printer_request_fire(dev);
+	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
+	printer_fire_request_fire(dev);
 }
 
 static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char **argv)
@@ -606,6 +610,33 @@ static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char
 	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 	printer_clock_enable(printhead);
 }
+
+static int cmd_print_control_set_mode(const struct shell *sh, size_t argc, char **argv, void *data)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	uint32_t mode = (uint32_t)data;
+	if (mode == 1)
+	{
+		print_control_start_manual_fire_mode();
+	}
+	else if (mode == 2)
+	{
+		print_control_encoder_mode_init_t init = {
+			.sequential_fires = 1,
+			.fire_every_ticks = 1,
+			.print_first_line_after_encoder_tick = 1};
+		print_control_start_encoder_mode(&init);
+	}
+	else
+	{
+		shell_print(sh, "Invalid mode");
+	}
+	return 0;
+}
+
+SHELL_SUBCMD_DICT_SET_CREATE(print_control_set_mode_cmds, cmd_print_control_set_mode,
+							 (manual, 1, "manual"), (encoder, 2, "encoder"));
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(hv_supply, NULL, "Test HV supply", cmd_test_hv_supply),
@@ -617,6 +648,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(pressure_control_set_target_pressure, NULL, "Set target pressure", cmd_pressure_contol_set_target_pressure),
 							   SHELL_CMD(pressure_control_print_pressure, &pressure_control_print_pressure_cmds, "Print pressure", NULL),
 							   SHELL_CMD(encoder_print, &encoder_print_cmds, "Print encoder", NULL),
+							   SHELL_CMD(print_control_set_mode, &print_control_set_mode_cmds, "Set print control mode", NULL),
 							   SHELL_CMD(pressure_control_calibrate_zero_pressure, NULL, "Calibrate zero pressure", cmd_pressure_control_calibrate_zero_pressure),
 							   SHELL_CMD(pump_motor, &pump_motor_cmds, "Test pump motor", cmd_test_pump),
 							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),
@@ -637,11 +669,17 @@ static void failure_callback()
 	printhead_routines_go_to_safe_state();
 	pressure_control_go_to_safe_state();
 	printer_system_smf_go_to_safe_state();
+	print_control_go_to_safe_state();
 }
 
 static void printhead_routines_error()
 {
 	failure_handling_set_error_state(ERROR_PRINTHEAD_RESET);
+}
+
+static void printhead_control_error(uint32_t errors)
+{
+	failure_handling_set_error_state(errors);
 }
 
 int main(void)
@@ -697,16 +735,36 @@ int main(void)
 	ret = pressure_control_initialize(&pressure_control_init);
 	if (ret != 0)
 	{
+		LOG_ERR("Pressure control initialization failed with error %d", ret);
 		return ret;
 	}
 
 	printhead_routines_init_t printhead_routines_init = {
 		.error_callback = printhead_routines_error};
 	ret = printhead_routines_initialize(&printhead_routines_init);
+	if (ret != 0)
+	{
+		LOG_ERR("Printhead routines initialization failed with error %d", ret);
+		return ret;
+	}
 
 	failure_handling_init_t failure_handling_init = {
 		.failure_callback = failure_callback};
 	ret = failure_handling_initialize(&failure_handling_init);
+	if (ret != 0)
+	{
+		LOG_ERR("Failure handling initialization failed with error %d", ret);
+		return ret;
+	}
+
+	print_control_init_t print_control_init = {
+		.error_callback = printhead_control_error};
+	ret = print_control_initialize(&print_control_init);
+	if (ret != 0)
+	{
+		LOG_ERR("Print control initialization failed with error %d", ret);
+		return ret;
+	}
 
 	ret = printer_system_smf();
 	if (ret != 0)

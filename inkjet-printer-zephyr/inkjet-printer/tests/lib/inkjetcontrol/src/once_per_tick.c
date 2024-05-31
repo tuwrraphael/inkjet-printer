@@ -55,6 +55,29 @@ static void encoder_advance(encoder_print_status_t *status, int32_t ticks)
 	}
 }
 
+ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line_when_negative)
+{
+	encoder_print_init_t init = {
+		.get_value = get_value,
+		.fire_abort = fire_abort,
+		.load_line = load_line,
+		.sequential_fires = 1,
+		.fire_every_ticks = 1,
+		.print_first_line_after_encoder_tick = 4};
+
+	encoder_print_status_t encoder_print_status;
+
+	encoder_print_init(&encoder_print_status, &init);
+	encoder_advance(&encoder_print_status, -3);
+	zassert_equal(encoder_print_status.last_printed_line, -1, "last_printed_line not -1");
+	zassert_equal(encoder_print_status.expected_encoder_value, init.print_first_line_after_encoder_tick, "last_printed_line not -1");
+	encoder_advance(&encoder_print_status, 6);
+	zassert_equal(encoder_print_status.last_printed_line, -1, "last_printed_line not -1");
+	encoder_advance(&encoder_print_status, 1);
+	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
+	zassert_equal(encoder_value, 4, "encoder_value not 4");
+}
+
 ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line)
 {
 	encoder_print_init_t init = {
@@ -92,6 +115,7 @@ ZTEST(encoder_print_once_per_tick, test_normal_operation)
 	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
 	encoder_advance(&encoder_print_status, 1);
 	zassert_equal(encoder_print_status.last_printed_line, 1, "last_printed_line not 0");
+	zassert_equal(encoder_print_status.printed_lines, 2, "printed_lines not 2");
 }
 
 ZTEST(encoder_print_once_per_tick, test_prints_first_line_pos_5)

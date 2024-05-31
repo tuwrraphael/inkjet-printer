@@ -49,15 +49,29 @@ static int qdec_stm32_fetch(const struct device *dev, enum sensor_channel chan)
 {
 	struct qdec_stm32_dev_data *dev_data = dev->data;
 	const struct qdec_stm32_dev_cfg *dev_cfg = dev->config;
-	uint32_t counter_value;
 
 	if ((chan != SENSOR_CHAN_ALL) && (chan != SENSOR_CHAN_POS_DX))
 	{
 		return -ENOTSUP;
 	}
-	counter_value = LL_TIM_GetCounter(dev_cfg->timer_inst);
-	dev_data->position = counter_value;
-
+	if (IS_TIM_32B_COUNTER_INSTANCE(dev_cfg->timer_inst))
+	{
+		int64_t encoder_value = dev_cfg->timer_inst->CNT;
+		if (encoder_value > CONFIG_QDEC_STM32_LINEAR_MAX_ENCODER_COUNT)
+		{
+			encoder_value = encoder_value - ((int64_t)(UINT32_MAX) + 1);
+		}
+		dev_data->position = (int32_t)encoder_value;
+	}
+	else
+	{
+		int32_t encoder_value = dev_cfg->timer_inst->CNT;
+		if (encoder_value > CONFIG_QDEC_STM32_LINEAR_MAX_ENCODER_COUNT)
+		{
+			encoder_value = encoder_value - ((int32_t)(UINT16_MAX) + 1);
+		}
+		dev_data->position = encoder_value;
+	}
 	return 0;
 }
 
@@ -127,7 +141,7 @@ static int qdec_stm32_initialize(const struct device *dev)
 	{
 		max_counter_value = UINT16_MAX;
 	}
-	LL_TIM_SetAutoReload(dev_cfg->timer_inst, 10000);
+	LL_TIM_SetAutoReload(dev_cfg->timer_inst, max_counter_value);
 
 	if (LL_TIM_ENCODER_Init(dev_cfg->timer_inst, &init_props) != SUCCESS)
 	{
@@ -227,7 +241,7 @@ static void timer_irq_handler(const struct device *dev)
 	{
 		timer->SR &= ~TIM_SR_CC1IF;
 		uint32_t timer_cnt = cfg->encoder_xor_timer->CNT;
-		LOG_INF("Timer IRQ, %d, %d", timer->CNT, timer_cnt);
+		// LOG_INF("Timer IRQ, %d, %d", timer->CNT, timer_cnt);
 	}
 }
 #define TIMER(n) DT_INST_PARENT(n)
