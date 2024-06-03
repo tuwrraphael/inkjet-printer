@@ -109,6 +109,8 @@
 	st,prescaler = <0>;
 	status = "okay";
 
+	interrupts = <24 1>, <25 1>, <26 0>, <27 1>;
+
 	printer_fire: printer_fire {
 		compatible = "st,fire-stm32-combined-pwm";
 		status = "okay";
@@ -130,6 +132,8 @@
 &timers3 {
 	st,prescaler = <0>; // apb 1
 	status = "okay";
+
+	interrupts = <29 1>;
 
 	qdec: qdec {
 		compatible = "st,stm32-qdec-linear";
@@ -176,4 +180,17 @@
 		reg = <0>;
 		spi-max-frequency = <400000>;
 	};
+};
+
+&usart3 {
+	interrupts = <39 1>;
+};
+
+&usbotg_hs {
+	interrupts = <77 1>, <74 1>, <75 1>;
+};
+
+&exti {
+	interrupts = <6 1>, <7 1>, <8 1>, <9 1>,
+				     <10 1>, <23 1>, <40 1>;
 };
