@@ -48,12 +48,12 @@ static void load_line_handler(struct k_work *work)
     active_nozzle = line_to_load % 128;
     uint32_t pixels[4] = {0, 0, 0, 0};
     set_nozzle(active_nozzle, true, pixels);
-    int ret; //TODO!! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // int ret = printer_wait_rts(printhead, K_SECONDS(1));
-    // if (ret != 0)
-    // {
-    //     error_callback(ERROR_PRINTHEAD_COMMUNICATION);
-    // }
+    int ret;
+    ret = printer_wait_rts(printhead, K_SECONDS(1));
+    if (ret != 0)
+    {
+        error_callback(ERROR_PRINTHEAD_COMMUNICATION);
+    }
     ret = printer_set_pixels(printhead, pixels);
     if (ret != 0)
     {
@@ -107,16 +107,19 @@ int print_control_start_encoder_mode(print_control_encoder_mode_init_t *init)
     print_init.fire_every_ticks = init->fire_every_ticks;
     print_init.print_first_line_after_encoder_tick = init->print_first_line_after_encoder_tick;
     encoder_print_init(&encoder_print_status, &print_init);
+    printer_fire_set_timing(printer_fire, 10300, 1000, 10300, 2000);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
     printer_fire_set_trigger_reset(printer_fire, false);
     printer_fire_set_fire_issued_callback(printer_fire, fire_issued_cb);
     printer_fire_set_trigger_callback(printer_fire, trigger_cb);
+    printer_fire_request_fire(printer_fire);
     encoder_mode = true;
     return 0;
 }
 int print_control_start_manual_fire_mode()
 {
     encoder_mode = false;
+    printer_fire_set_timing(printer_fire, 40000, 1000, 250, 1000);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
     printer_fire_set_trigger_reset(printer_fire, true);
     printer_fire_set_fire_issued_callback(printer_fire, NULL);

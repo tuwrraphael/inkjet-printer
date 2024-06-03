@@ -115,15 +115,8 @@ static uint64_t pwm_stm32_get_cycles_per_sec(const struct device *dev)
 	return (uint64_t)(data->tim_clk / (cfg->prescaler + 1));
 }
 
-
 static int set_timing(const struct device *dev, uint32_t light_delay, uint32_t light_duration, uint32_t fire_delay, uint32_t fire_duration)
 {
-	if (light_duration < fire_duration)
-	{
-		LOG_ERR("Light duration must be greater than fire duration");
-		return -EINVAL;
-	}
-
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	uint64_t cycles_per_sec = pwm_stm32_get_cycles_per_sec(dev);
 
@@ -136,7 +129,7 @@ static int set_timing(const struct device *dev, uint32_t light_delay, uint32_t l
 
 	mask_cycles = mask_cycles > min_mask_cycles ? mask_cycles : min_mask_cycles;
 
-	LOG_INF("Set light timing: %d - %d, mask: %d", pulse34_start_cycles, pulse34_end_cycles, mask_cycles);
+	LOG_INF("Set timing: %d - %d, %d - %d, mask: %d", pulse12_start_cycles, pulse12_end_cycles, pulse34_start_cycles, pulse34_end_cycles, mask_cycles);
 
 	TIM_TypeDef *timer = cfg->timer;
 	TIM_HandleTypeDef htim1;
@@ -182,6 +175,7 @@ static const struct printer_fire_api fire_stm32_combined_pwm_api = {
 	.set_trigger_callback = &fire_set_trigger_callback,
 	.abort = &fire_abort,
 	.set_trigger_reset = &fire_set_trigger_reset,
+	.set_timing = &set_timing,
 };
 
 static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t *tim_clk)
@@ -499,30 +493,6 @@ static void timer_cc_irq_handler(const struct device *dev)
 	}
 }
 
-static void timer_irq_handler(const struct device *dev)
-{
-	uint32_t isr_enter = TIM1->CNT;
-	struct fire_stm32_combined_pwm_data *data = dev->data;
-	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
-	TIM_TypeDef *timer = cfg->timer;
-	if (timer->SR & TIM_SR_TIF)
-	{
-		timer->SR &= ~TIM_SR_TIF;
-		if (data->trigger_callback != NULL)
-		{
-			data->trigger_callback();
-		}
-		if (data->trigger_reset == true)
-		{
-			// reset the slave mode
-			uint32_t tmpsmcr = timer->SMCR;
-			tmpsmcr &= ~TIM_SMCR_SMS;
-			timer->SMCR = tmpsmcr;
-		}
-		LOG_INF("Timer TRGIF %d - %d", isr_enter, TIM1->CNT);
-	}
-}
-
 #define TIMER(idx) DT_INST_PARENT(idx)
 
 /** TIMx instance from DT */
@@ -531,30 +501,9 @@ static void timer_irq_handler(const struct device *dev)
 #define CLOCK_TIMER(idx) ((TIM_TypeDef *)DT_REG_ADDR(DT_PROP(DT_DRV_INST(idx), clock_timer)))
 
 #define FIRE_STM32_COMBINED_PWM_INIT(idx)                                                            \
+	static void fire_##idx##_stm32_irq_config(const struct device *dev);                             \
 	static struct fire_stm32_combined_pwm_data fire_stm32_combined_pwm_data##idx = {                 \
 		.reset = RESET_DT_SPEC_GET(TIMER(idx)),                                                      \
-	};                                                                                               \
-                                                                                                     \
-	static void fire_##idx##_stm32_irq_config(const struct device *dev)                              \
-	{                                                                                                \
-		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq),                                         \
-					DT_IRQ_BY_NAME(TIMER(idx), trgcom, priority),                                    \
-					timer_irq_handler,                                                               \
-					DEVICE_DT_INST_GET(idx),                                                         \
-					0);                                                                              \
-		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq));                                         \
-		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), up, irq),                                             \
-					DT_IRQ_BY_NAME(TIMER(idx), up, priority),                                        \
-					timer_update_irq_handler,                                                        \
-					DEVICE_DT_INST_GET(idx),                                                         \
-					0);                                                                              \
-		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), up, irq));                                             \
-		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), cc, irq),                                             \
-					DT_IRQ_BY_NAME(TIMER(idx), cc, priority),                                        \
-					timer_cc_irq_handler,                                                            \
-					DEVICE_DT_INST_GET(idx),                                                         \
-					0);                                                                              \
-		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), cc, irq));                                             \
 	};                                                                                               \
 	PINCTRL_DT_INST_DEFINE(idx);                                                                     \
                                                                                                      \
@@ -574,6 +523,51 @@ static void timer_irq_handler(const struct device *dev)
 		.clock_timer = CLOCK_TIMER(idx),                                                             \
 		.encoder_timer_trigger = DT_PROP(DT_DRV_INST(idx), encoder_timer_trigger),                   \
 		.clock_timer_trigger = DT_PROP(DT_DRV_INST(idx), clock_timer_trigger),                       \
+	};                                                                                               \
+                                                                                                     \
+	ISR_DIRECT_DECLARE(fire_##idx##_trgcom_isr_handler)                                              \
+	{                                                                                                \
+		struct fire_stm32_combined_pwm_data *data = &fire_stm32_combined_pwm_data##idx;              \
+		const struct fire_stm32_combined_pwm_config *cfg = &fire_stm32_combined_pwm_##idx##_config;  \
+		TIM_TypeDef *timer = cfg->timer;                                                             \
+		if (timer->SR & TIM_SR_TIF)                                                                  \
+		{                                                                                            \
+			timer->SR &= ~TIM_SR_TIF;                                                                \
+			if (data->trigger_callback != NULL)                                                      \
+			{                                                                                        \
+				data->trigger_callback();                                                            \
+			}                                                                                        \
+			if (data->trigger_reset == true)                                                         \
+			{                                                                                        \
+				/* reset the slave mode */                                                           \
+				uint32_t tmpsmcr = timer->SMCR;                                                      \
+				tmpsmcr &= ~TIM_SMCR_SMS;                                                            \
+				timer->SMCR = tmpsmcr;                                                               \
+			}                                                                                        \
+		}                                                                                            \
+		ISR_DIRECT_PM(); /* done after do_stuff() due to latency concerns */                         \
+		return 1;                                                                                    \
+	}                                                                                                \
+                                                                                                     \
+	static void fire_##idx##_stm32_irq_config(const struct device *dev)                              \
+	{                                                                                                \
+		IRQ_DIRECT_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq),                                  \
+						   DT_IRQ_BY_NAME(TIMER(idx), trgcom, priority),                             \
+						   fire_##idx##_trgcom_isr_handler,                                          \
+						   0);                                                                       \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), trgcom, irq));                                         \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), up, irq),                                             \
+					DT_IRQ_BY_NAME(TIMER(idx), up, priority),                                        \
+					timer_update_irq_handler,                                                        \
+					DEVICE_DT_INST_GET(idx),                                                         \
+					0);                                                                              \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), up, irq));                                             \
+		IRQ_CONNECT(DT_IRQ_BY_NAME(TIMER(idx), cc, irq),                                             \
+					DT_IRQ_BY_NAME(TIMER(idx), cc, priority),                                        \
+					timer_cc_irq_handler,                                                            \
+					DEVICE_DT_INST_GET(idx),                                                         \
+					0);                                                                              \
+		irq_enable(DT_IRQ_BY_NAME(TIMER(idx), cc, irq));                                             \
 	};                                                                                               \
                                                                                                      \
 	DEVICE_DT_INST_DEFINE(idx, fire_stm32_combined_pwm_init, NULL,                                   \

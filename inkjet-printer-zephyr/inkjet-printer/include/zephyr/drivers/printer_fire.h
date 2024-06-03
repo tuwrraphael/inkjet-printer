@@ -29,6 +29,7 @@ extern "C"
     typedef int (*printer_fire_set_trigger_callback_t)(const struct device *dev, void (*callback)(void));
     typedef int (*printer_fire_abort_t)(const struct device *dev);
     typedef int (*printer_fire_set_trigger_reset_t)(const struct device *dev, bool reset);
+    typedef int (*printer_fire_set_timing_t)(const struct device *dev, uint32_t light_delay, uint32_t light_duration, uint32_t fire_delay, uint32_t fire_duration);
 
     __subsystem struct printer_fire_api
     {
@@ -39,6 +40,7 @@ extern "C"
         printer_fire_set_trigger_callback_t set_trigger_callback;
         printer_fire_abort_t abort;
         printer_fire_set_trigger_reset_t set_trigger_reset;
+        printer_fire_set_timing_t set_timing;
     };
 
     __syscall int printer_fire_request_fire(const struct device *dev)
@@ -95,6 +97,14 @@ extern "C"
             (const struct printer_fire_api *)dev->api;
 
         return api->set_trigger_reset(dev, reset);
+    }
+
+    __syscall int printer_fire_set_timing(const struct device *dev, uint32_t light_delay, uint32_t light_duration, uint32_t fire_delay, uint32_t fire_duration)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_timing(dev, light_delay, light_duration, fire_delay, fire_duration);
     }
 
 #ifdef __cplusplus
