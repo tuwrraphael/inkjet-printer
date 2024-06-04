@@ -26,6 +26,7 @@ extern "C"
     typedef int (*printer_fire_set_light_timing_t)(const struct device *dev, uint32_t delay, uint32_t duration);
     typedef int (*printer_fire_set_trigger_t)(const struct device *dev, printer_fire_trigger_t trigger);
     typedef int (*printer_fire_set_fire_issued_callback_t)(const struct device *dev, void (*callback)(void));
+    typedef int (*printer_fire_set_fire_cycle_completed_callback_t)(const struct device *dev, void (*callback)(void));
     typedef int (*printer_fire_set_trigger_callback_t)(const struct device *dev, void (*callback)(void));
     typedef int (*printer_fire_abort_t)(const struct device *dev);
     typedef int (*printer_fire_set_trigger_reset_t)(const struct device *dev, bool reset);
@@ -37,6 +38,7 @@ extern "C"
         printer_fire_set_light_timing_t set_light_timing;
         printer_fire_set_trigger_t set_trigger;
         printer_fire_set_fire_issued_callback_t set_fire_issued_callback;
+        printer_fire_set_fire_cycle_completed_callback_t set_fire_cycle_completed_callback;
         printer_fire_set_trigger_callback_t set_trigger_callback;
         printer_fire_abort_t abort;
         printer_fire_set_trigger_reset_t set_trigger_reset;
@@ -73,6 +75,14 @@ extern "C"
             (const struct printer_fire_api *)dev->api;
 
         return api->set_fire_issued_callback(dev, callback);
+    }
+
+    __syscall int printer_fire_set_fire_cycle_completed_callback(const struct device *dev, void (*callback)(void))
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_fire_cycle_completed_callback(dev, callback);
     }
 
     __syscall int printer_fire_set_trigger_callback(const struct device *dev, void (*callback)(void))

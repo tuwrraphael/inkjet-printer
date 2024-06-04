@@ -24,6 +24,7 @@ struct fire_stm32_combined_pwm_data
 	uint32_t tim_clk;
 	void (*trigger_callback)(void);
 	void (*fire_issued_callback)(void);
+	void (*fire_cycle_completed_callback)(void);
 	bool trigger_reset;
 };
 
@@ -64,6 +65,13 @@ static int fire_set_fire_issued_callback(const struct device *dev, void (*callba
 {
 	struct fire_stm32_combined_pwm_data *data = dev->data;
 	data->fire_issued_callback = callback;
+	return 0;
+}
+
+static int fire_set_fire_cycle_completed_callback(const struct device *dev, void (*callback)(void))
+{
+	struct fire_stm32_combined_pwm_data *data = dev->data;
+	data->fire_cycle_completed_callback = callback;
 	return 0;
 }
 
@@ -172,6 +180,7 @@ static const struct printer_fire_api fire_stm32_combined_pwm_api = {
 	.set_light_timing = &set_light_timing,
 	.set_trigger = &fire_set_trigger,
 	.set_fire_issued_callback = &fire_set_fire_issued_callback,
+	.set_fire_cycle_completed_callback = &fire_set_fire_cycle_completed_callback,
 	.set_trigger_callback = &fire_set_trigger_callback,
 	.abort = &fire_abort,
 	.set_trigger_reset = &fire_set_trigger_reset,
@@ -299,6 +308,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 
 	data->trigger_callback = NULL;
 	data->fire_issued_callback = NULL;
+	data->fire_cycle_completed_callback = NULL;
 	data->trigger_reset = true;
 
 	TIM_TypeDef *timer = cfg->timer;
@@ -455,7 +465,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_TRIGGER);
 	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_UPDATE);
-	// __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC2);
+	__HAL_TIM_ENABLE_IT(&htim1, TIM_IT_CC2);
 	// // __HAL_TIM_ENABLE(&htim1);
 
 	uint32_t tmpcr2 = cfg->clock_timer->CR2;
@@ -475,21 +485,25 @@ static void timer_update_irq_handler(const struct device *dev)
 	if (timer->SR & TIM_SR_UIF)
 	{
 		timer->SR &= ~TIM_SR_UIF;
-		if (data->fire_issued_callback != NULL)
+		if (data->fire_cycle_completed_callback != NULL)
 		{
-			data->fire_issued_callback();
+			data->fire_cycle_completed_callback();
 		}
 	}
 }
 
 static void timer_cc_irq_handler(const struct device *dev)
 {
-	// struct fire_stm32_combined_pwm_data *data = dev->data;
+	struct fire_stm32_combined_pwm_data *data = dev->data;
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	TIM_TypeDef *timer = cfg->timer;
 	if (timer->SR & TIM_SR_CC2IF)
 	{
 		timer->SR &= ~TIM_SR_CC2IF;
+		if (data->fire_issued_callback != NULL)
+		{
+			data->fire_issued_callback();
+		}
 	}
 }
 

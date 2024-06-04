@@ -9,6 +9,8 @@
 #define ERROR_USER_ABORT (1<<2)
 #define ERROR_PRINTHEAD_COMMUNICATION (1<<3)
 #define ERROR_PRINTHEAD_FIRE (1<<4)
+#define ERROR_LOAD_NOT_FINISHED (1<<5)
+#define ERROR_PRINTHEAD_READY (1<<6)
 
 typedef void (*failure_callback_t)(void);
 

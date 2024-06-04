@@ -21,12 +21,19 @@ static void fire_abort(void *inst)
     return;
 }
 
-static void load_line(void *inst, uint32_t line)
+static void error_cb_fail_test(void *inst)
 {
-    load_line_called_with = line;
-    return;
+	printf("Error callback called\n");
+	ztest_test_fail();
 }
 
+static void load_line(void *inst, uint32_t line, bool wait_fired)
+{
+	load_line_called_with = line;
+	encoder_print_status_t *encoder_print_status = (encoder_print_status_t *)inst;
+	encoder_signal_load_line_completed(encoder_print_status);
+	return;
+}
 static void before(void *f)
 {
     encoder_value = 0;
@@ -48,7 +55,8 @@ static void fire_until_aborted(encoder_print_status_t *status)
             printf("fire_loop >= MAX_FIRE_LOOP");
             ztest_test_fail();
         }
-        encoder_printhead_fired_handler(status);
+        encoder_fire_issued_handler(status);
+        encoder_fire_cycle_completed_handler(status);
         fire_loop++;
     }
     last_fire_aborted = false;
@@ -67,15 +75,16 @@ static void encoder_advance(encoder_print_status_t *status, int32_t ticks)
 
 ZTEST(encoder_print_x_per_x_ticks, test_270dpi_normal_operation)
 {
+    encoder_print_status_t encoder_print_status;
     encoder_print_init_t init = {
         .get_value = get_value,
         .fire_abort = fire_abort,
         .load_line = load_line,
+        .load_error_cb = error_cb_fail_test,
+        .inst = &encoder_print_status,
         .sequential_fires = 3,
         .fire_every_ticks = 2,
         .print_first_line_after_encoder_tick = 1};
-
-    encoder_print_status_t encoder_print_status;
 
     encoder_print_init(&encoder_print_status, &init);
     encoder_advance(&encoder_print_status, 1); // -- encoder 1 (plan to print 0, 1, 2)
@@ -88,15 +97,16 @@ ZTEST(encoder_print_x_per_x_ticks, test_270dpi_normal_operation)
 
 ZTEST(encoder_print_x_per_x_ticks, test_270dpi_missed_tick)
 {
+    encoder_print_status_t encoder_print_status;
     encoder_print_init_t init = {
         .get_value = get_value,
         .fire_abort = fire_abort,
         .load_line = load_line,
+        .load_error_cb = error_cb_fail_test,
+        .inst = &encoder_print_status,
         .sequential_fires = 3,
         .fire_every_ticks = 2,
         .print_first_line_after_encoder_tick = 1};
-
-    encoder_print_status_t encoder_print_status;
 
     encoder_print_init(&encoder_print_status, &init);
     encoder_value++;

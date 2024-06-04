@@ -7,11 +7,17 @@ K_SEM_DEFINE(encoder_sem, 0, 1);
 
 LOG_MODULE_REGISTER(encoder, CONFIG_INKJETCONTROL_LOG_LEVEL);
 
-static void load_line(encoder_print_status_t *status, uint32_t line)
+static void load_line(encoder_print_status_t *status, uint32_t line, bool wait_fired)
 {
-	status->init.load_line(status->init.inst, line);
+	if (status->loading_line)
+	{
+		status->init.load_error_cb(status->init.inst);
+		return;
+	}
+	status->loading_line = true;
+	status->init.load_line(status->init.inst, line, wait_fired);
 	status->last_loaded_line = line;
-	LOG_INF("Loaded line %d", line);
+	LOG_INF("Loading line %d", line);
 }
 
 void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *init)
@@ -22,20 +28,27 @@ void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *in
 	status->last_printed_line = -1;
 	status->lost_lines_count = 0;
 	status->printed_lines = 0;
+	status->loading_line = false;
 	k_sem_reset(&encoder_sem);
 	k_sem_give(&encoder_sem);
 	for (uint32_t i = 0; i < MAX_LOST_LINES_MEMORY; i++)
 	{
 		status->lost_lines[i] = -1;
 	}
-	load_line(status, 0);
+	load_line(status, 0, false);
 	LOG_DBG("Encoder print initialized");
+}
+
+void encoder_signal_load_line_completed(encoder_print_status_t *status)
+{
+	status->loading_line = false;
+	LOG_DBG("Loaded line");
 }
 
 void encoder_tick_handler(encoder_print_status_t *status)
 {
-	int32_t encoder_value = TIM3->CNT; // status->init.get_value(status->init.inst);
-	LOG_DBG("Encoder tick handler %d", encoder_value);
+	int32_t encoder_value = status->init.get_value(status->init.inst);
+	// LOG_DBG("Encoder tick handler %d", encoder_value);
 
 	if (k_sem_take(&encoder_sem, K_NO_WAIT) != 0)
 	{
@@ -43,12 +56,11 @@ void encoder_tick_handler(encoder_print_status_t *status)
 	}
 	else
 	{
-		LOG_DBG("Encoder tick %d, expected %d", encoder_value, status->expected_encoder_value);
+		// LOG_DBG("Encoder tick %d, expected %d", encoder_value, status->expected_encoder_value);
 		if (encoder_value < status->expected_encoder_value)
 		{
-			uint32_t abortcnt = TIM1->CNT;
 			status->init.fire_abort(status->init.inst);
-			LOG_INF("Encoder jumped back, stop timer, %d",abortcnt);
+			LOG_INF("Encoder jumped back, stop timer");
 			k_sem_give(&encoder_sem);
 		}
 		else if (encoder_value > status->expected_encoder_value)
@@ -66,7 +78,7 @@ void encoder_tick_handler(encoder_print_status_t *status)
 				status->lost_lines_count++;
 			}
 			uint32_t lost_lines = next_printable_line - status->last_printed_line - 1;
-			load_line(status, next_printable_line);
+			load_line(status, next_printable_line, false);
 			LOG_DBG("Encoder jumped forward, lost %d, total lost %d, loaded %d", lost_lines, status->lost_lines_count, next_printable_line);
 			status->expected_encoder_value = next_printable_encoder_value;
 			k_sem_give(&encoder_sem);
@@ -78,13 +90,20 @@ void encoder_tick_handler(encoder_print_status_t *status)
 		}
 	}
 }
-void encoder_printhead_fired_handler(encoder_print_status_t *status)
+
+void encoder_fire_issued_handler(encoder_print_status_t *status)
 {
-	LOG_DBG("printed line %d", status->last_loaded_line);
-	status->last_printed_line = status->last_loaded_line;
-	uint32_t next_line_nr = status->last_printed_line + 1;
+	LOG_DBG("issued line %d", status->last_loaded_line);
+	status->issued_line = status->last_loaded_line;
+	uint32_t next_line_nr = status->last_loaded_line + 1;
+	load_line(status, next_line_nr, true);
+}
+
+void encoder_fire_cycle_completed_handler(encoder_print_status_t *status)
+{
+	LOG_DBG("printed line %d", status->issued_line);
+	status->last_printed_line = status->issued_line;
 	status->printed_lines++;
-	load_line(status, next_line_nr);
 	if (status->remaining_sequential_fires > 1)
 	{
 		status->remaining_sequential_fires--;

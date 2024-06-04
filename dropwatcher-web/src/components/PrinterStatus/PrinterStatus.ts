@@ -32,6 +32,14 @@ export class PrinterStatus extends HTMLElement {
     private connectStageButton : HTMLButtonElement;
     private printerUSB: PrinterUSB;
     private movementStage: MovementStage;
+    private sequentialFires : HTMLTableCellElement;
+    private fireEveryTicks : HTMLTableCellElement;
+    private printFirstLineAfterEncoderTick : HTMLTableCellElement;
+    private encoderValue : HTMLTableCellElement;
+    private expectedEncoderValue : HTMLTableCellElement;
+    private lastPrintedLine : HTMLTableCellElement;
+    private lostLinesCount : HTMLTableCellElement;
+    private printedLines : HTMLTableCellElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -59,6 +67,14 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure = document.querySelector("#pressure-control-limit-pressure");
             this.pressureControlAlgorithm = document.querySelector("#pressure-control-algorithm");
             this.connectUsbButton = document.querySelector("#connect-usb");
+            this.sequentialFires = document.querySelector("#sequential-fires");
+            this.fireEveryTicks = document.querySelector("#fire-every-ticks");
+            this.printFirstLineAfterEncoderTick = document.querySelector("#print-first-line-after-encoder-tick");
+            this.encoderValue = document.querySelector("#encoder-value");
+            this.expectedEncoderValue = document.querySelector("#expected-encoder-value");
+            this.lastPrintedLine = document.querySelector("#last-printed-line");
+            this.lostLinesCount = document.querySelector("#lost-lines-count");
+            this.printedLines = document.querySelector("#printed-lines");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -97,6 +113,8 @@ export class PrinterStatus extends HTMLElement {
                 return "Startup";
             case PrinterSystemState.Dropwatcher:
                 return "Dropwatcher";
+            case PrinterSystemState.Print:
+                return "Print";
             default:
                 return "Unspecified";
         }
@@ -166,6 +184,14 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
             this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
             this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
+            this.sequentialFires.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.sequentialFires);
+            this.fireEveryTicks.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.fireEveryTicks);
+            this.printFirstLineAfterEncoderTick.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.printFirstLineAfterEncoderTick);
+            this.encoderValue.innerText = this.formatNumber(s.printerSystemState.printControl.encoderValue);
+            this.expectedEncoderValue.innerText = this.formatNumber(s.printerSystemState.printControl.expectedEncoderValue);
+            this.lastPrintedLine.innerText = this.formatNumber(s.printerSystemState.printControl.lastPrintedLine);
+            this.lostLinesCount.innerText = this.formatNumber(s.printerSystemState.printControl.lostLinesCount);
+            this.printedLines.innerText = this.formatNumber(s.printerSystemState.printControl.printedLines);
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);

@@ -6,7 +6,9 @@ import {
     PrinterRequest,
     PrinterSystemStateResponse,
     ChangeNozzleDataRequest,
-    ChangePrinterSystemStateRequest
+    ChangePrinterSystemStateRequest,
+    ChangeEncoderModeSettingsRequest,
+    ChangeEncoderPositionRequest
 } from "./proto/compiled";
 import { Store } from "./state/Store";
 import { NozzleDataChanged } from "./state/actions/NozzleDataSet";
@@ -104,4 +106,17 @@ export class PrinterUSB {
         printerRequest.changePrinterSystemStateRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
+
+    async sendChangeEncoderModeSettingsRequest(request: ChangeEncoderModeSettingsRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeEncoderModeSettingsRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeEncoderPositionRequest(request: ChangeEncoderPositionRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeEncoderPositionRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
 }

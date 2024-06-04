@@ -42,6 +42,7 @@ struct qdec_stm32_dev_cfg
 struct qdec_stm32_dev_data
 {
 	int32_t position;
+	int32_t offset;
 	uint32_t irq_counter;
 };
 
@@ -61,7 +62,7 @@ static int qdec_stm32_fetch(const struct device *dev, enum sensor_channel chan)
 		{
 			encoder_value = encoder_value - ((int64_t)(UINT32_MAX) + 1);
 		}
-		dev_data->position = (int32_t)encoder_value;
+		dev_data->position = ((int32_t)encoder_value);
 	}
 	else
 	{
@@ -75,6 +76,28 @@ static int qdec_stm32_fetch(const struct device *dev, enum sensor_channel chan)
 	return 0;
 }
 
+static int qdec_stm32_set(const struct device *dev,
+						  enum sensor_channel chan,
+						  enum sensor_attribute attr,
+						  const struct sensor_value *val)
+{
+	struct qdec_stm32_dev_data *const dev_data = dev->data;
+	// const struct qdec_stm32_dev_cfg *const dev_cfg = dev->config;
+
+	if (chan != SENSOR_CHAN_POS_DX)
+	{
+		return -ENOTSUP;
+	}
+
+	if (attr == SENSOR_ATTR_OFFSET)
+	{
+		dev_data->offset = val->val1;
+		return 0;
+	}
+
+	return -ENOTSUP;
+}
+
 static int qdec_stm32_get(const struct device *dev, enum sensor_channel chan,
 						  struct sensor_value *val)
 {
@@ -82,8 +105,8 @@ static int qdec_stm32_get(const struct device *dev, enum sensor_channel chan,
 
 	if (chan == SENSOR_CHAN_POS_DX)
 	{
-		val->val1 = dev_data->position;
-		val->val2 = 0;
+		val->val1 = dev_data->position + dev_data->offset;
+		val->val2 = dev_data->position;
 	}
 	else
 	{
@@ -96,6 +119,9 @@ static int qdec_stm32_get(const struct device *dev, enum sensor_channel chan,
 static int qdec_stm32_initialize(const struct device *dev)
 {
 	const struct qdec_stm32_dev_cfg *const dev_cfg = dev->config;
+	struct qdec_stm32_dev_data *const dev_data = dev->data;
+	dev_data->position = 0;
+	dev_data->offset = 0;
 	int retval;
 	LL_TIM_ENCODER_InitTypeDef init_props;
 	uint32_t max_counter_value;
@@ -188,7 +214,7 @@ static int qdec_stm32_initialize(const struct device *dev)
 static const struct sensor_driver_api qdec_stm32_driver_api = {
 	.sample_fetch = qdec_stm32_fetch,
 	.channel_get = qdec_stm32_get,
-};
+	.attr_set = qdec_stm32_set};
 
 static void timer_irq_handler(const struct device *dev)
 {
@@ -240,7 +266,7 @@ static void timer_irq_handler(const struct device *dev)
 	if (timer->SR & TIM_SR_CC1IF)
 	{
 		timer->SR &= ~TIM_SR_CC1IF;
-		uint32_t timer_cnt = cfg->encoder_xor_timer->CNT;
+		// uint32_t timer_cnt = cfg->encoder_xor_timer->CNT;
 		// LOG_INF("Timer IRQ, %d, %d", timer->CNT, timer_cnt);
 	}
 }

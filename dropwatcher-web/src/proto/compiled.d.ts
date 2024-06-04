@@ -221,6 +221,207 @@ export class PressureControlSystemState implements IPressureControlSystemState {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a PrintControlEncoderModeSettings. */
+export class PrintControlEncoderModeSettings implements IPrintControlEncoderModeSettings {
+
+    /**
+     * Constructs a new PrintControlEncoderModeSettings.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPrintControlEncoderModeSettings);
+
+    /** PrintControlEncoderModeSettings sequentialFires. */
+    public sequentialFires: number;
+
+    /** PrintControlEncoderModeSettings fireEveryTicks. */
+    public fireEveryTicks: number;
+
+    /** PrintControlEncoderModeSettings printFirstLineAfterEncoderTick. */
+    public printFirstLineAfterEncoderTick: number;
+
+    /**
+     * Creates a new PrintControlEncoderModeSettings instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PrintControlEncoderModeSettings instance
+     */
+    public static create(properties?: IPrintControlEncoderModeSettings): PrintControlEncoderModeSettings;
+
+    /**
+     * Encodes the specified PrintControlEncoderModeSettings message. Does not implicitly {@link PrintControlEncoderModeSettings.verify|verify} messages.
+     * @param message PrintControlEncoderModeSettings message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPrintControlEncoderModeSettings, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PrintControlEncoderModeSettings message, length delimited. Does not implicitly {@link PrintControlEncoderModeSettings.verify|verify} messages.
+     * @param message PrintControlEncoderModeSettings message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPrintControlEncoderModeSettings, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PrintControlEncoderModeSettings message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PrintControlEncoderModeSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PrintControlEncoderModeSettings;
+
+    /**
+     * Decodes a PrintControlEncoderModeSettings message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PrintControlEncoderModeSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PrintControlEncoderModeSettings;
+
+    /**
+     * Verifies a PrintControlEncoderModeSettings message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PrintControlEncoderModeSettings message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PrintControlEncoderModeSettings
+     */
+    public static fromObject(object: { [k: string]: any }): PrintControlEncoderModeSettings;
+
+    /**
+     * Creates a plain object from a PrintControlEncoderModeSettings message. Also converts values to other types if specified.
+     * @param message PrintControlEncoderModeSettings
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PrintControlEncoderModeSettings, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PrintControlEncoderModeSettings to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PrintControlEncoderModeSettings
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
+/** Represents a PrintControlState. */
+export class PrintControlState implements IPrintControlState {
+
+    /**
+     * Constructs a new PrintControlState.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPrintControlState);
+
+    /** PrintControlState encoderModeSettings. */
+    public encoderModeSettings?: (IPrintControlEncoderModeSettings|null);
+
+    /** PrintControlState encoderValue. */
+    public encoderValue: number;
+
+    /** PrintControlState expectedEncoderValue. */
+    public expectedEncoderValue: number;
+
+    /** PrintControlState lastPrintedLine. */
+    public lastPrintedLine: number;
+
+    /** PrintControlState lostLinesCount. */
+    public lostLinesCount: number;
+
+    /** PrintControlState printedLines. */
+    public printedLines: number;
+
+    /**
+     * Creates a new PrintControlState instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PrintControlState instance
+     */
+    public static create(properties?: IPrintControlState): PrintControlState;
+
+    /**
+     * Encodes the specified PrintControlState message. Does not implicitly {@link PrintControlState.verify|verify} messages.
+     * @param message PrintControlState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPrintControlState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PrintControlState message, length delimited. Does not implicitly {@link PrintControlState.verify|verify} messages.
+     * @param message PrintControlState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPrintControlState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PrintControlState message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PrintControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PrintControlState;
+
+    /**
+     * Decodes a PrintControlState message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PrintControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PrintControlState;
+
+    /**
+     * Verifies a PrintControlState message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PrintControlState message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PrintControlState
+     */
+    public static fromObject(object: { [k: string]: any }): PrintControlState;
+
+    /**
+     * Creates a plain object from a PrintControlState message. Also converts values to other types if specified.
+     * @param message PrintControlState
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PrintControlState, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PrintControlState to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PrintControlState
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a GetPrinterSystemStateRequest. */
 export class GetPrinterSystemStateRequest implements IGetPrinterSystemStateRequest {
 
@@ -758,6 +959,186 @@ export class ChangeNozzleDataRequest implements IChangeNozzleDataRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a ChangeEncoderPositionRequest. */
+export class ChangeEncoderPositionRequest implements IChangeEncoderPositionRequest {
+
+    /**
+     * Constructs a new ChangeEncoderPositionRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangeEncoderPositionRequest);
+
+    /** ChangeEncoderPositionRequest position. */
+    public position: number;
+
+    /**
+     * Creates a new ChangeEncoderPositionRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ChangeEncoderPositionRequest instance
+     */
+    public static create(properties?: IChangeEncoderPositionRequest): ChangeEncoderPositionRequest;
+
+    /**
+     * Encodes the specified ChangeEncoderPositionRequest message. Does not implicitly {@link ChangeEncoderPositionRequest.verify|verify} messages.
+     * @param message ChangeEncoderPositionRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IChangeEncoderPositionRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ChangeEncoderPositionRequest message, length delimited. Does not implicitly {@link ChangeEncoderPositionRequest.verify|verify} messages.
+     * @param message ChangeEncoderPositionRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IChangeEncoderPositionRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangeEncoderPositionRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangeEncoderPositionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangeEncoderPositionRequest;
+
+    /**
+     * Decodes a ChangeEncoderPositionRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ChangeEncoderPositionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangeEncoderPositionRequest;
+
+    /**
+     * Verifies a ChangeEncoderPositionRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ChangeEncoderPositionRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ChangeEncoderPositionRequest
+     */
+    public static fromObject(object: { [k: string]: any }): ChangeEncoderPositionRequest;
+
+    /**
+     * Creates a plain object from a ChangeEncoderPositionRequest message. Also converts values to other types if specified.
+     * @param message ChangeEncoderPositionRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ChangeEncoderPositionRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ChangeEncoderPositionRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for ChangeEncoderPositionRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
+/** Represents a ChangeEncoderModeSettingsRequest. */
+export class ChangeEncoderModeSettingsRequest implements IChangeEncoderModeSettingsRequest {
+
+    /**
+     * Constructs a new ChangeEncoderModeSettingsRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangeEncoderModeSettingsRequest);
+
+    /** ChangeEncoderModeSettingsRequest encoderModeSettings. */
+    public encoderModeSettings?: (IPrintControlEncoderModeSettings|null);
+
+    /**
+     * Creates a new ChangeEncoderModeSettingsRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ChangeEncoderModeSettingsRequest instance
+     */
+    public static create(properties?: IChangeEncoderModeSettingsRequest): ChangeEncoderModeSettingsRequest;
+
+    /**
+     * Encodes the specified ChangeEncoderModeSettingsRequest message. Does not implicitly {@link ChangeEncoderModeSettingsRequest.verify|verify} messages.
+     * @param message ChangeEncoderModeSettingsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IChangeEncoderModeSettingsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ChangeEncoderModeSettingsRequest message, length delimited. Does not implicitly {@link ChangeEncoderModeSettingsRequest.verify|verify} messages.
+     * @param message ChangeEncoderModeSettingsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IChangeEncoderModeSettingsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangeEncoderModeSettingsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangeEncoderModeSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangeEncoderModeSettingsRequest;
+
+    /**
+     * Decodes a ChangeEncoderModeSettingsRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ChangeEncoderModeSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangeEncoderModeSettingsRequest;
+
+    /**
+     * Verifies a ChangeEncoderModeSettingsRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ChangeEncoderModeSettingsRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ChangeEncoderModeSettingsRequest
+     */
+    public static fromObject(object: { [k: string]: any }): ChangeEncoderModeSettingsRequest;
+
+    /**
+     * Creates a plain object from a ChangeEncoderModeSettingsRequest message. Also converts values to other types if specified.
+     * @param message ChangeEncoderModeSettingsRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ChangeEncoderModeSettingsRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ChangeEncoderModeSettingsRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for ChangeEncoderModeSettingsRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterRequest. */
 export class PrinterRequest implements IPrinterRequest {
 
@@ -785,6 +1166,12 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest changeNozzleDataRequest. */
     public changeNozzleDataRequest?: (IChangeNozzleDataRequest|null);
 
+    /** PrinterRequest changeEncoderPositionRequest. */
+    public changeEncoderPositionRequest?: (IChangeEncoderPositionRequest|null);
+
+    /** PrinterRequest changeEncoderModeSettingsRequest. */
+    public changeEncoderModeSettingsRequest?: (IChangeEncoderModeSettingsRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -802,6 +1189,12 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _changeNozzleDataRequest. */
     public _changeNozzleDataRequest?: "changeNozzleDataRequest";
+
+    /** PrinterRequest _changeEncoderPositionRequest. */
+    public _changeEncoderPositionRequest?: "changeEncoderPositionRequest";
+
+    /** PrinterRequest _changeEncoderModeSettingsRequest. */
+    public _changeEncoderModeSettingsRequest?: "changeEncoderModeSettingsRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.
@@ -887,7 +1280,8 @@ export enum PrinterSystemState {
     PrinterSystemState_STARTUP = 1,
     PrinterSystemState_IDLE = 2,
     PrinterSystemState_ERROR = 3,
-    PrinterSystemState_DROPWATCHER = 4
+    PrinterSystemState_DROPWATCHER = 4,
+    PrinterSystemState_PRINT = 5
 }
 
 /** Represents a PrinterSystemStateResponse. */
@@ -907,6 +1301,9 @@ export class PrinterSystemStateResponse implements IPrinterSystemStateResponse {
 
     /** PrinterSystemStateResponse pressureControl. */
     public pressureControl?: (IPressureControlSystemState|null);
+
+    /** PrinterSystemStateResponse printControl. */
+    public printControl?: (IPrintControlState|null);
 
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.

@@ -14,6 +14,12 @@ static int32_t get_value(void *inst)
 	return encoder_value;
 }
 
+static void error_cb_fail_test(void *inst)
+{
+	printf("Error callback called\n");
+	ztest_test_fail();
+}
+
 static void fire_abort(void *inst)
 {
 	fire_abort_called++;
@@ -21,9 +27,11 @@ static void fire_abort(void *inst)
 	return;
 }
 
-static void load_line(void *inst, uint32_t line)
+static void load_line(void *inst, uint32_t line, bool wait_fired)
 {
 	load_line_called_with = line;
+	encoder_print_status_t *encoder_print_status = (encoder_print_status_t *)inst;
+	encoder_signal_load_line_completed(encoder_print_status);
 	return;
 }
 
@@ -39,7 +47,8 @@ static void fire_if_not_aborted(encoder_print_status_t *status)
 {
 	if (!last_fire_aborted)
 	{
-		encoder_printhead_fired_handler(status);
+		encoder_fire_issued_handler(status);
+		encoder_fire_cycle_completed_handler(status);
 	}
 	last_fire_aborted = false;
 }
@@ -57,15 +66,17 @@ static void encoder_advance(encoder_print_status_t *status, int32_t ticks)
 
 ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line_when_negative)
 {
+	encoder_print_status_t encoder_print_status;
+
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 4};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_advance(&encoder_print_status, -3);
@@ -80,15 +91,16 @@ ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line_when_nega
 
 ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 4};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_advance(&encoder_print_status, 1);
@@ -100,15 +112,16 @@ ZTEST(encoder_print_once_per_tick, test_not_printing_before_first_line)
 
 ZTEST(encoder_print_once_per_tick, test_normal_operation)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 1};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_advance(&encoder_print_status, 1);
@@ -120,15 +133,16 @@ ZTEST(encoder_print_once_per_tick, test_normal_operation)
 
 ZTEST(encoder_print_once_per_tick, test_prints_first_line_pos_5)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 5};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_advance(&encoder_print_status, 4);
@@ -140,15 +154,16 @@ ZTEST(encoder_print_once_per_tick, test_prints_first_line_pos_5)
 
 ZTEST(encoder_print_once_per_tick, test_encoder_jitter_back)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 1};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_value++;
@@ -164,15 +179,16 @@ ZTEST(encoder_print_once_per_tick, test_encoder_jitter_back)
 
 ZTEST(encoder_print_once_per_tick, test_missed_single_tick)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 1};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_value++;
@@ -199,15 +215,16 @@ ZTEST(encoder_print_once_per_tick, test_missed_single_tick)
 
 ZTEST(encoder_print_once_per_tick, test_missed_two_ticks)
 {
+	encoder_print_status_t encoder_print_status;
 	encoder_print_init_t init = {
 		.get_value = get_value,
 		.fire_abort = fire_abort,
 		.load_line = load_line,
+		.load_error_cb = error_cb_fail_test,
+		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 1,
 		.print_first_line_after_encoder_tick = 1};
-
-	encoder_print_status_t encoder_print_status;
 
 	encoder_print_init(&encoder_print_status, &init);
 	encoder_value++;

@@ -20,6 +20,7 @@ static print_control_error_callback_t error_callback;
 static encoder_print_status_t encoder_print_status;
 
 static uint32_t line_to_load = 0;
+static bool next_load_wait_fired = false;
 
 static void load_line_handler(struct k_work *work);
 
@@ -49,16 +50,21 @@ static void load_line_handler(struct k_work *work)
     uint32_t pixels[4] = {0, 0, 0, 0};
     set_nozzle(active_nozzle, true, pixels);
     int ret;
-    ret = printer_wait_rts(printhead, K_SECONDS(1));
-    if (ret != 0)
+    if (next_load_wait_fired)
     {
-        error_callback(ERROR_PRINTHEAD_COMMUNICATION);
+        ret = printer_wait_fired_load_next(printhead, K_USEC(10));
+        LOG_INF("Wait fired %d", ret);
+        if (ret != 0)
+        {
+            error_callback(ERROR_PRINTHEAD_READY);
+        }
     }
     ret = printer_set_pixels(printhead, pixels);
     if (ret != 0)
     {
         error_callback(ERROR_PRINTHEAD_COMMUNICATION);
     }
+    encoder_signal_load_line_completed(&encoder_print_status);
 }
 
 static int32_t get_value_cb(void *inst)
@@ -69,14 +75,20 @@ static int32_t get_value_cb(void *inst)
     return val.val1;
 }
 
+static void load_error_cb(void *inst)
+{
+    error_callback(ERROR_LOAD_NOT_FINISHED);
+}
+
 static void fire_abort_cb(void *inst)
 {
     printer_fire_abort(printer_fire);
 }
 
-static void load_line_cb(void *inst, uint32_t line)
+static void load_line_cb(void *inst, uint32_t line, bool wait_fired)
 {
     line_to_load = line;
+    next_load_wait_fired = wait_fired;
     k_work_submit(&load_line_work);
 }
 
@@ -84,7 +96,15 @@ static void fire_issued_cb()
 {
     if (encoder_mode)
     {
-        encoder_printhead_fired_handler(&encoder_print_status);
+        encoder_fire_issued_handler(&encoder_print_status);
+    }
+}
+
+static void fire_completed_cb()
+{
+    if (encoder_mode)
+    {
+        encoder_fire_cycle_completed_handler(&encoder_print_status);
     }
 }
 
@@ -96,12 +116,13 @@ static void trigger_cb()
     }
 }
 
-int print_control_start_encoder_mode(print_control_encoder_mode_init_t *init)
+int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init)
 {
     static encoder_print_init_t print_init = {
         .fire_abort = fire_abort_cb,
         .get_value = get_value_cb,
         .load_line = load_line_cb,
+        .load_error_cb = load_error_cb,
         .inst = NULL};
     print_init.sequential_fires = init->sequential_fires;
     print_init.fire_every_ticks = init->fire_every_ticks;
@@ -111,6 +132,7 @@ int print_control_start_encoder_mode(print_control_encoder_mode_init_t *init)
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
     printer_fire_set_trigger_reset(printer_fire, false);
     printer_fire_set_fire_issued_callback(printer_fire, fire_issued_cb);
+    printer_fire_set_fire_cycle_completed_callback(printer_fire, fire_completed_cb);
     printer_fire_set_trigger_callback(printer_fire, trigger_cb);
     printer_fire_request_fire(printer_fire);
     encoder_mode = true;
@@ -123,6 +145,7 @@ int print_control_start_manual_fire_mode()
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
     printer_fire_set_trigger_reset(printer_fire, true);
     printer_fire_set_fire_issued_callback(printer_fire, NULL);
+    printer_fire_set_fire_cycle_completed_callback(printer_fire, NULL);
     printer_fire_set_trigger_callback(printer_fire, NULL);
     return 0;
 }
@@ -136,6 +159,24 @@ int print_control_request_fire()
     }
     return 0;
 }
+
+void print_control_set_encoder_position(int32_t value)
+{
+    struct sensor_value val;
+    (void)sensor_sample_fetch(encoder);
+    (void)sensor_channel_get(encoder, SENSOR_CHAN_POS_DX, &val);
+    val.val1 = value - val.val2;
+    (void)sensor_attr_set(encoder, SENSOR_CHAN_POS_DX, SENSOR_ATTR_OFFSET, &val);
+}
+
+void print_control_disable()
+{
+    encoder_mode = false;
+    printer_fire_set_trigger_reset(printer_fire, true);
+    printer_fire_abort(printer_fire);
+    printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
+}
+
 int print_control_initialize(print_control_init_t *init)
 {
     error_callback = init->error_callback;
@@ -165,4 +206,16 @@ void print_control_go_to_safe_state()
     printer_fire_set_trigger_reset(printer_fire, true);
     printer_fire_abort(printer_fire);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
+}
+
+void print_control_get_info(print_control_info_t *info)
+{
+    info->encoder_mode_settings.fire_every_ticks = encoder_print_status.init.fire_every_ticks;
+    info->encoder_mode_settings.print_first_line_after_encoder_tick = encoder_print_status.init.print_first_line_after_encoder_tick;
+    info->encoder_mode_settings.sequential_fires = encoder_print_status.init.sequential_fires;
+    info->expected_encoder_value = encoder_print_status.expected_encoder_value;
+    info->last_printed_line = encoder_print_status.last_printed_line;
+    info->lost_lines_count = encoder_print_status.lost_lines_count;
+    info->printed_lines = encoder_print_status.printed_lines;
+    info->encoder_value = get_value_cb(NULL);
 }

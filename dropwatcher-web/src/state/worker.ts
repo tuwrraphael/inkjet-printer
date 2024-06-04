@@ -58,6 +58,8 @@ function mapPrinterSystemState(s: ProtoPrinterSystemState): PrinterSystemState {
             return PrinterSystemState.Startup;
         case ProtoPrinterSystemState.PrinterSystemState_DROPWATCHER:
             return PrinterSystemState.Dropwatcher;
+        case ProtoPrinterSystemState.PrinterSystemState_PRINT:
+            return PrinterSystemState.Print;
         default:
             return PrinterSystemState.Unspecified;
     }
@@ -128,6 +130,18 @@ async function handleMessage(msg: Actions) {
                                 algorithm: msg.response.pressureControl.parameters.algorithm ? mapPressureControlAlgorithm(msg.response.pressureControl.parameters.algorithm) : PressureControlAlgorithm.Unspecified,
                                 enabled: msg.response.pressureControl.parameters.enabled
                             } : null
+                        } : null,
+                        printControl: msg.response.printControl ? {
+                            encoderModeSettings: {
+                                fireEveryTicks: msg.response.printControl.encoderModeSettings.fireEveryTicks || 0,
+                                printFirstLineAfterEncoderTick: msg.response.printControl.encoderModeSettings.printFirstLineAfterEncoderTick || 0,
+                                sequentialFires: msg.response.printControl.encoderModeSettings.sequentialFires | 0
+                            },
+                            encoderValue: msg.response.printControl.encoderValue || 0,
+                            expectedEncoderValue: msg.response.printControl.expectedEncoderValue || 0,
+                            lastPrintedLine: msg.response.printControl.lastPrintedLine || 0,
+                            lostLinesCount: msg.response.printControl.lostLinesCount || 0,
+                            printedLines: msg.response.printControl.printedLines || 0
                         } : null
                     }
                 };
