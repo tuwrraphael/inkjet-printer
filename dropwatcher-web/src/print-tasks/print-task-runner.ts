@@ -4,8 +4,8 @@ import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
 import { MoveTaskRunner } from "./runners/MoveTaskRunner";
-import { PrinterProgram, PrinterProgramState, PrinterTask, PrinterTaskHome, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
-import { TaskRunnerSynchronization } from "./TaskRunnerSynchronization";
+import { ResetEncoderTaskRunner } from "./runners/ResetEncoderTaskRunner";
+import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "./printer-program";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
 import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
@@ -93,6 +93,10 @@ export class PrintTaskRunner {
             case PrinterTaskType.Move:
                 let moveTaskRunner = new MoveTaskRunner(task, this.movementStage);
                 await moveTaskRunner.run();
+                break;
+            case PrinterTaskType.ResetEncoder:
+                let resetEncoderTaskRunner = new ResetEncoderTaskRunner(task, this.printerUsb);
+                await resetEncoderTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

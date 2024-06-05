@@ -8,12 +8,14 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(xaar128, CONFIG_PRINTER_LOG_LEVEL);
 
+#define READY_EVENT (1 << 0)
+
 struct xaar128_data
 {
 	const struct device *dev;
 	bool ready;
 	struct gpio_callback ready_cb_data;
-	struct k_sem rts_sem;
+	struct k_event ready_event;
 };
 
 struct xaar128_config
@@ -34,7 +36,7 @@ void ready_int_handler(const struct device *dev, struct gpio_callback *cb,
 	data->ready = gpio_pin_get_dt(&config->ready_gpio);
 	if (data->ready == false)
 	{
-		k_sem_give(&data->rts_sem);
+		k_event_set(&data->ready_event, READY_EVENT);
 	}
 }
 
@@ -68,15 +70,17 @@ static int xaar128_clock_enable(const struct device *dev)
 	return 0;
 }
 
-static uint32_t reverse32(uint32_t nozzles) {
-    return ((nozzles & 0xFF) << 24) | (((nozzles & 0xFF00)) << 8) | (((nozzles & 0xFF0000)) >> 8) | ((nozzles & 0xFF000000) >> 24);
+static uint32_t reverse32(uint32_t nozzles)
+{
+	return ((nozzles & 0xFF) << 24) | (((nozzles & 0xFF00)) << 8) | (((nozzles & 0xFF0000)) >> 8) | ((nozzles & 0xFF000000) >> 24);
 }
 
 static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 {
 	struct xaar128_data *data = dev->data;
-	LOG_INF("xaar128_set_pixels");
+	LOG_DBG("xaar128_set_pixels");
 	const struct xaar128_config *config = dev->config;
+	k_event_clear(&data->ready_event, 0xFFFFFFFF);
 	struct spi_cs_control cs = {
 		.delay = 0};
 	cs.gpio.dt_flags = config->nss2_gpio.dt_flags;
@@ -98,7 +102,7 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	struct spi_config spi_config;
 	memcpy(&spi_config, &config->bus.config, sizeof(spi_config));
 	spi_config.cs = cs;
-	LOG_INF("xaar128_set_pixels: spi_write 1");
+	LOG_DBG("xaar128_set_pixels: spi_write 1");
 	int ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
@@ -115,11 +119,11 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
-		LOG_ERR("Error %d: failed to write to SPI device %s",
+		LOG_DBG("Error %d: failed to write to SPI device %s",
 				ret, config->bus.bus->name);
 		return ret;
 	}
-	k_sem_reset(&data->rts_sem);
+	k_event_clear(&data->ready_event, 0xFFFFFFFF);
 	return 0;
 }
 
@@ -134,25 +138,29 @@ static int xaar128_request_fire(const struct device *dev)
 	return printer_fire_request_fire(config->printer_fire);
 }
 
-static int xaar128_wait_rts(const struct device *dev, k_timeout_t timeout)
+static int xaar128_wait_fired_load_next(const struct device *dev, k_timeout_t timeout)
 {
 	struct xaar128_data *data = dev->data;
-	int ret = k_sem_take(&data->rts_sem, timeout);
-	return ret;
+	if (k_event_wait(&data->ready_event, READY_EVENT, false, timeout) != READY_EVENT)
+	{
+		return -ETIMEDOUT;
+	}
+	return 0;
 }
 
 static const struct printer_driver_api xaar128_api = {
 	.clock_enable = &xaar128_clock_enable,
 	.set_pixels = &xaar128_set_pixels,
 	.request_fire = &xaar128_request_fire,
-	.wait_rts = &xaar128_wait_rts};
+	.wait_fired_load_next = &xaar128_wait_fired_load_next};
 
 static int xaar128_init(const struct device *dev)
 {
 	const struct xaar128_config *config = dev->config;
 	struct xaar128_data *data = dev->data;
 
-	k_sem_init(&data->rts_sem, 1, 1);
+	k_event_init(&data->ready_event);
+	k_event_clear(&data->ready_event, 0xFFFFFFFF);
 
 	data->dev = dev;
 	if (!device_is_ready(config->printer_fire))

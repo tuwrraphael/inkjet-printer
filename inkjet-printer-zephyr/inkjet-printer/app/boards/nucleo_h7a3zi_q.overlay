@@ -109,6 +109,8 @@
 	st,prescaler = <0>;
 	status = "okay";
 
+	interrupts = <24 1>, <25 1>, <26 0>, <27 1>;
+
 	printer_fire: printer_fire {
 		compatible = "st,fire-stm32-combined-pwm";
 		status = "okay";
@@ -120,12 +122,18 @@
 		pulse34_end = <(2*PRINTHEAD_CLOCK_NS)>;
 		min_mask_period = <MAX_FIRE_FREQUENCY>;
 		#printer-fire-cells = <0>;
+		encoder_timer = <&timers3>;
+		clock_timer = <&timers4>;
+		encoder_timer_trigger = <0>; // ITR0 -> timer15
+		clock_timer_trigger = <((1<<4)|(2<<4))>; // ITR3 -> timer4
 	};
 };
 
 &timers3 {
 	st,prescaler = <0>; // apb 1
 	status = "okay";
+
+	interrupts = <29 1>;
 
 	qdec: qdec {
 		compatible = "st,stm32-qdec-linear";
@@ -134,9 +142,15 @@
 		pinctrl-names = "default";
 		//st,input-polarity-inverted;
 		st,input-filter-level = <15>; // f/32, n=8
-		st,counts-per-revolution = <360>;
 		st,encoder-mode = <3>;
+		encoder-xor-timer = <&timers15>;
+		encoder-xor-timer-remap = <((2<<0)|(2<<8))>; // LL_TIM_TIM15_TI1_RMP_TIM3_CH1 | LL_TIM_TIM15_TI2_RMP_TIM3_CH2
 	};
+};
+
+&timers15 {
+	st,prescaler = <0>;
+	status = "okay";
 };
 
 &spi1 {
@@ -147,7 +161,7 @@
 		compatible = "xaar,xaar128";
 		pwms= <&pwm_clk 4 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
 		reg = <0>;
-		spi-max-frequency = <1000000>;
+		spi-max-frequency = <2000000>;
 		nss1-gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
 		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
 		ready-gpios = <&gpiof 11 GPIO_ACTIVE_HIGH>;
@@ -166,4 +180,17 @@
 		reg = <0>;
 		spi-max-frequency = <400000>;
 	};
+};
+
+&usart3 {
+	interrupts = <39 1>;
+};
+
+&usbotg_hs {
+	interrupts = <77 1>, <74 1>, <75 1>;
+};
+
+&exti {
+	interrupts = <6 1>, <7 1>, <8 1>, <9 1>,
+				     <10 1>, <23 1>, <40 1>;
 };

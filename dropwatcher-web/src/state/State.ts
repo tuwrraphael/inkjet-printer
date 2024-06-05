@@ -5,7 +5,8 @@ export enum PrinterSystemState {
     Startup = 1,
     Idle = 2,
     Error = 3,
-    Dropwatcher = 4
+    Dropwatcher = 4,
+    Print = 5,
 }
 export enum PressureControlDirection {
     Unspecified = 0,
@@ -23,6 +24,21 @@ export interface StagePos {
     x: number;
     y: number;
     z: number;
+}
+
+export interface PrintControlState {
+    encoderModeSettings: PrintControlEncoderModeSettings;
+    encoderValue: number;
+    expectedEncoderValue: number;
+    lastPrintedLine: number;
+    lostLinesCount: number;
+    printedLines: number;
+}
+
+export interface PrintControlEncoderModeSettings {
+    sequentialFires: number;
+    fireEveryTicks: number;
+    printFirstLineAfterEncoderTick: number;
 }
 
 export interface State {
@@ -45,6 +61,7 @@ export interface State {
                 algorithm: PressureControlAlgorithm;
             }
         },
+        printControl: PrintControlState
     },
     movementStageState: {
         connected: boolean;

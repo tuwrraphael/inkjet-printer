@@ -1,3 +1,4 @@
+import { th } from "date-fns/locale";
 import { MovementStage } from "../../movement-stage";
 import { PrinterTaskMove } from "../printer-program";
 
@@ -9,3 +10,5 @@ export class MoveTaskRunner {
         await this.movementStage.movementExecutor.moveAbsoluteAndWait(this.task.x, this.task.y, this.task.z, this.task.feedRate);
     }
 }
+
+

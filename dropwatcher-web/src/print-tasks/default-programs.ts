@@ -1,5 +1,5 @@
-import { HelloWorldProgamSteps } from "./HelloWorldProgram";
-import { PrinterProgram, PrinterTaskHome, PrinterTaskPrimeNozzle, PrinterTaskSetTargetPressure, PrinterTaskType } from "./printer-program";
+// import { HelloWorldProgamSteps } from "./HelloWorldProgram";
+import { PrinterProgram, PrinterTask, PrinterTaskHome, PrinterTaskPrimeNozzle, PrinterTaskSetTargetPressure, PrinterTaskType, PrinterTasks } from "./printer-program";
 
 export const HomeProgram: PrinterProgram = {
     tasks: [
@@ -71,11 +71,44 @@ export const MoveTestProgram: PrinterProgram = {
     ]
 };
 
-export const HelloWorldProgram : PrinterProgram = {
-    tasks: [
-        { type:PrinterTaskType.Home},
-        ...HelloWorldProgamSteps
-    ]
+function generateEncoderProgramSteps() {
+    let steps: PrinterTasks[] = [];
+    let x = 60;
+    for (let i = 0; i < 100; i++) {
+        steps.push({
+            type: PrinterTaskType.Move,
+            x: x,
+            y: 175,
+            z: 0.5,
+            feedRate: 10000
+        });
+        steps.push({
+            type: PrinterTaskType.ResetEncoder,
+            fireEveryTicks: 1,
+            printFirstLineAfterEncoderTick: 100,
+            sequentialFires: 1
+        });
+        steps.push({
+            type: PrinterTaskType.Move,
+            x: x,
+            y: 0,
+            z: 0.5,
+            feedRate: 3000
+        });
+    }
+    return steps;
+
+}
+
+export const PrintEncoderProgram: PrinterProgram = {
+    tasks: generateEncoderProgramSteps()
 };
+
+// export const HelloWorldProgram : PrinterProgram = {
+//     tasks: [
+//         { type:PrinterTaskType.Home},
+//         ...HelloWorldProgamSteps
+//     ]
+// };
 
 // let pressureTestProgram 

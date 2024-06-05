@@ -707,6 +707,580 @@ export const PressureControlSystemState = $root.PressureControlSystemState = (()
     return PressureControlSystemState;
 })();
 
+export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSettings = (() => {
+
+    /**
+     * Properties of a PrintControlEncoderModeSettings.
+     * @exports IPrintControlEncoderModeSettings
+     * @interface IPrintControlEncoderModeSettings
+     * @property {number|null} [sequentialFires] PrintControlEncoderModeSettings sequentialFires
+     * @property {number|null} [fireEveryTicks] PrintControlEncoderModeSettings fireEveryTicks
+     * @property {number|null} [printFirstLineAfterEncoderTick] PrintControlEncoderModeSettings printFirstLineAfterEncoderTick
+     */
+
+    /**
+     * Constructs a new PrintControlEncoderModeSettings.
+     * @exports PrintControlEncoderModeSettings
+     * @classdesc Represents a PrintControlEncoderModeSettings.
+     * @implements IPrintControlEncoderModeSettings
+     * @constructor
+     * @param {IPrintControlEncoderModeSettings=} [properties] Properties to set
+     */
+    function PrintControlEncoderModeSettings(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * PrintControlEncoderModeSettings sequentialFires.
+     * @member {number} sequentialFires
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    PrintControlEncoderModeSettings.prototype.sequentialFires = 0;
+
+    /**
+     * PrintControlEncoderModeSettings fireEveryTicks.
+     * @member {number} fireEveryTicks
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    PrintControlEncoderModeSettings.prototype.fireEveryTicks = 0;
+
+    /**
+     * PrintControlEncoderModeSettings printFirstLineAfterEncoderTick.
+     * @member {number} printFirstLineAfterEncoderTick
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    PrintControlEncoderModeSettings.prototype.printFirstLineAfterEncoderTick = 0;
+
+    /**
+     * Creates a new PrintControlEncoderModeSettings instance using the specified properties.
+     * @function create
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {IPrintControlEncoderModeSettings=} [properties] Properties to set
+     * @returns {PrintControlEncoderModeSettings} PrintControlEncoderModeSettings instance
+     */
+    PrintControlEncoderModeSettings.create = function create(properties) {
+        return new PrintControlEncoderModeSettings(properties);
+    };
+
+    /**
+     * Encodes the specified PrintControlEncoderModeSettings message. Does not implicitly {@link PrintControlEncoderModeSettings.verify|verify} messages.
+     * @function encode
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {IPrintControlEncoderModeSettings} message PrintControlEncoderModeSettings message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PrintControlEncoderModeSettings.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.sequentialFires != null && Object.hasOwnProperty.call(message, "sequentialFires"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.sequentialFires);
+        if (message.fireEveryTicks != null && Object.hasOwnProperty.call(message, "fireEveryTicks"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.fireEveryTicks);
+        if (message.printFirstLineAfterEncoderTick != null && Object.hasOwnProperty.call(message, "printFirstLineAfterEncoderTick"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.printFirstLineAfterEncoderTick);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified PrintControlEncoderModeSettings message, length delimited. Does not implicitly {@link PrintControlEncoderModeSettings.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {IPrintControlEncoderModeSettings} message PrintControlEncoderModeSettings message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PrintControlEncoderModeSettings.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a PrintControlEncoderModeSettings message from the specified reader or buffer.
+     * @function decode
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {PrintControlEncoderModeSettings} PrintControlEncoderModeSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PrintControlEncoderModeSettings.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrintControlEncoderModeSettings();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.sequentialFires = reader.uint32();
+                    break;
+                }
+            case 2: {
+                    message.fireEveryTicks = reader.uint32();
+                    break;
+                }
+            case 3: {
+                    message.printFirstLineAfterEncoderTick = reader.uint32();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a PrintControlEncoderModeSettings message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {PrintControlEncoderModeSettings} PrintControlEncoderModeSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PrintControlEncoderModeSettings.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a PrintControlEncoderModeSettings message.
+     * @function verify
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    PrintControlEncoderModeSettings.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.sequentialFires != null && message.hasOwnProperty("sequentialFires"))
+            if (!$util.isInteger(message.sequentialFires))
+                return "sequentialFires: integer expected";
+        if (message.fireEveryTicks != null && message.hasOwnProperty("fireEveryTicks"))
+            if (!$util.isInteger(message.fireEveryTicks))
+                return "fireEveryTicks: integer expected";
+        if (message.printFirstLineAfterEncoderTick != null && message.hasOwnProperty("printFirstLineAfterEncoderTick"))
+            if (!$util.isInteger(message.printFirstLineAfterEncoderTick))
+                return "printFirstLineAfterEncoderTick: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a PrintControlEncoderModeSettings message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {PrintControlEncoderModeSettings} PrintControlEncoderModeSettings
+     */
+    PrintControlEncoderModeSettings.fromObject = function fromObject(object) {
+        if (object instanceof $root.PrintControlEncoderModeSettings)
+            return object;
+        let message = new $root.PrintControlEncoderModeSettings();
+        if (object.sequentialFires != null)
+            message.sequentialFires = object.sequentialFires >>> 0;
+        if (object.fireEveryTicks != null)
+            message.fireEveryTicks = object.fireEveryTicks >>> 0;
+        if (object.printFirstLineAfterEncoderTick != null)
+            message.printFirstLineAfterEncoderTick = object.printFirstLineAfterEncoderTick >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a PrintControlEncoderModeSettings message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {PrintControlEncoderModeSettings} message PrintControlEncoderModeSettings
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    PrintControlEncoderModeSettings.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.sequentialFires = 0;
+            object.fireEveryTicks = 0;
+            object.printFirstLineAfterEncoderTick = 0;
+        }
+        if (message.sequentialFires != null && message.hasOwnProperty("sequentialFires"))
+            object.sequentialFires = message.sequentialFires;
+        if (message.fireEveryTicks != null && message.hasOwnProperty("fireEveryTicks"))
+            object.fireEveryTicks = message.fireEveryTicks;
+        if (message.printFirstLineAfterEncoderTick != null && message.hasOwnProperty("printFirstLineAfterEncoderTick"))
+            object.printFirstLineAfterEncoderTick = message.printFirstLineAfterEncoderTick;
+        return object;
+    };
+
+    /**
+     * Converts this PrintControlEncoderModeSettings to JSON.
+     * @function toJSON
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    PrintControlEncoderModeSettings.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for PrintControlEncoderModeSettings
+     * @function getTypeUrl
+     * @memberof PrintControlEncoderModeSettings
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    PrintControlEncoderModeSettings.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/PrintControlEncoderModeSettings";
+    };
+
+    return PrintControlEncoderModeSettings;
+})();
+
+export const PrintControlState = $root.PrintControlState = (() => {
+
+    /**
+     * Properties of a PrintControlState.
+     * @exports IPrintControlState
+     * @interface IPrintControlState
+     * @property {IPrintControlEncoderModeSettings|null} [encoderModeSettings] PrintControlState encoderModeSettings
+     * @property {number|null} [encoderValue] PrintControlState encoderValue
+     * @property {number|null} [expectedEncoderValue] PrintControlState expectedEncoderValue
+     * @property {number|null} [lastPrintedLine] PrintControlState lastPrintedLine
+     * @property {number|null} [lostLinesCount] PrintControlState lostLinesCount
+     * @property {number|null} [printedLines] PrintControlState printedLines
+     */
+
+    /**
+     * Constructs a new PrintControlState.
+     * @exports PrintControlState
+     * @classdesc Represents a PrintControlState.
+     * @implements IPrintControlState
+     * @constructor
+     * @param {IPrintControlState=} [properties] Properties to set
+     */
+    function PrintControlState(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * PrintControlState encoderModeSettings.
+     * @member {IPrintControlEncoderModeSettings|null|undefined} encoderModeSettings
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.encoderModeSettings = null;
+
+    /**
+     * PrintControlState encoderValue.
+     * @member {number} encoderValue
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.encoderValue = 0;
+
+    /**
+     * PrintControlState expectedEncoderValue.
+     * @member {number} expectedEncoderValue
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.expectedEncoderValue = 0;
+
+    /**
+     * PrintControlState lastPrintedLine.
+     * @member {number} lastPrintedLine
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.lastPrintedLine = 0;
+
+    /**
+     * PrintControlState lostLinesCount.
+     * @member {number} lostLinesCount
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.lostLinesCount = 0;
+
+    /**
+     * PrintControlState printedLines.
+     * @member {number} printedLines
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.printedLines = 0;
+
+    /**
+     * Creates a new PrintControlState instance using the specified properties.
+     * @function create
+     * @memberof PrintControlState
+     * @static
+     * @param {IPrintControlState=} [properties] Properties to set
+     * @returns {PrintControlState} PrintControlState instance
+     */
+    PrintControlState.create = function create(properties) {
+        return new PrintControlState(properties);
+    };
+
+    /**
+     * Encodes the specified PrintControlState message. Does not implicitly {@link PrintControlState.verify|verify} messages.
+     * @function encode
+     * @memberof PrintControlState
+     * @static
+     * @param {IPrintControlState} message PrintControlState message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PrintControlState.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.encoderModeSettings != null && Object.hasOwnProperty.call(message, "encoderModeSettings"))
+            $root.PrintControlEncoderModeSettings.encode(message.encoderModeSettings, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.encoderValue != null && Object.hasOwnProperty.call(message, "encoderValue"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.encoderValue);
+        if (message.expectedEncoderValue != null && Object.hasOwnProperty.call(message, "expectedEncoderValue"))
+            writer.uint32(/* id 3, wireType 0 =*/24).int32(message.expectedEncoderValue);
+        if (message.lastPrintedLine != null && Object.hasOwnProperty.call(message, "lastPrintedLine"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int32(message.lastPrintedLine);
+        if (message.lostLinesCount != null && Object.hasOwnProperty.call(message, "lostLinesCount"))
+            writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.lostLinesCount);
+        if (message.printedLines != null && Object.hasOwnProperty.call(message, "printedLines"))
+            writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.printedLines);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified PrintControlState message, length delimited. Does not implicitly {@link PrintControlState.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof PrintControlState
+     * @static
+     * @param {IPrintControlState} message PrintControlState message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PrintControlState.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a PrintControlState message from the specified reader or buffer.
+     * @function decode
+     * @memberof PrintControlState
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {PrintControlState} PrintControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PrintControlState.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PrintControlState();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.encoderModeSettings = $root.PrintControlEncoderModeSettings.decode(reader, reader.uint32());
+                    break;
+                }
+            case 2: {
+                    message.encoderValue = reader.int32();
+                    break;
+                }
+            case 3: {
+                    message.expectedEncoderValue = reader.int32();
+                    break;
+                }
+            case 4: {
+                    message.lastPrintedLine = reader.int32();
+                    break;
+                }
+            case 5: {
+                    message.lostLinesCount = reader.uint32();
+                    break;
+                }
+            case 6: {
+                    message.printedLines = reader.uint32();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a PrintControlState message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof PrintControlState
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {PrintControlState} PrintControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PrintControlState.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a PrintControlState message.
+     * @function verify
+     * @memberof PrintControlState
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    PrintControlState.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings")) {
+            let error = $root.PrintControlEncoderModeSettings.verify(message.encoderModeSettings);
+            if (error)
+                return "encoderModeSettings." + error;
+        }
+        if (message.encoderValue != null && message.hasOwnProperty("encoderValue"))
+            if (!$util.isInteger(message.encoderValue))
+                return "encoderValue: integer expected";
+        if (message.expectedEncoderValue != null && message.hasOwnProperty("expectedEncoderValue"))
+            if (!$util.isInteger(message.expectedEncoderValue))
+                return "expectedEncoderValue: integer expected";
+        if (message.lastPrintedLine != null && message.hasOwnProperty("lastPrintedLine"))
+            if (!$util.isInteger(message.lastPrintedLine))
+                return "lastPrintedLine: integer expected";
+        if (message.lostLinesCount != null && message.hasOwnProperty("lostLinesCount"))
+            if (!$util.isInteger(message.lostLinesCount))
+                return "lostLinesCount: integer expected";
+        if (message.printedLines != null && message.hasOwnProperty("printedLines"))
+            if (!$util.isInteger(message.printedLines))
+                return "printedLines: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a PrintControlState message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof PrintControlState
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {PrintControlState} PrintControlState
+     */
+    PrintControlState.fromObject = function fromObject(object) {
+        if (object instanceof $root.PrintControlState)
+            return object;
+        let message = new $root.PrintControlState();
+        if (object.encoderModeSettings != null) {
+            if (typeof object.encoderModeSettings !== "object")
+                throw TypeError(".PrintControlState.encoderModeSettings: object expected");
+            message.encoderModeSettings = $root.PrintControlEncoderModeSettings.fromObject(object.encoderModeSettings);
+        }
+        if (object.encoderValue != null)
+            message.encoderValue = object.encoderValue | 0;
+        if (object.expectedEncoderValue != null)
+            message.expectedEncoderValue = object.expectedEncoderValue | 0;
+        if (object.lastPrintedLine != null)
+            message.lastPrintedLine = object.lastPrintedLine | 0;
+        if (object.lostLinesCount != null)
+            message.lostLinesCount = object.lostLinesCount >>> 0;
+        if (object.printedLines != null)
+            message.printedLines = object.printedLines >>> 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a PrintControlState message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof PrintControlState
+     * @static
+     * @param {PrintControlState} message PrintControlState
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    PrintControlState.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.encoderModeSettings = null;
+            object.encoderValue = 0;
+            object.expectedEncoderValue = 0;
+            object.lastPrintedLine = 0;
+            object.lostLinesCount = 0;
+            object.printedLines = 0;
+        }
+        if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings"))
+            object.encoderModeSettings = $root.PrintControlEncoderModeSettings.toObject(message.encoderModeSettings, options);
+        if (message.encoderValue != null && message.hasOwnProperty("encoderValue"))
+            object.encoderValue = message.encoderValue;
+        if (message.expectedEncoderValue != null && message.hasOwnProperty("expectedEncoderValue"))
+            object.expectedEncoderValue = message.expectedEncoderValue;
+        if (message.lastPrintedLine != null && message.hasOwnProperty("lastPrintedLine"))
+            object.lastPrintedLine = message.lastPrintedLine;
+        if (message.lostLinesCount != null && message.hasOwnProperty("lostLinesCount"))
+            object.lostLinesCount = message.lostLinesCount;
+        if (message.printedLines != null && message.hasOwnProperty("printedLines"))
+            object.printedLines = message.printedLines;
+        return object;
+    };
+
+    /**
+     * Converts this PrintControlState to JSON.
+     * @function toJSON
+     * @memberof PrintControlState
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    PrintControlState.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for PrintControlState
+     * @function getTypeUrl
+     * @memberof PrintControlState
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    PrintControlState.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/PrintControlState";
+    };
+
+    return PrintControlState;
+})();
+
 export const GetPrinterSystemStateRequest = $root.GetPrinterSystemStateRequest = (() => {
 
     /**
@@ -1022,6 +1596,7 @@ export const ChangePrinterSystemStateRequest = $root.ChangePrinterSystemStateReq
             case 2:
             case 3:
             case 4:
+            case 5:
                 break;
             }
         return null;
@@ -1065,6 +1640,10 @@ export const ChangePrinterSystemStateRequest = $root.ChangePrinterSystemStateReq
         case "PrinterSystemState_DROPWATCHER":
         case 4:
             message.state = 4;
+            break;
+        case "PrinterSystemState_PRINT":
+        case 5:
+            message.state = 5;
             break;
         }
         return message;
@@ -1956,6 +2535,417 @@ export const ChangeNozzleDataRequest = $root.ChangeNozzleDataRequest = (() => {
     return ChangeNozzleDataRequest;
 })();
 
+export const ChangeEncoderPositionRequest = $root.ChangeEncoderPositionRequest = (() => {
+
+    /**
+     * Properties of a ChangeEncoderPositionRequest.
+     * @exports IChangeEncoderPositionRequest
+     * @interface IChangeEncoderPositionRequest
+     * @property {number|null} [position] ChangeEncoderPositionRequest position
+     */
+
+    /**
+     * Constructs a new ChangeEncoderPositionRequest.
+     * @exports ChangeEncoderPositionRequest
+     * @classdesc Represents a ChangeEncoderPositionRequest.
+     * @implements IChangeEncoderPositionRequest
+     * @constructor
+     * @param {IChangeEncoderPositionRequest=} [properties] Properties to set
+     */
+    function ChangeEncoderPositionRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangeEncoderPositionRequest position.
+     * @member {number} position
+     * @memberof ChangeEncoderPositionRequest
+     * @instance
+     */
+    ChangeEncoderPositionRequest.prototype.position = 0;
+
+    /**
+     * Creates a new ChangeEncoderPositionRequest instance using the specified properties.
+     * @function create
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {IChangeEncoderPositionRequest=} [properties] Properties to set
+     * @returns {ChangeEncoderPositionRequest} ChangeEncoderPositionRequest instance
+     */
+    ChangeEncoderPositionRequest.create = function create(properties) {
+        return new ChangeEncoderPositionRequest(properties);
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderPositionRequest message. Does not implicitly {@link ChangeEncoderPositionRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {IChangeEncoderPositionRequest} message ChangeEncoderPositionRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderPositionRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.position != null && Object.hasOwnProperty.call(message, "position"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int32(message.position);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderPositionRequest message, length delimited. Does not implicitly {@link ChangeEncoderPositionRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {IChangeEncoderPositionRequest} message ChangeEncoderPositionRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderPositionRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ChangeEncoderPositionRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangeEncoderPositionRequest} ChangeEncoderPositionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderPositionRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeEncoderPositionRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.position = reader.int32();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ChangeEncoderPositionRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ChangeEncoderPositionRequest} ChangeEncoderPositionRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderPositionRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ChangeEncoderPositionRequest message.
+     * @function verify
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ChangeEncoderPositionRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.position != null && message.hasOwnProperty("position"))
+            if (!$util.isInteger(message.position))
+                return "position: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a ChangeEncoderPositionRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ChangeEncoderPositionRequest} ChangeEncoderPositionRequest
+     */
+    ChangeEncoderPositionRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangeEncoderPositionRequest)
+            return object;
+        let message = new $root.ChangeEncoderPositionRequest();
+        if (object.position != null)
+            message.position = object.position | 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ChangeEncoderPositionRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {ChangeEncoderPositionRequest} message ChangeEncoderPositionRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ChangeEncoderPositionRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.position = 0;
+        if (message.position != null && message.hasOwnProperty("position"))
+            object.position = message.position;
+        return object;
+    };
+
+    /**
+     * Converts this ChangeEncoderPositionRequest to JSON.
+     * @function toJSON
+     * @memberof ChangeEncoderPositionRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ChangeEncoderPositionRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for ChangeEncoderPositionRequest
+     * @function getTypeUrl
+     * @memberof ChangeEncoderPositionRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    ChangeEncoderPositionRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/ChangeEncoderPositionRequest";
+    };
+
+    return ChangeEncoderPositionRequest;
+})();
+
+export const ChangeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest = (() => {
+
+    /**
+     * Properties of a ChangeEncoderModeSettingsRequest.
+     * @exports IChangeEncoderModeSettingsRequest
+     * @interface IChangeEncoderModeSettingsRequest
+     * @property {IPrintControlEncoderModeSettings|null} [encoderModeSettings] ChangeEncoderModeSettingsRequest encoderModeSettings
+     */
+
+    /**
+     * Constructs a new ChangeEncoderModeSettingsRequest.
+     * @exports ChangeEncoderModeSettingsRequest
+     * @classdesc Represents a ChangeEncoderModeSettingsRequest.
+     * @implements IChangeEncoderModeSettingsRequest
+     * @constructor
+     * @param {IChangeEncoderModeSettingsRequest=} [properties] Properties to set
+     */
+    function ChangeEncoderModeSettingsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangeEncoderModeSettingsRequest encoderModeSettings.
+     * @member {IPrintControlEncoderModeSettings|null|undefined} encoderModeSettings
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @instance
+     */
+    ChangeEncoderModeSettingsRequest.prototype.encoderModeSettings = null;
+
+    /**
+     * Creates a new ChangeEncoderModeSettingsRequest instance using the specified properties.
+     * @function create
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {IChangeEncoderModeSettingsRequest=} [properties] Properties to set
+     * @returns {ChangeEncoderModeSettingsRequest} ChangeEncoderModeSettingsRequest instance
+     */
+    ChangeEncoderModeSettingsRequest.create = function create(properties) {
+        return new ChangeEncoderModeSettingsRequest(properties);
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderModeSettingsRequest message. Does not implicitly {@link ChangeEncoderModeSettingsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {IChangeEncoderModeSettingsRequest} message ChangeEncoderModeSettingsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderModeSettingsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.encoderModeSettings != null && Object.hasOwnProperty.call(message, "encoderModeSettings"))
+            $root.PrintControlEncoderModeSettings.encode(message.encoderModeSettings, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderModeSettingsRequest message, length delimited. Does not implicitly {@link ChangeEncoderModeSettingsRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {IChangeEncoderModeSettingsRequest} message ChangeEncoderModeSettingsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderModeSettingsRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ChangeEncoderModeSettingsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangeEncoderModeSettingsRequest} ChangeEncoderModeSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderModeSettingsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeEncoderModeSettingsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.encoderModeSettings = $root.PrintControlEncoderModeSettings.decode(reader, reader.uint32());
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ChangeEncoderModeSettingsRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ChangeEncoderModeSettingsRequest} ChangeEncoderModeSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderModeSettingsRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ChangeEncoderModeSettingsRequest message.
+     * @function verify
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ChangeEncoderModeSettingsRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings")) {
+            let error = $root.PrintControlEncoderModeSettings.verify(message.encoderModeSettings);
+            if (error)
+                return "encoderModeSettings." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a ChangeEncoderModeSettingsRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ChangeEncoderModeSettingsRequest} ChangeEncoderModeSettingsRequest
+     */
+    ChangeEncoderModeSettingsRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangeEncoderModeSettingsRequest)
+            return object;
+        let message = new $root.ChangeEncoderModeSettingsRequest();
+        if (object.encoderModeSettings != null) {
+            if (typeof object.encoderModeSettings !== "object")
+                throw TypeError(".ChangeEncoderModeSettingsRequest.encoderModeSettings: object expected");
+            message.encoderModeSettings = $root.PrintControlEncoderModeSettings.fromObject(object.encoderModeSettings);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ChangeEncoderModeSettingsRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {ChangeEncoderModeSettingsRequest} message ChangeEncoderModeSettingsRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ChangeEncoderModeSettingsRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.encoderModeSettings = null;
+        if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings"))
+            object.encoderModeSettings = $root.PrintControlEncoderModeSettings.toObject(message.encoderModeSettings, options);
+        return object;
+    };
+
+    /**
+     * Converts this ChangeEncoderModeSettingsRequest to JSON.
+     * @function toJSON
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ChangeEncoderModeSettingsRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for ChangeEncoderModeSettingsRequest
+     * @function getTypeUrl
+     * @memberof ChangeEncoderModeSettingsRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    ChangeEncoderModeSettingsRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/ChangeEncoderModeSettingsRequest";
+    };
+
+    return ChangeEncoderModeSettingsRequest;
+})();
+
 export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
@@ -1968,6 +2958,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {ICameraFrameRequest|null} [cameraFrameRequest] PrinterRequest cameraFrameRequest
      * @property {IChangePressureControlParametersRequest|null} [changePressureControlParameterRequest] PrinterRequest changePressureControlParameterRequest
      * @property {IChangeNozzleDataRequest|null} [changeNozzleDataRequest] PrinterRequest changeNozzleDataRequest
+     * @property {IChangeEncoderPositionRequest|null} [changeEncoderPositionRequest] PrinterRequest changeEncoderPositionRequest
+     * @property {IChangeEncoderModeSettingsRequest|null} [changeEncoderModeSettingsRequest] PrinterRequest changeEncoderModeSettingsRequest
      */
 
     /**
@@ -2032,6 +3024,22 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @instance
      */
     PrinterRequest.prototype.changeNozzleDataRequest = null;
+
+    /**
+     * PrinterRequest changeEncoderPositionRequest.
+     * @member {IChangeEncoderPositionRequest|null|undefined} changeEncoderPositionRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.changeEncoderPositionRequest = null;
+
+    /**
+     * PrinterRequest changeEncoderModeSettingsRequest.
+     * @member {IChangeEncoderModeSettingsRequest|null|undefined} changeEncoderModeSettingsRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.changeEncoderModeSettingsRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -2103,6 +3111,28 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
+     * PrinterRequest _changeEncoderPositionRequest.
+     * @member {"changeEncoderPositionRequest"|undefined} _changeEncoderPositionRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_changeEncoderPositionRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changeEncoderPositionRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
+     * PrinterRequest _changeEncoderModeSettingsRequest.
+     * @member {"changeEncoderModeSettingsRequest"|undefined} _changeEncoderModeSettingsRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_changeEncoderModeSettingsRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changeEncoderModeSettingsRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrinterRequest instance using the specified properties.
      * @function create
      * @memberof PrinterRequest
@@ -2138,6 +3168,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.ChangePressureControlParametersRequest.encode(message.changePressureControlParameterRequest, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
         if (message.changeNozzleDataRequest != null && Object.hasOwnProperty.call(message, "changeNozzleDataRequest"))
             $root.ChangeNozzleDataRequest.encode(message.changeNozzleDataRequest, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+        if (message.changeEncoderPositionRequest != null && Object.hasOwnProperty.call(message, "changeEncoderPositionRequest"))
+            $root.ChangeEncoderPositionRequest.encode(message.changeEncoderPositionRequest, writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
+        if (message.changeEncoderModeSettingsRequest != null && Object.hasOwnProperty.call(message, "changeEncoderModeSettingsRequest"))
+            $root.ChangeEncoderModeSettingsRequest.encode(message.changeEncoderModeSettingsRequest, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
         return writer;
     };
 
@@ -2194,6 +3228,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 }
             case 6: {
                     message.changeNozzleDataRequest = $root.ChangeNozzleDataRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 7: {
+                    message.changeEncoderPositionRequest = $root.ChangeEncoderPositionRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 8: {
+                    message.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -2280,6 +3322,22 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "changeNozzleDataRequest." + error;
             }
         }
+        if (message.changeEncoderPositionRequest != null && message.hasOwnProperty("changeEncoderPositionRequest")) {
+            properties._changeEncoderPositionRequest = 1;
+            {
+                let error = $root.ChangeEncoderPositionRequest.verify(message.changeEncoderPositionRequest);
+                if (error)
+                    return "changeEncoderPositionRequest." + error;
+            }
+        }
+        if (message.changeEncoderModeSettingsRequest != null && message.hasOwnProperty("changeEncoderModeSettingsRequest")) {
+            properties._changeEncoderModeSettingsRequest = 1;
+            {
+                let error = $root.ChangeEncoderModeSettingsRequest.verify(message.changeEncoderModeSettingsRequest);
+                if (error)
+                    return "changeEncoderModeSettingsRequest." + error;
+            }
+        }
         return null;
     };
 
@@ -2324,6 +3382,16 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (typeof object.changeNozzleDataRequest !== "object")
                 throw TypeError(".PrinterRequest.changeNozzleDataRequest: object expected");
             message.changeNozzleDataRequest = $root.ChangeNozzleDataRequest.fromObject(object.changeNozzleDataRequest);
+        }
+        if (object.changeEncoderPositionRequest != null) {
+            if (typeof object.changeEncoderPositionRequest !== "object")
+                throw TypeError(".PrinterRequest.changeEncoderPositionRequest: object expected");
+            message.changeEncoderPositionRequest = $root.ChangeEncoderPositionRequest.fromObject(object.changeEncoderPositionRequest);
+        }
+        if (object.changeEncoderModeSettingsRequest != null) {
+            if (typeof object.changeEncoderModeSettingsRequest !== "object")
+                throw TypeError(".PrinterRequest.changeEncoderModeSettingsRequest: object expected");
+            message.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.fromObject(object.changeEncoderModeSettingsRequest);
         }
         return message;
     };
@@ -2371,6 +3439,16 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (options.oneofs)
                 object._changeNozzleDataRequest = "changeNozzleDataRequest";
         }
+        if (message.changeEncoderPositionRequest != null && message.hasOwnProperty("changeEncoderPositionRequest")) {
+            object.changeEncoderPositionRequest = $root.ChangeEncoderPositionRequest.toObject(message.changeEncoderPositionRequest, options);
+            if (options.oneofs)
+                object._changeEncoderPositionRequest = "changeEncoderPositionRequest";
+        }
+        if (message.changeEncoderModeSettingsRequest != null && message.hasOwnProperty("changeEncoderModeSettingsRequest")) {
+            object.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.toObject(message.changeEncoderModeSettingsRequest, options);
+            if (options.oneofs)
+                object._changeEncoderModeSettingsRequest = "changeEncoderModeSettingsRequest";
+        }
         return object;
     };
 
@@ -2412,6 +3490,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
  * @property {number} PrinterSystemState_IDLE=2 PrinterSystemState_IDLE value
  * @property {number} PrinterSystemState_ERROR=3 PrinterSystemState_ERROR value
  * @property {number} PrinterSystemState_DROPWATCHER=4 PrinterSystemState_DROPWATCHER value
+ * @property {number} PrinterSystemState_PRINT=5 PrinterSystemState_PRINT value
  */
 export const PrinterSystemState = $root.PrinterSystemState = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -2420,6 +3499,7 @@ export const PrinterSystemState = $root.PrinterSystemState = (() => {
     values[valuesById[2] = "PrinterSystemState_IDLE"] = 2;
     values[valuesById[3] = "PrinterSystemState_ERROR"] = 3;
     values[valuesById[4] = "PrinterSystemState_DROPWATCHER"] = 4;
+    values[valuesById[5] = "PrinterSystemState_PRINT"] = 5;
     return values;
 })();
 
@@ -2432,6 +3512,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      * @property {PrinterSystemState|null} [state] PrinterSystemStateResponse state
      * @property {number|null} [errorFlags] PrinterSystemStateResponse errorFlags
      * @property {IPressureControlSystemState|null} [pressureControl] PrinterSystemStateResponse pressureControl
+     * @property {IPrintControlState|null} [printControl] PrinterSystemStateResponse printControl
      */
 
     /**
@@ -2474,6 +3555,14 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
     PrinterSystemStateResponse.prototype.pressureControl = null;
 
     /**
+     * PrinterSystemStateResponse printControl.
+     * @member {IPrintControlState|null|undefined} printControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    PrinterSystemStateResponse.prototype.printControl = null;
+
+    /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.
      * @function create
      * @memberof PrinterSystemStateResponse
@@ -2503,6 +3592,8 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.errorFlags);
         if (message.pressureControl != null && Object.hasOwnProperty.call(message, "pressureControl"))
             $root.PressureControlSystemState.encode(message.pressureControl, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.printControl != null && Object.hasOwnProperty.call(message, "printControl"))
+            $root.PrintControlState.encode(message.printControl, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
         return writer;
     };
 
@@ -2549,6 +3640,10 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
                     message.pressureControl = $root.PressureControlSystemState.decode(reader, reader.uint32());
                     break;
                 }
+            case 4: {
+                    message.printControl = $root.PrintControlState.decode(reader, reader.uint32());
+                    break;
+                }
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -2593,6 +3688,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             case 2:
             case 3:
             case 4:
+            case 5:
                 break;
             }
         if (message.errorFlags != null && message.hasOwnProperty("errorFlags"))
@@ -2602,6 +3698,11 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             let error = $root.PressureControlSystemState.verify(message.pressureControl);
             if (error)
                 return "pressureControl." + error;
+        }
+        if (message.printControl != null && message.hasOwnProperty("printControl")) {
+            let error = $root.PrintControlState.verify(message.printControl);
+            if (error)
+                return "printControl." + error;
         }
         return null;
     };
@@ -2645,6 +3746,10 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
         case 4:
             message.state = 4;
             break;
+        case "PrinterSystemState_PRINT":
+        case 5:
+            message.state = 5;
+            break;
         }
         if (object.errorFlags != null)
             message.errorFlags = object.errorFlags >>> 0;
@@ -2652,6 +3757,11 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             if (typeof object.pressureControl !== "object")
                 throw TypeError(".PrinterSystemStateResponse.pressureControl: object expected");
             message.pressureControl = $root.PressureControlSystemState.fromObject(object.pressureControl);
+        }
+        if (object.printControl != null) {
+            if (typeof object.printControl !== "object")
+                throw TypeError(".PrinterSystemStateResponse.printControl: object expected");
+            message.printControl = $root.PrintControlState.fromObject(object.printControl);
         }
         return message;
     };
@@ -2673,6 +3783,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             object.state = options.enums === String ? "PrinterSystemState_UNSPECIFIED" : 0;
             object.errorFlags = 0;
             object.pressureControl = null;
+            object.printControl = null;
         }
         if (message.state != null && message.hasOwnProperty("state"))
             object.state = options.enums === String ? $root.PrinterSystemState[message.state] === undefined ? message.state : $root.PrinterSystemState[message.state] : message.state;
@@ -2680,6 +3791,8 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             object.errorFlags = message.errorFlags;
         if (message.pressureControl != null && message.hasOwnProperty("pressureControl"))
             object.pressureControl = $root.PressureControlSystemState.toObject(message.pressureControl, options);
+        if (message.printControl != null && message.hasOwnProperty("printControl"))
+            object.printControl = $root.PrintControlState.toObject(message.printControl, options);
         return object;
     };
 

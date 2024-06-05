@@ -7,7 +7,9 @@ export const DefaultState: State =
         state: PrinterSystemState.Unspecified,
         errors: {
             flags: 0
-        }, pressureControl: null
+        },
+        pressureControl: null,
+        printControl: null
     },
     movementStageState: {
         connected: false,

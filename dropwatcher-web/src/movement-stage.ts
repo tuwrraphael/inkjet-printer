@@ -67,8 +67,7 @@ export class MovementStage {
     }
 
     private parsePositionMessage(msg: string, res: (pos: { x: number, y: number, z: number, e: number }) => void): boolean {
-        // X:0.00Y:0.00Z:0.00E:0.00 Count X: 0.00Y:0.00Z:0.00
-        let regex = /^X:([0-9.-]+)Y:([0-9.-]+)Z:([0-9.-]+)E:([0-9.-]+) Count X: ([0-9.-]+)Y:([0-9.-]+)Z:([0-9.-]+)$/;
+        let regex = /^X:([0-9.-]+) Y:([0-9.-]+) Z:([0-9.-]+) E:([0-9.-]+) Count X:([0-9.-]+) Y:([0-9.-]+) Z:([0-9.-]+)$/;
         let match = regex.exec(msg);
         if (match) {
             res({

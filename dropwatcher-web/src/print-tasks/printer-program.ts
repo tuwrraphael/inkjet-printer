@@ -4,7 +4,8 @@ export const enum PrinterTaskType {
     SetTargetPressure,
     SetNozzleData,
     RequestFire,
-    Move
+    Move,
+    ResetEncoder
 }
 
 export interface PrinterTask {
@@ -35,6 +36,13 @@ export interface PrinterTaskRequestFire extends PrinterTask {
     readonly type: PrinterTaskType.RequestFire;
 }
 
+export interface PrinterTaskResetEncoder extends PrinterTask {
+    readonly type: PrinterTaskType.ResetEncoder;
+    fireEveryTicks: number;
+    printFirstLineAfterEncoderTick: number;
+    sequentialFires: number;
+}
+
 export interface PrinterTaskMove extends PrinterTask {
     readonly type: PrinterTaskType.Move;
     x: number;
@@ -50,6 +58,7 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskRequestFire
     | PrinterTaskMove
     | PrinterTaskHome
+    | PrinterTaskResetEncoder
     ;
 
 
