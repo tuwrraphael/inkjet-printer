@@ -78,7 +78,7 @@ static uint32_t reverse32(uint32_t nozzles)
 static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 {
 	struct xaar128_data *data = dev->data;
-	LOG_INF("xaar128_set_pixels");
+	LOG_DBG("xaar128_set_pixels");
 	const struct xaar128_config *config = dev->config;
 	k_event_clear(&data->ready_event, 0xFFFFFFFF);
 	struct spi_cs_control cs = {
@@ -102,7 +102,7 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	struct spi_config spi_config;
 	memcpy(&spi_config, &config->bus.config, sizeof(spi_config));
 	spi_config.cs = cs;
-	LOG_INF("xaar128_set_pixels: spi_write 1");
+	LOG_DBG("xaar128_set_pixels: spi_write 1");
 	int ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
@@ -119,7 +119,7 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	ret = spi_write(config->bus.bus, &spi_config, &tx);
 	if (ret != 0)
 	{
-		LOG_ERR("Error %d: failed to write to SPI device %s",
+		LOG_DBG("Error %d: failed to write to SPI device %s",
 				ret, config->bus.bus->name);
 		return ret;
 	}

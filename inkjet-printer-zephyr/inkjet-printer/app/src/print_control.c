@@ -3,6 +3,7 @@
 #include <zephyr/drivers/sensor.h>
 
 #include <lib/inkjetcontrol/encoder.h>
+#include <lib/inkjetcontrol/test_pattern.h>
 #include <zephyr/drivers/printer.h>
 #include <zephyr/drivers/printer_fire.h>
 
@@ -22,49 +23,37 @@ static encoder_print_status_t encoder_print_status;
 static uint32_t line_to_load = 0;
 static bool next_load_wait_fired = false;
 
-static void load_line_handler(struct k_work *work);
+static void load_line_handler(void);
 
-K_WORK_DEFINE(load_line_work, load_line_handler);
-
-uint8_t active_nozzle = 0;
+K_SEM_DEFINE(load_line_sem, 0, 1);
 
 static bool encoder_mode = false;
 
-void set_nozzle(uint8_t nozzle_id, bool value, uint32_t *data)
+static void load_line_handler(void)
 {
-    uint8_t patternid = nozzle_id / 32;
-    uint8_t bitid = nozzle_id % 32;
-    if (value)
+    while (true)
     {
-        data[patternid] |= (1 << (bitid));
-    }
-    else
-    {
-        data[patternid] &= ~(1 << (bitid));
-    }
-}
-
-static void load_line_handler(struct k_work *work)
-{
-    active_nozzle = line_to_load % 128;
-    uint32_t pixels[4] = {0, 0, 0, 0};
-    set_nozzle(active_nozzle, true, pixels);
-    int ret;
-    if (next_load_wait_fired)
-    {
-        ret = printer_wait_fired_load_next(printhead, K_USEC(10));
-        LOG_INF("Wait fired %d", ret);
+        k_sem_take(&load_line_sem, K_FOREVER);
+        uint32_t pixels[4] = {0, 0, 0, 0};
+        get_pixels_zig_zag(line_to_load, pixels);
+        int ret;
+        if (next_load_wait_fired)
+        {
+            ret = printer_wait_fired_load_next(printhead, K_USEC(20));
+            LOG_INF("Wait fired %d", ret);
+            if (ret != 0)
+            {
+                LOG_ERR("Fired signal not received, skipping load");
+                continue;
+            }
+        }
+        ret = printer_set_pixels(printhead, pixels);
         if (ret != 0)
         {
-            error_callback(ERROR_PRINTHEAD_READY);
+            error_callback(ERROR_PRINTHEAD_COMMUNICATION);
         }
+        encoder_signal_load_line_completed(&encoder_print_status, line_to_load);
     }
-    ret = printer_set_pixels(printhead, pixels);
-    if (ret != 0)
-    {
-        error_callback(ERROR_PRINTHEAD_COMMUNICATION);
-    }
-    encoder_signal_load_line_completed(&encoder_print_status);
 }
 
 static int32_t get_value_cb(void *inst)
@@ -77,7 +66,7 @@ static int32_t get_value_cb(void *inst)
 
 static void load_error_cb(void *inst)
 {
-    error_callback(ERROR_LOAD_NOT_FINISHED);
+    LOG_ERR("Load error");
 }
 
 static void fire_abort_cb(void *inst)
@@ -89,7 +78,7 @@ static void load_line_cb(void *inst, uint32_t line, bool wait_fired)
 {
     line_to_load = line;
     next_load_wait_fired = wait_fired;
-    k_work_submit(&load_line_work);
+    k_sem_give(&load_line_sem);
 }
 
 static void fire_issued_cb()
@@ -219,3 +208,9 @@ void print_control_get_info(print_control_info_t *info)
     info->printed_lines = encoder_print_status.printed_lines;
     info->encoder_value = get_value_cb(NULL);
 }
+
+#define LOAD_LINE_STACK (512)
+#define LOAD_LINE_PRIORITY (-2)
+
+K_THREAD_DEFINE(load_line, 512, load_line_handler, NULL, NULL, NULL,
+                LOAD_LINE_PRIORITY, 0, 0);

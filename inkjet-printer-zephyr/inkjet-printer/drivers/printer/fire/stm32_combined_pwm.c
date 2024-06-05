@@ -481,7 +481,6 @@ static void timer_update_irq_handler(const struct device *dev)
 	struct fire_stm32_combined_pwm_data *data = dev->data;
 	const struct fire_stm32_combined_pwm_config *cfg = dev->config;
 	TIM_TypeDef *timer = cfg->timer;
-	LOG_INF("Timer UIF");
 	if (timer->SR & TIM_SR_UIF)
 	{
 		timer->SR &= ~TIM_SR_UIF;

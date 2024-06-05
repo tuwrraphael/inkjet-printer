@@ -1,6 +1,6 @@
 import { MovementStage } from "../../movement-stage";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
-import { HelloWorldProgram, HomeProgram, MoveTestProgram } from "../../print-tasks/default-programs";
+import {  HomeProgram, MoveTestProgram, PrintEncoderProgram } from "../../print-tasks/default-programs";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { PrinterUSB } from "../../printer-usb";
 import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
@@ -38,7 +38,11 @@ export class PrintComponent extends HTMLElement {
             this.currentProgram = document.querySelector("#current-program");
             abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {
                 ev.preventDefault();
-                TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(HelloWorldProgram));
+                TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
+            }, this.abortController.signal);
+            abortableEventListener(this.querySelector("#cancel-print"), "click", async (ev) => {
+                ev.preventDefault();
+                TaskRunnerSynchronization.getInstance().cancelAll();
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#zero-encoder"), "click", async (ev) => {
                 ev.preventDefault();
@@ -64,15 +68,15 @@ export class PrintComponent extends HTMLElement {
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#home"), "click", async (ev) => {
                 ev.preventDefault();
-                await this.movementStage.sendGcodeAndWaitForFinished("G28 Y");
+                await this.movementStage.movementExecutor.home();
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#go-start"), "click", async (ev) => {
                 ev.preventDefault();
-                await this.movementStage.sendGcodeAndWaitForFinished("G0 Y175 F3000");
+                await this.movementStage.sendGcodeAndWaitForFinished("G0 Y175 F400");
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#go-end"), "click", async (ev) => {
                 ev.preventDefault();
-                await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F3000");
+                await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F400");
             }, this.abortController.signal);
         }
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);

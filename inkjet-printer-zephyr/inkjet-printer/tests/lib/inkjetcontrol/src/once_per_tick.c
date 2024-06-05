@@ -31,7 +31,7 @@ static void load_line(void *inst, uint32_t line, bool wait_fired)
 {
 	load_line_called_with = line;
 	encoder_print_status_t *encoder_print_status = (encoder_print_status_t *)inst;
-	encoder_signal_load_line_completed(encoder_print_status);
+	encoder_signal_load_line_completed(encoder_print_status, line);
 	return;
 }
 
@@ -247,6 +247,82 @@ ZTEST(encoder_print_once_per_tick, test_missed_two_ticks)
 	zassert_equal(encoder_print_status.lost_lines[1], 2, "lost_lines[1] not 2");
 	zassert_equal(encoder_print_status.lost_lines[2], 3, "lost_lines[2] not 3");
 	encoder_advance(&encoder_print_status, 1); // -- encoder 5 (plan to print 4)
+	zassert_equal(encoder_print_status.last_printed_line, 4, "last_printed_line not 4");
+}
+
+static void load_error_cb_print(void *inst)
+{
+	printf("Error callback called\n");
+}
+
+static void load_line_manual_complete(void *inst, uint32_t line, bool wait_fired)
+{
+	load_line_called_with = line;
+	return;
+}
+
+// static void fire_if_not_aborted(encoder_print_status_t *status)
+// {
+// 	if (!last_fire_aborted)
+// 	{
+// 		encoder_fire_issued_handler(status);
+// 		encoder_fire_cycle_completed_handler(status);
+// 	}
+// 	last_fire_aborted = false;
+// }
+
+// static void encoder_advance(encoder_print_status_t *status, int32_t ticks)
+// {
+// 	uint16_t ticks_pos = ticks < 0 ? -ticks : ticks;
+// 	for (uint16_t i = 0; i < ticks_pos; i++)
+// 	{
+// 		encoder_value += ticks < 0 ? -1 : 1;
+// 		encoder_tick_handler(status);
+// 		fire_if_not_aborted(status);
+// 	}
+// }
+
+ZTEST(encoder_print_once_per_tick, load_line_slow)
+{
+	encoder_print_status_t encoder_print_status;
+	encoder_print_init_t init = {
+		.get_value = get_value,
+		.fire_abort = fire_abort,
+		.load_line = load_line_manual_complete,
+		.load_error_cb = load_error_cb_print,
+		.inst = &encoder_print_status,
+		.sequential_fires = 1,
+		.fire_every_ticks = 1,
+		.print_first_line_after_encoder_tick = 1};
+
+	encoder_print_init(&encoder_print_status, &init);
+	encoder_signal_load_line_completed(&encoder_print_status, 0);
+	encoder_advance(&encoder_print_status, 1);
+	zassert_equal(fire_abort_called, 1, "fire_abort not called 1 time");
+	encoder_signal_load_line_completed(&encoder_print_status, 1);
+	zassert_equal(encoder_print_status.last_printed_line, 0, "last_printed_line not 0");
+	encoder_value++;
+	encoder_tick_handler(&encoder_print_status);
+	encoder_fire_issued_handler(&encoder_print_status);
+	zassert_equal(encoder_print_status.last_line_queued_for_loading, 2, "last_line_queued_for_loading not 2");
+	encoder_fire_cycle_completed_handler(&encoder_print_status);
+	zassert_equal(encoder_print_status.last_printed_line, 1, "last_printed_line not 1");
+	encoder_value++;
+	zassert_equal(fire_abort_called, 2, "fire_abort not called 2 times");
+	encoder_tick_handler(&encoder_print_status);
+	encoder_signal_load_line_completed(&encoder_print_status, 2);
+	zassert_equal(fire_abort_called, 3, "fire_abort not called 3 times");
+	encoder_value++;
+	encoder_tick_handler(&encoder_print_status);
+	zassert_equal(fire_abort_called, 4, "fire_abort not called 4 times");
+	printf("fire abort called %d times\n", fire_abort_called);
+	zassert_equal(load_line_called_with, 4, "load_line not called with 4");
+	zassert_equal(encoder_print_status.lost_lines_count, 2, "lost_lines_count not 2");
+	zassert_equal(encoder_print_status.lost_lines[0], 2, "lost_lines[0] not 2");
+	zassert_equal(encoder_print_status.lost_lines[1], 3, "lost_lines[1] not 3");
+	encoder_signal_load_line_completed(&encoder_print_status, 4);
+	last_fire_aborted = false;
+	encoder_advance(&encoder_print_status, 1);
 	zassert_equal(encoder_print_status.last_printed_line, 4, "last_printed_line not 4");
 }
 

@@ -23,6 +23,7 @@ typedef struct
     uint32_t remaining_sequential_fires;
     int32_t expected_encoder_value;
     int32_t last_printed_line;
+    uint32_t last_line_queued_for_loading;
     uint32_t last_loaded_line;
     uint32_t issued_line;
     uint32_t lost_lines_count;
@@ -33,7 +34,7 @@ typedef struct
 
 void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *init);
 
-void encoder_signal_load_line_completed(encoder_print_status_t *status);
+void encoder_signal_load_line_completed(encoder_print_status_t *status, uint32_t line);
 void encoder_tick_handler(encoder_print_status_t *status);
 void encoder_fire_issued_handler(encoder_print_status_t *status);
 void encoder_fire_cycle_completed_handler(encoder_print_status_t *status);

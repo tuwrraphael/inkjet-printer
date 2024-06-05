@@ -31,7 +31,7 @@ static void load_line(void *inst, uint32_t line, bool wait_fired)
 {
 	load_line_called_with = line;
 	encoder_print_status_t *encoder_print_status = (encoder_print_status_t *)inst;
-	encoder_signal_load_line_completed(encoder_print_status);
+	encoder_signal_load_line_completed(encoder_print_status, line);
 	return;
 }
 

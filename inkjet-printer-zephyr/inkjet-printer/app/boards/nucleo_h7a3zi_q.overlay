@@ -161,7 +161,7 @@
 		compatible = "xaar,xaar128";
 		pwms= <&pwm_clk 4 PRINTHEAD_CLOCK_NS PWM_POLARITY_INVERTED>;
 		reg = <0>;
-		spi-max-frequency = <1000000>;
+		spi-max-frequency = <2000000>;
 		nss1-gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
 		nss2-gpios = <&gpiog 9 GPIO_ACTIVE_LOW>;
 		ready-gpios = <&gpiof 11 GPIO_ACTIVE_HIGH>;

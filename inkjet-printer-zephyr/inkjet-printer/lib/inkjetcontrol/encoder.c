@@ -16,7 +16,7 @@ static void load_line(encoder_print_status_t *status, uint32_t line, bool wait_f
 	}
 	status->loading_line = true;
 	status->init.load_line(status->init.inst, line, wait_fired);
-	status->last_loaded_line = line;
+	status->last_line_queued_for_loading = line;
 	LOG_INF("Loading line %d", line);
 }
 
@@ -39,9 +39,10 @@ void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *in
 	LOG_DBG("Encoder print initialized");
 }
 
-void encoder_signal_load_line_completed(encoder_print_status_t *status)
+void encoder_signal_load_line_completed(encoder_print_status_t *status, uint32_t line)
 {
 	status->loading_line = false;
+	status->last_loaded_line = line;
 	LOG_DBG("Loaded line");
 }
 
@@ -83,6 +84,12 @@ void encoder_tick_handler(encoder_print_status_t *status)
 			status->expected_encoder_value = next_printable_encoder_value;
 			k_sem_give(&encoder_sem);
 		}
+		else if (status->last_line_queued_for_loading != status->last_loaded_line)
+		{
+			status->init.fire_abort(status->init.inst);
+			LOG_ERR("Could not print line %d, still loading", status->last_line_queued_for_loading);
+			k_sem_give(&encoder_sem);
+		}
 		else
 		{
 			status->remaining_sequential_fires = status->init.sequential_fires;
@@ -93,9 +100,9 @@ void encoder_tick_handler(encoder_print_status_t *status)
 
 void encoder_fire_issued_handler(encoder_print_status_t *status)
 {
-	LOG_DBG("issued line %d", status->last_loaded_line);
-	status->issued_line = status->last_loaded_line;
-	uint32_t next_line_nr = status->last_loaded_line + 1;
+	LOG_DBG("issued line %d", status->last_line_queued_for_loading);
+	status->issued_line = status->last_line_queued_for_loading;
+	uint32_t next_line_nr = status->last_line_queued_for_loading + 1;
 	load_line(status, next_line_nr, true);
 }
 
@@ -106,8 +113,18 @@ void encoder_fire_cycle_completed_handler(encoder_print_status_t *status)
 	status->printed_lines++;
 	if (status->remaining_sequential_fires > 1)
 	{
-		status->remaining_sequential_fires--;
-		LOG_DBG("remaining %d", status->remaining_sequential_fires);
+		if (status->last_line_queued_for_loading != status->last_loaded_line)
+		{
+			status->init.fire_abort(status->init.inst);
+			status->remaining_sequential_fires = 0;
+			k_sem_give(&encoder_sem);
+			LOG_ERR("cycle handler: Could not print line %d, still loading", status->last_line_queued_for_loading);
+		}
+		else
+		{
+			status->remaining_sequential_fires--;
+			LOG_DBG("remaining %d", status->remaining_sequential_fires);
+		}
 	}
 	else if (status->remaining_sequential_fires == 1)
 	{
