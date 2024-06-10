@@ -1,6 +1,6 @@
 import { MovementStage } from "../../movement-stage";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
-import {  HomeProgram, MoveTestProgram, PrintEncoderProgram } from "../../print-tasks/default-programs";
+import { HomeProgram, MoveTestProgram, PrintEncoderProgram } from "../../print-tasks/default-programs";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { PrinterUSB } from "../../printer-usb";
 import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
@@ -11,6 +11,11 @@ import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./Print.html";
 import "./Print.scss";
+import "../PrintBedSimulation/PrintBedSimulation";
+import { PrintBedSimulation, PrintBedSimulationTagName } from "../PrintBedSimulation/PrintBedSimulation";
+import { ModelAdded } from "../../state/actions/ModelAdded";
+import { parseSvgFile } from "../../utils/parseSvgFile";
+import { svgToModel } from "../../utils/svgToModel";
 
 export class PrintComponent extends HTMLElement {
 
@@ -21,6 +26,7 @@ export class PrintComponent extends HTMLElement {
     private currentProgram: HTMLPreElement;
     private printerUsb: PrinterUSB;
     private movementStage: MovementStage;
+    private printBedSimulation: PrintBedSimulation;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -34,6 +40,25 @@ export class PrintComponent extends HTMLElement {
         if (!this.rendered) {
             this.rendered = true;
             this.innerHTML = template;
+            this.printBedSimulation = document.querySelector(PrintBedSimulationTagName);
+            console.log(this.printBedSimulation);
+            abortableEventListener(this.printBedSimulation, "drop", async (ev) => {
+                ev.preventDefault();
+                let files = ev.dataTransfer.files;
+                if (files.length > 0) {
+                    let file: File = files[0];
+                    let parsed = svgToModel(await parseSvgFile(file));
+                    this.store.postAction(new ModelAdded({
+                        fileName: file.name,
+                        layers: parsed.layers
+                    }));
+                }
+            }, this.abortController.signal);
+            abortableEventListener(this.printBedSimulation, "dragover", (ev) => {
+                ev.preventDefault();
+            }, this.abortController.signal);
+
+
             this.programRunnerState = document.querySelector("#program-runner-state");
             this.currentProgram = document.querySelector("#current-program");
             abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {

@@ -1,9 +1,23 @@
 .app-container {
     display: grid;
     grid-template-columns: 8fr 4fr;
+    grid-template-rows: min-content auto;
+    grid-template-areas:
+        "header header"
+        "content status";
     height: 100vh;
 }
 
 .content {
     padding: 0.5em;
+    grid-area: content;
+}
+
+.app-header {
+    grid-area: header;
+    padding: 0.5em;
+}
+
+.app-status {
+    grid-area: status;
 }

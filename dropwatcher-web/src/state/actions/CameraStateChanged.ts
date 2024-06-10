@@ -6,11 +6,12 @@ export class CameraStateChanged implements Action {
     constructor(public state: {
         cameraOn?: boolean;
         exposureTime?: number;
-        canChangeExposure?:{
-            min:number;
-            max:number;
-            step:number;
+        canChangeExposure?: {
+            min: number;
+            max: number;
+            step: number;
         };
     }) { }
     readonly type = ActionType.CameraStateChanged;
 }
+

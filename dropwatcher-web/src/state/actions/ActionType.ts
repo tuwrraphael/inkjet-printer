@@ -8,5 +8,7 @@ export const enum ActionType {
     NozzleDataChanged,
     DropwatcherParametersChanged,
     CameraStateChanged,
-    DropwatcherNozzlePosChanged
+    DropwatcherNozzlePosChanged,
+    ModelAdded,
+    ViewLayerChanged
 }

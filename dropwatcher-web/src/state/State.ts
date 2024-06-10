@@ -41,6 +41,37 @@ export interface PrintControlEncoderModeSettings {
     printFirstLineAfterEncoderTick: number;
 }
 
+export enum PolygonType {
+    Contour,
+    Hole
+}
+export type Point = [number, number];
+
+export interface Polygon {
+    type: PolygonType;
+    points: Point[];
+}
+
+export interface NewModel {
+    layers: {
+        polygons: Polygon[];
+    }[];
+    fileName: string;
+}
+
+export interface Model {
+    layers: {
+        polygons: Polygon[];
+    }[];
+    fileName: string;
+    boundingBox: {
+        min: Point;
+        max: Point;
+    },
+    position: Point
+};
+
+
 export interface State {
     printerSystemState: {
         usbConnected: boolean;
@@ -85,6 +116,22 @@ export interface State {
             first: StagePos,
             last: StagePos
         }
+    },
+    printState: {
+        printerParams: {
+            buildPlate: {
+                width: number;
+                height: number;
+            },
+            encoder: {
+                yAxis: {
+                    dpi: number;
+                    ticks: number;
+                }
+            }
+        },
+        models: Model[],
+        viewLayer: number
     }
 }
 

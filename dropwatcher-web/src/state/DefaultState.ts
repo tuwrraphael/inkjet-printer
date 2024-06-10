@@ -32,5 +32,21 @@ export const DefaultState: State =
             first: null,
             last: null
         }
+    },
+    printState: {
+        printerParams: {
+            buildPlate: {
+                width: 175,
+                height: 175
+            },
+            encoder: {
+                yAxis: {
+                    dpi: 720,
+                    ticks: 5000
+                }
+            }
+        },
+        models: [],
+        viewLayer: 0
     }
 };

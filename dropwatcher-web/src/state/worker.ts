@@ -1,5 +1,5 @@
 import { ActionType } from "./actions/ActionType";
-import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection } from "./State";
+import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel } from "./State";
 
 import { PrinterUSBConnectionStateChanged } from "./actions/PrinterUSBConnectionStateChanged";
 import { PrinterSystemStateResponseReceived } from "./actions/PrinterSystemStateResponseReceived";
@@ -16,6 +16,7 @@ import { DropwatcherNozzlePosChanged } from "./actions/DropwatcherNozzlePosChang
 import { NozzleDataChanged } from "./actions/NozzleDataSet";
 import { DropwatcherParametersChanged } from "./actions/DropwatcherParametersSet";
 import { CameraStateChanged } from "./actions/CameraStateChanged";
+import { ModelAdded, ViewLayerChanged } from "./actions/ModelAdded";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -27,6 +28,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | DropwatcherParametersChanged
     | CameraStateChanged
     | DropwatcherNozzlePosChanged
+    | ModelAdded
+    | ViewLayerChanged
     ;
 let state: State;
 let initialized = false;
@@ -90,6 +93,40 @@ function mapPressureControlAlgorithm(a: ProtoPressureControlAlgorithm): Pressure
         default:
             return PressureControlAlgorithm.Unspecified;
     }
+}
+
+async function getBoundingBox(model: NewModel): Promise<{ min: Point, max: Point }> {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (let layer of model.layers) {
+        for (let polygon of layer.polygons) {
+            for (let point of polygon.points) {
+                minX = Math.min(minX, point[0]);
+                minY = Math.min(minY, point[1]);
+                maxX = Math.max(maxX, point[0]);
+                maxY = Math.max(maxY, point[1]);
+            }
+        }
+    }
+    return { min: [minX, minY], max: [maxX, maxY] };
+
+}
+
+async function modelAdded(msg: ModelAdded) {
+    let bb = await getBoundingBox(msg.model);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            models: [...oldState.printState.models, {
+                fileName: msg.model.fileName,
+                layers: msg.model.layers,
+                boundingBox: bb,
+                position: [10, 10]
+            }],
+        }
+    }));
 }
 
 async function handleMessage(msg: Actions) {
@@ -213,6 +250,17 @@ async function handleMessage(msg: Actions) {
                         first: msg.firstNozzlePos || oldState.dropwatcherState.nozzlePos.first,
                         last: msg.lastNozzlePos || oldState.dropwatcherState.nozzlePos.last
                     }
+                }
+            }));
+            break;
+        case ActionType.ModelAdded:
+            modelAdded(msg);
+            break;
+        case ActionType.ViewLayerChanged:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    viewLayer: msg.layer
                 }
             }));
             break;
