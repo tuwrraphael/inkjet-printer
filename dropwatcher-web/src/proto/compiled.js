@@ -2946,6 +2946,257 @@ export const ChangeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsR
     return ChangeEncoderModeSettingsRequest;
 })();
 
+export const ChangePrintMemoryRequest = $root.ChangePrintMemoryRequest = (() => {
+
+    /**
+     * Properties of a ChangePrintMemoryRequest.
+     * @exports IChangePrintMemoryRequest
+     * @interface IChangePrintMemoryRequest
+     * @property {number|null} [offset] ChangePrintMemoryRequest offset
+     * @property {Array.<number>|null} [data] ChangePrintMemoryRequest data
+     */
+
+    /**
+     * Constructs a new ChangePrintMemoryRequest.
+     * @exports ChangePrintMemoryRequest
+     * @classdesc Represents a ChangePrintMemoryRequest.
+     * @implements IChangePrintMemoryRequest
+     * @constructor
+     * @param {IChangePrintMemoryRequest=} [properties] Properties to set
+     */
+    function ChangePrintMemoryRequest(properties) {
+        this.data = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangePrintMemoryRequest offset.
+     * @member {number} offset
+     * @memberof ChangePrintMemoryRequest
+     * @instance
+     */
+    ChangePrintMemoryRequest.prototype.offset = 0;
+
+    /**
+     * ChangePrintMemoryRequest data.
+     * @member {Array.<number>} data
+     * @memberof ChangePrintMemoryRequest
+     * @instance
+     */
+    ChangePrintMemoryRequest.prototype.data = $util.emptyArray;
+
+    /**
+     * Creates a new ChangePrintMemoryRequest instance using the specified properties.
+     * @function create
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {IChangePrintMemoryRequest=} [properties] Properties to set
+     * @returns {ChangePrintMemoryRequest} ChangePrintMemoryRequest instance
+     */
+    ChangePrintMemoryRequest.create = function create(properties) {
+        return new ChangePrintMemoryRequest(properties);
+    };
+
+    /**
+     * Encodes the specified ChangePrintMemoryRequest message. Does not implicitly {@link ChangePrintMemoryRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {IChangePrintMemoryRequest} message ChangePrintMemoryRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangePrintMemoryRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.offset != null && Object.hasOwnProperty.call(message, "offset"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.offset);
+        if (message.data != null && message.data.length) {
+            writer.uint32(/* id 2, wireType 2 =*/18).fork();
+            for (let i = 0; i < message.data.length; ++i)
+                writer.uint32(message.data[i]);
+            writer.ldelim();
+        }
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ChangePrintMemoryRequest message, length delimited. Does not implicitly {@link ChangePrintMemoryRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {IChangePrintMemoryRequest} message ChangePrintMemoryRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangePrintMemoryRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ChangePrintMemoryRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangePrintMemoryRequest} ChangePrintMemoryRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangePrintMemoryRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangePrintMemoryRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.offset = reader.uint32();
+                    break;
+                }
+            case 2: {
+                    if (!(message.data && message.data.length))
+                        message.data = [];
+                    if ((tag & 7) === 2) {
+                        let end2 = reader.uint32() + reader.pos;
+                        while (reader.pos < end2)
+                            message.data.push(reader.uint32());
+                    } else
+                        message.data.push(reader.uint32());
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ChangePrintMemoryRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ChangePrintMemoryRequest} ChangePrintMemoryRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangePrintMemoryRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ChangePrintMemoryRequest message.
+     * @function verify
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ChangePrintMemoryRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.offset != null && message.hasOwnProperty("offset"))
+            if (!$util.isInteger(message.offset))
+                return "offset: integer expected";
+        if (message.data != null && message.hasOwnProperty("data")) {
+            if (!Array.isArray(message.data))
+                return "data: array expected";
+            for (let i = 0; i < message.data.length; ++i)
+                if (!$util.isInteger(message.data[i]))
+                    return "data: integer[] expected";
+        }
+        return null;
+    };
+
+    /**
+     * Creates a ChangePrintMemoryRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ChangePrintMemoryRequest} ChangePrintMemoryRequest
+     */
+    ChangePrintMemoryRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangePrintMemoryRequest)
+            return object;
+        let message = new $root.ChangePrintMemoryRequest();
+        if (object.offset != null)
+            message.offset = object.offset >>> 0;
+        if (object.data) {
+            if (!Array.isArray(object.data))
+                throw TypeError(".ChangePrintMemoryRequest.data: array expected");
+            message.data = [];
+            for (let i = 0; i < object.data.length; ++i)
+                message.data[i] = object.data[i] >>> 0;
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ChangePrintMemoryRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {ChangePrintMemoryRequest} message ChangePrintMemoryRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ChangePrintMemoryRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.arrays || options.defaults)
+            object.data = [];
+        if (options.defaults)
+            object.offset = 0;
+        if (message.offset != null && message.hasOwnProperty("offset"))
+            object.offset = message.offset;
+        if (message.data && message.data.length) {
+            object.data = [];
+            for (let j = 0; j < message.data.length; ++j)
+                object.data[j] = message.data[j];
+        }
+        return object;
+    };
+
+    /**
+     * Converts this ChangePrintMemoryRequest to JSON.
+     * @function toJSON
+     * @memberof ChangePrintMemoryRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ChangePrintMemoryRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for ChangePrintMemoryRequest
+     * @function getTypeUrl
+     * @memberof ChangePrintMemoryRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    ChangePrintMemoryRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/ChangePrintMemoryRequest";
+    };
+
+    return ChangePrintMemoryRequest;
+})();
+
 export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
@@ -2960,6 +3211,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {IChangeNozzleDataRequest|null} [changeNozzleDataRequest] PrinterRequest changeNozzleDataRequest
      * @property {IChangeEncoderPositionRequest|null} [changeEncoderPositionRequest] PrinterRequest changeEncoderPositionRequest
      * @property {IChangeEncoderModeSettingsRequest|null} [changeEncoderModeSettingsRequest] PrinterRequest changeEncoderModeSettingsRequest
+     * @property {IChangePrintMemoryRequest|null} [changePrintMemoryRequest] PrinterRequest changePrintMemoryRequest
      */
 
     /**
@@ -3040,6 +3292,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @instance
      */
     PrinterRequest.prototype.changeEncoderModeSettingsRequest = null;
+
+    /**
+     * PrinterRequest changePrintMemoryRequest.
+     * @member {IChangePrintMemoryRequest|null|undefined} changePrintMemoryRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.changePrintMemoryRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -3133,6 +3393,17 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
+     * PrinterRequest _changePrintMemoryRequest.
+     * @member {"changePrintMemoryRequest"|undefined} _changePrintMemoryRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_changePrintMemoryRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changePrintMemoryRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrinterRequest instance using the specified properties.
      * @function create
      * @memberof PrinterRequest
@@ -3172,6 +3443,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.ChangeEncoderPositionRequest.encode(message.changeEncoderPositionRequest, writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
         if (message.changeEncoderModeSettingsRequest != null && Object.hasOwnProperty.call(message, "changeEncoderModeSettingsRequest"))
             $root.ChangeEncoderModeSettingsRequest.encode(message.changeEncoderModeSettingsRequest, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
+        if (message.changePrintMemoryRequest != null && Object.hasOwnProperty.call(message, "changePrintMemoryRequest"))
+            $root.ChangePrintMemoryRequest.encode(message.changePrintMemoryRequest, writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         return writer;
     };
 
@@ -3236,6 +3509,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 }
             case 8: {
                     message.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 9: {
+                    message.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -3338,6 +3615,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "changeEncoderModeSettingsRequest." + error;
             }
         }
+        if (message.changePrintMemoryRequest != null && message.hasOwnProperty("changePrintMemoryRequest")) {
+            properties._changePrintMemoryRequest = 1;
+            {
+                let error = $root.ChangePrintMemoryRequest.verify(message.changePrintMemoryRequest);
+                if (error)
+                    return "changePrintMemoryRequest." + error;
+            }
+        }
         return null;
     };
 
@@ -3392,6 +3677,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (typeof object.changeEncoderModeSettingsRequest !== "object")
                 throw TypeError(".PrinterRequest.changeEncoderModeSettingsRequest: object expected");
             message.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.fromObject(object.changeEncoderModeSettingsRequest);
+        }
+        if (object.changePrintMemoryRequest != null) {
+            if (typeof object.changePrintMemoryRequest !== "object")
+                throw TypeError(".PrinterRequest.changePrintMemoryRequest: object expected");
+            message.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.fromObject(object.changePrintMemoryRequest);
         }
         return message;
     };
@@ -3448,6 +3738,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             object.changeEncoderModeSettingsRequest = $root.ChangeEncoderModeSettingsRequest.toObject(message.changeEncoderModeSettingsRequest, options);
             if (options.oneofs)
                 object._changeEncoderModeSettingsRequest = "changeEncoderModeSettingsRequest";
+        }
+        if (message.changePrintMemoryRequest != null && message.hasOwnProperty("changePrintMemoryRequest")) {
+            object.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.toObject(message.changePrintMemoryRequest, options);
+            if (options.oneofs)
+                object._changePrintMemoryRequest = "changePrintMemoryRequest";
         }
         return object;
     };

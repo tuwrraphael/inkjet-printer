@@ -469,6 +469,20 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			LOG_ERR("Failed to decode ChangeEncoderModeSettingsRequest");
 		}
 	}
+	else if (type == ChangePrintMemoryRequest_fields)
+	{
+		ChangePrintMemoryRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangePrintMemoryRequest_fields, &request);
+		if (status)
+		{
+			print_control_set_print_memory(request.offset, request.data, request.data_count);
+			LOG_INF("ChangePrintMemoryRequest: offset %d, data_count %d", request.offset, request.data_count);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangePrintMemoryRequest");
+		}
+	}
 	else
 	{
 		LOG_INF("Unknown message type");

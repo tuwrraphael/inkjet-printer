@@ -153,7 +153,7 @@ static int qdec_stm32_initialize(const struct device *dev)
 	if (dev_cfg->is_input_polarity_inverted)
 	{
 		init_props.IC1Polarity = LL_TIM_IC_POLARITY_FALLING;
-		init_props.IC2Polarity = LL_TIM_IC_POLARITY_FALLING;
+		// init_props.IC2Polarity = LL_TIM_IC_POLARITY_FALLING;
 	}
 
 	init_props.IC1Filter = dev_cfg->input_filtering_level * LL_TIM_IC_FILTER_FDIV1_N2;

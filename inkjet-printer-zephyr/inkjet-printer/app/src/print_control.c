@@ -12,6 +12,8 @@
 
 LOG_MODULE_REGISTER(print_control, CONFIG_APP_LOG_LEVEL);
 
+static uint32_t print_memory[16384] = {0};
+
 static const struct device *printhead;
 static const struct device *printer_fire;
 static const struct device *encoder;
@@ -34,8 +36,6 @@ static void load_line_handler(void)
     while (true)
     {
         k_sem_take(&load_line_sem, K_FOREVER);
-        uint32_t pixels[4] = {0, 0, 0, 0};
-        get_pixels_zig_zag(line_to_load, pixels);
         int ret;
         if (next_load_wait_fired)
         {
@@ -47,7 +47,7 @@ static void load_line_handler(void)
                 continue;
             }
         }
-        ret = printer_set_pixels(printhead, pixels);
+        ret = printer_set_pixels(printhead, &print_memory[line_to_load]);
         if (ret != 0)
         {
             error_callback(ERROR_PRINTHEAD_COMMUNICATION);
@@ -164,6 +164,10 @@ void print_control_disable()
     printer_fire_set_trigger_reset(printer_fire, true);
     printer_fire_abort(printer_fire);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
+}
+
+void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t length) {
+    memcpy(&print_memory[offset], data, length * sizeof(uint32_t));
 }
 
 int print_control_initialize(print_control_init_t *init)

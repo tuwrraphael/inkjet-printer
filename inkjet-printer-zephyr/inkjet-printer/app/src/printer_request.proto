@@ -36,6 +36,11 @@ message ChangeEncoderModeSettingsRequest {
     PrintControlEncoderModeSettings encoder_mode_settings = 1;
 }
 
+message ChangePrintMemoryRequest {
+  uint32 offset = 1;
+  repeated uint32 data = 2;
+}
+
 message PrinterRequest
 {
     optional GetPrinterSystemStateRequest get_printer_system_state_request = 1;
@@ -46,4 +51,5 @@ message PrinterRequest
     optional ChangeNozzleDataRequest change_nozzle_data_request = 6;
     optional ChangeEncoderPositionRequest change_encoder_position_request = 7;
     optional ChangeEncoderModeSettingsRequest change_encoder_mode_settings_request = 8;
+    optional ChangePrintMemoryRequest change_print_memory_request = 9;
 }

@@ -184,14 +184,14 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
             this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
             this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
-            this.sequentialFires.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.sequentialFires);
-            this.fireEveryTicks.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.fireEveryTicks);
-            this.printFirstLineAfterEncoderTick.innerText = this.formatNumber(s.printerSystemState.printControl.encoderModeSettings.printFirstLineAfterEncoderTick);
-            this.encoderValue.innerText = this.formatNumber(s.printerSystemState.printControl.encoderValue);
-            this.expectedEncoderValue.innerText = this.formatNumber(s.printerSystemState.printControl.expectedEncoderValue);
-            this.lastPrintedLine.innerText = this.formatNumber(s.printerSystemState.printControl.lastPrintedLine);
-            this.lostLinesCount.innerText = this.formatNumber(s.printerSystemState.printControl.lostLinesCount);
-            this.printedLines.innerText = this.formatNumber(s.printerSystemState.printControl.printedLines);
+            this.sequentialFires.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.sequentialFires);
+            this.fireEveryTicks.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.fireEveryTicks);
+            this.printFirstLineAfterEncoderTick.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.printFirstLineAfterEncoderTick);
+            this.encoderValue.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderValue);
+            this.expectedEncoderValue.innerText = this.formatNumber(s.printerSystemState.printControl?.expectedEncoderValue);
+            this.lastPrintedLine.innerText = this.formatNumber(s.printerSystemState.printControl?.lastPrintedLine);
+            this.lostLinesCount.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesCount);
+            this.printedLines.innerText = this.formatNumber(s.printerSystemState.printControl?.printedLines);
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);

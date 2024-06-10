@@ -30,6 +30,7 @@ int print_control_start_manual_fire_mode();
 int print_control_request_fire();
 void print_control_set_encoder_position(int32_t value);
 void print_control_disable();
+void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t length);
 int print_control_initialize(print_control_init_t *init);
 void print_control_get_info(print_control_info_t *info);
 void print_control_go_to_safe_state();

@@ -1,1 +1,2 @@
 ChangeNozzleDataRequest.data max_count:4
+ChangePrintMemoryRequest.data max_count:16
