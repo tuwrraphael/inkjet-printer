@@ -8,7 +8,8 @@ import {
     ChangeNozzleDataRequest,
     ChangePrinterSystemStateRequest,
     ChangeEncoderModeSettingsRequest,
-    ChangeEncoderPositionRequest
+    ChangeEncoderPositionRequest,
+    ChangePrintMemoryRequest
 } from "./proto/compiled";
 import { Store } from "./state/Store";
 import { NozzleDataChanged } from "./state/actions/NozzleDataSet";
@@ -117,6 +118,13 @@ export class PrinterUSB {
         let printerRequest = new PrinterRequest();
         printerRequest.changeEncoderPositionRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangePrintMemoryRequest(request: ChangePrintMemoryRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changePrintMemoryRequest = request;
+        let encoded = PrinterRequest.encode(printerRequest).finish();
+        await this.webUsbWrapper.send(encoded);
     }
 
 }

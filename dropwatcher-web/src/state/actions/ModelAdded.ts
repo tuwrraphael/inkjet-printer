@@ -8,7 +8,4 @@ export class ModelAdded implements Action {
     readonly type = ActionType.ModelAdded;
 }
 
-export class ViewLayerChanged implements Action {
-    constructor(public layer: number) { }
-    readonly type = ActionType.ViewLayerChanged;
-}
+

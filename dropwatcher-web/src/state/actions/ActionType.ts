@@ -10,5 +10,8 @@ export const enum ActionType {
     CameraStateChanged,
     DropwatcherNozzlePosChanged,
     ModelAdded,
-    ViewLayerChanged
+    ViewLayerChanged,
+    ModelPositionChanged,
+    SlicePositionChanged,
+    SlicePositionIncrement
 }

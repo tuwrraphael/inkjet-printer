@@ -1,4 +1,5 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
+import { PrinterParams, PrintingParams } from "../slicer/TrackSlicer";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -60,6 +61,7 @@ export interface NewModel {
 }
 
 export interface Model {
+    id: string;
     layers: {
         polygons: Polygon[];
     }[];
@@ -67,9 +69,18 @@ export interface Model {
     boundingBox: {
         min: Point;
         max: Point;
-    },
-    position: Point
+    }
 };
+
+export interface ModelParams {
+    position: Point;
+}
+
+export enum SlicingStatus {
+    None,
+    InProgress,
+    Done
+}
 
 
 export interface State {
@@ -118,21 +129,17 @@ export interface State {
         }
     },
     printState: {
-        printerParams: {
-            buildPlate: {
-                width: number;
-                height: number;
-            },
-            encoder: {
-                yAxis: {
-                    dpi: number;
-                    ticks: number;
-                }
-            }
-        },
-        models: Model[],
-        viewLayer: number
-    }
+        printerParams: PrinterParams,
+        printingParams: PrintingParams,
+        slicingState: {
+            moveAxisPos: number;
+            track: Uint32Array;
+            slicingStatus: SlicingStatus;
+        }
+        viewLayer: number,
+        modelParams: { [id: string]: ModelParams }
+    },
+    models: Model[]
 }
 
 export type StateChanges = (keyof State)[];

@@ -1,15 +1,17 @@
 import pointInPolygon from "robust-point-in-polygon";
-import { Model, Point, Polygon, PolygonType } from "../state/State";
+import { Model, ModelParams, Point, Polygon, PolygonType } from "../state/State";
+import { getNozzleDistance } from "./getNozzleDistance";
 
 export interface PrinterParams {
     numNozzles: number;
-    nozzleDistance: number;
+    printheadSwathePerpendicular: number;
+    printheadAngleRads: number;
     buildPlate: {
         width: number;
         height: number;
     };
     encoder: {
-        yAxis: {
+        printAxis: {
             dpi: number;
             ticks: number;
         };
@@ -33,6 +35,7 @@ export class TrackSlicer {
     contourBoundingBoxes: { minX: number; minY: number; maxX: number; maxY: number; }[];
 
     constructor(private model: Model,
+        private modelParams: ModelParams,
         private layer: number,
         private printerParams: PrinterParams,
         private printingParams: PrintingParams) {
@@ -47,9 +50,9 @@ export class TrackSlicer {
         this.contourBoundingBoxes = this.polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
     }
 
-    private transformCoordinates(points: Point[]) : Point[] {
+    private transformCoordinates(points: Point[]): Point[] {
         return points.map(([x, y]) => {
-            return [x + this.model.position[0], y + this.model.position[1]] ;
+            return [x + this.modelParams.position[0], y + this.modelParams.position[1]];
         });
     }
 
@@ -77,19 +80,20 @@ export class TrackSlicer {
     }
 
     getTrack(x: number): Uint32Array {
-        let lines = Math.ceil((this.printerParams.encoder.yAxis.ticks - this.printingParams.printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.fireEveryTicks;
-        console.log(`Lines: ${lines}`);
+        let nozzleDistance = getNozzleDistance(this.printerParams);
+        let lines = Math.ceil((this.printerParams.encoder.printAxis.ticks - this.printingParams.printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.sequentialFires;
+        console.log(lines);
         let swathe = new Uint32Array(lines * 4);
         swathe.fill(0);
-        let encoderMMperDot = 25.4 / this.printerParams.encoder.yAxis.dpi;
+        let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let tickAccumulator = this.printingParams.fireEveryTicks - 1;
         let line = 0;
-        for (let tick = this.printingParams.printFirstLineAfterEncoderTick; tick < this.printerParams.encoder.yAxis.ticks; tick++) {
+        for (let tick = this.printingParams.printFirstLineAfterEncoderTick; tick < this.printerParams.encoder.printAxis.ticks; tick++) {
             tickAccumulator = (tickAccumulator + 1) % this.printingParams.fireEveryTicks;
             if (tickAccumulator == 0) {
                 for (let fire = 0; fire < this.printingParams.sequentialFires; fire++) {
                     for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
-                        let nozzleX = x + ((this.printerParams.numNozzles - 1) - nozzle) * this.printerParams.nozzleDistance;
+                        let nozzleX = x + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance;
                         let nozzleY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
                         if (this.insideLayer([nozzleX, nozzleY])) {
                             let patternid = Math.floor(nozzle / 32);
@@ -127,3 +131,4 @@ export class TrackSlicer {
         return false;
     }
 }
+

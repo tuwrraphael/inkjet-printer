@@ -1,5 +1,5 @@
 import { ActionType } from "./actions/ActionType";
-import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel } from "./State";
+import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel, SlicingStatus } from "./State";
 
 import { PrinterUSBConnectionStateChanged } from "./actions/PrinterUSBConnectionStateChanged";
 import { PrinterSystemStateResponseReceived } from "./actions/PrinterSystemStateResponseReceived";
@@ -16,7 +16,13 @@ import { DropwatcherNozzlePosChanged } from "./actions/DropwatcherNozzlePosChang
 import { NozzleDataChanged } from "./actions/NozzleDataSet";
 import { DropwatcherParametersChanged } from "./actions/DropwatcherParametersSet";
 import { CameraStateChanged } from "./actions/CameraStateChanged";
-import { ModelAdded, ViewLayerChanged } from "./actions/ModelAdded";
+import { ModelAdded } from "./actions/ModelAdded";
+import { ViewLayerChanged } from "./actions/ViewLayerChanged";
+import { ModelPositionChanged } from "./actions/ModelPositionChanged";
+import { TrackSlicer } from "../slicer/TrackSlicer";
+import { SlicePositionChanged } from "./actions/SlicePositionChanged";
+import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
+import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -30,6 +36,9 @@ type Actions = PrinterUSBConnectionStateChanged
     | DropwatcherNozzlePosChanged
     | ModelAdded
     | ViewLayerChanged
+    | ModelPositionChanged
+    | SlicePositionChanged
+    | SlicePositionIncrement
     ;
 let state: State;
 let initialized = false;
@@ -114,19 +123,127 @@ async function getBoundingBox(model: NewModel): Promise<{ min: Point, max: Point
 
 }
 
-async function modelAdded(msg: ModelAdded) {
-    let bb = await getBoundingBox(msg.model);
+let modelIds = 0;
+
+let trackSlicer: TrackSlicer = null;
+
+async function updateSlicerParams() {
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
-            models: [...oldState.printState.models, {
-                fileName: msg.model.fileName,
-                layers: msg.model.layers,
-                boundingBox: bb,
-                position: [10, 10]
-            }],
+            slicingState: {
+                ...oldState.printState.slicingState,
+                track: null,
+                slicingStatus: SlicingStatus.None
+            }
         }
     }));
+    if (state.models.length < 1) {
+        return;
+    }
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                slicingStatus: SlicingStatus.InProgress
+            }
+        }
+    }));
+    let model = state.models[0];
+    let modelParams = state.printState.modelParams[model.id];
+    trackSlicer = new TrackSlicer(model, modelParams, state.printState.viewLayer, state.printState.printerParams, state.printState.printingParams);
+    let track = trackSlicer.getTrack(state.printState.slicingState.moveAxisPos);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                track: track,
+                slicingStatus: SlicingStatus.Done
+            }
+        }
+    }));
+}
+
+async function modelAdded(msg: ModelAdded) {
+    let bb = await getBoundingBox(msg.model);
+    let model: Model = {
+        fileName: msg.model.fileName,
+        layers: msg.model.layers,
+        boundingBox: bb,
+        id: `${modelIds++}`
+    };
+    updateState(oldState => ({
+        models: [...oldState.models, model],
+        printState: {
+            ...oldState.printState,
+            modelParams: {
+                ...oldState.printState.modelParams,
+                [model.id]: {
+                    position: [10, 10]
+                }
+            }
+        }
+    }));
+    updateSlicerParams();
+}
+
+function reslice() {
+    if (null == trackSlicer) {
+        return;
+    }
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                slicingStatus: SlicingStatus.InProgress
+            }
+        }
+    }));
+    let track = trackSlicer.getTrack(state.printState.slicingState.moveAxisPos);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                track: track,
+                slicingStatus: SlicingStatus.Done
+            }
+        }
+    }));
+}
+
+function slicePositionIncrement(msg:SlicePositionIncrement) {
+    let swathe = getPrintheadSwathe(state.printState.printerParams);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                moveAxisPos: oldState.printState.slicingState.moveAxisPos + (swathe *msg.increment),
+                slicingStatus: SlicingStatus.None,
+                track: null
+            }
+        }
+    }));
+    reslice();  
+}
+
+function slicePositionChanged(msg: SlicePositionChanged) {
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                moveAxisPos: msg.moveAxisPos,
+                slicingStatus: SlicingStatus.None,
+                track: null
+            }
+        }
+    }));
+    reslice();
 }
 
 async function handleMessage(msg: Actions) {
@@ -263,6 +380,27 @@ async function handleMessage(msg: Actions) {
                     viewLayer: msg.layer
                 }
             }));
+            updateSlicerParams();
+            break;
+        case ActionType.ModelPositionChanged:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    modelParams: {
+                        ...oldState.printState.modelParams,
+                        [msg.id]: {
+                            position: msg.position
+                        }
+                    }
+                }
+            }));
+            updateSlicerParams();
+            break;
+        case ActionType.SlicePositionChanged:
+            slicePositionChanged(msg);
+            break;
+        case ActionType.SlicePositionIncrement:
+            slicePositionIncrement(msg);
             break;
     }
 }

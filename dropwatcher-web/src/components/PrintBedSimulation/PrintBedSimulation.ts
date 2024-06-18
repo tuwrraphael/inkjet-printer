@@ -1,17 +1,15 @@
-import { Model, Point, PolygonType, State, StateChanges } from "../../state/State";
+import { Model, ModelParams, Point, PolygonType, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
 import "./PrintBedSimulation.scss";
-import { ViewLayerChanged } from "../../state/actions/ModelAdded";
-import { PrinterParams, PrintingParams, TrackSlicer } from "../../slicer/TrackSlicer";
+import { ViewLayerChanged } from "../../state/actions/ViewLayerChanged";
+import { PrinterParams, PrintingParams } from "../../slicer/TrackSlicer";
+import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
+import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
-
-let check = 10;
-
-let modelCanvasSize = 2084;
 
 let modelColors = [
     "#FFDFBA", // pastel orange
@@ -36,7 +34,7 @@ export class PrintBedSimulation extends HTMLElement {
     private bedWidth: number;
     private bedHeight: number;
     private dotsPerMM: number;
-    private encoderYAxis: { dpi: number; ticks: number; };
+    private encoderPrintAxis: { dpi: number; ticks: number; };
     private zoom: number;
     private initialized = false;
     private pan: { x: number; y: number; };
@@ -46,9 +44,13 @@ export class PrintBedSimulation extends HTMLElement {
     private modelCanvasMap = new Map<Model, HTMLCanvasElement>();
     private rangeInput: HTMLInputElement;
     private layerDisplay: HTMLSpanElement;
-    track: Uint32Array;
-    printerParams: PrinterParams;
-    printingParams: PrintingParams;
+    private modelPositionMap: WeakMap<Model, { x: number, y: number }> = new WeakMap();
+    private track: Uint32Array;
+    private printerParams: PrinterParams;
+    private printingParams: PrintingParams;
+    private resizeObserver: ResizeObserver;
+    private moveAxisPos: number;
+    private modelParams: { [id: string]: ModelParams; };
 
     constructor() {
         super();
@@ -66,20 +68,34 @@ export class PrintBedSimulation extends HTMLElement {
             this.layerDisplay = this.querySelector("#layer-display");
             this.rangeInput = this.querySelector("#layer-range");
             this.ctx = this.printCanvas.getContext("2d");
+            this.resizeObserver = new ResizeObserver(() => this.onResized());
         }
         this.abortController = new AbortController();
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
         this.update(this.store.state, null);
         let zoomConstant = 0.008;
         abortableEventListener(this.printCanvas, "mousedown", (ev) => {
-            if (Math.abs(this.zoom - 1.0) < 0.01) {
-                return;
-            }
+
             ev.preventDefault();
+            let rect = this.printCanvas.getBoundingClientRect();
+            let canvasFactor = rect.width / this.printCanvas.width;
             let mouseDownX = ev.clientX;
             let mouseDownY = ev.clientY;
-            let canvasFactor = this.printCanvas.getBoundingClientRect().width / this.printCanvas.width;
+            let mouseDownBedPos = this.bedPositionFromMouseEvent(ev);
+            let middleButton = ev.button === 1;
+            let model = this.bedPositionOnModel(mouseDownBedPos);
+            let modelParams = model ?  this.modelParams[model.id] : null;
+            let modelOrigin = model ? { x: modelParams.position[0], y: modelParams.position[1] } : null;
             let mouseMove = (ev: MouseEvent) => {
+                if (model && !middleButton) {
+                    let movedPos = this.bedPositionFromMouseEvent(ev);
+                    this.modelPositionMap.set(model, { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) });
+                    this.render(false);
+                    return;
+                }
+                if (Math.abs(this.zoom - 1.0) < 0.01) {
+                    return;
+                }
                 this.pan.x += (ev.clientX - mouseDownX) / canvasFactor;
                 this.pan.y += (ev.clientY - mouseDownY) / canvasFactor;
 
@@ -90,15 +106,16 @@ export class PrintBedSimulation extends HTMLElement {
             let mouseUp = (ev: MouseEvent) => {
                 document.removeEventListener("mousemove", mouseMove);
                 document.removeEventListener("mouseup", mouseUp);
+                if (model && !middleButton) {
+                    let updatedPos = this.modelPositionMap.get(model);
+                    this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
+                }
             };
             document.addEventListener("mousemove", mouseMove);
             document.addEventListener("mouseup", mouseUp);
         }, this.abortController.signal);
         abortableEventListener(this.printCanvas, "mousemove", (ev) => {
-            let rect = this.printCanvas.getBoundingClientRect();
-            let canvasFactor = rect.width / this.printCanvas.width;
-            let x = (((ev.clientX - rect.left - (this.pan.x * canvasFactor)) / this.zoom) / canvasFactor) / this.dotsPerMM - simmargin;
-            let y = this.bedHeight - ((((ev.clientY - rect.top - (this.pan.y * canvasFactor)) / this.zoom) / canvasFactor) / this.dotsPerMM - simmargin);
+            let { x, y } = this.bedPositionFromMouseEvent(ev);
             this.printCanvasInfo.innerText = `X: ${x.toFixed(2)} mm, Y: ${y.toFixed(2)} mm`;
         }, this.abortController.signal);
         abortableEventListener(this.printCanvas, "wheel", (ev) => {
@@ -109,11 +126,15 @@ export class PrintBedSimulation extends HTMLElement {
             let rect = this.printCanvas.getBoundingClientRect();
             let canvasFactor = rect.width / this.printCanvas.width;
 
-            let newZoom = this.zoom + ev.deltaY * -zoomConstant;
+            let newZoom = this.zoom + this.zoom * ev.deltaY * -zoomConstant;
             newZoom = Math.max(1.0, newZoom);
 
-            let newPanX = -1 * ((((ev.clientX - rect.left - (this.pan.x * canvasFactor)) / this.zoom) * newZoom - ev.clientX + rect.left) / canvasFactor);
-            let newPanY = -1 * ((((ev.clientY - rect.top - (this.pan.y * canvasFactor)) / this.zoom) * newZoom - ev.clientY + rect.top) / canvasFactor);
+            let newDotsPerMM = this.dotsPerMM * newZoom / this.zoom;
+
+
+
+            let newPanX = -1 * (newDotsPerMM * (((ev.clientX - rect.left - (this.pan.x * canvasFactor)))) / this.dotsPerMM - ev.clientX + rect.left) / canvasFactor;
+            let newPanY = -1 * (newDotsPerMM * (((ev.clientY - rect.top - (this.pan.y * canvasFactor)))) / this.dotsPerMM - ev.clientY + rect.top) / canvasFactor;
             this.pan.x = newPanX;
             this.pan.y = newPanY;
 
@@ -121,7 +142,7 @@ export class PrintBedSimulation extends HTMLElement {
             if (Math.abs(this.zoom - 1.0) < 0.01) {
                 this.pan = { x: 0, y: 0 };
             }
-            this.render(false);
+            this.render(true);
         }, this.abortController.signal);
         abortableEventListener(this.rangeInput, "input", (ev) => {
             this.layerDisplay.innerText = this.rangeInput.value;
@@ -129,17 +150,52 @@ export class PrintBedSimulation extends HTMLElement {
         abortableEventListener(this.rangeInput, "change", (ev) => {
             this.store.postAction(new ViewLayerChanged(parseInt(this.rangeInput.value)));
         }, this.abortController.signal);
+        this.resizeObserver.observe(this.printCanvas.parentElement);
+    }
+
+    onResized(): void {
+        this.render(true);
+    }
+
+    private bedPositionFromMouseEvent(ev: MouseEvent) {
+        let rect = this.printCanvas.getBoundingClientRect();
+        let canvasFactor = rect.width / this.printCanvas.width;
+        return {
+            x: (((ev.clientX - rect.left - (this.pan.x * canvasFactor))) / canvasFactor) / this.dotsPerMM - simmargin,
+            y: this.bedHeight - ((((ev.clientY - rect.top - (this.pan.y * canvasFactor))) / canvasFactor) / this.dotsPerMM - simmargin)
+        };
+    }
+
+    private bedPositionOnModel({ x, y }: { x: number, y: number }): Model | null {
+        for (let model of this.models) {
+
+            let modelWidth = model.boundingBox.max[0] - model.boundingBox.min[0];
+            let modelHeight = model.boundingBox.max[1] - model.boundingBox.min[1];
+            let modelParams = this.modelParams[model.id];
+            let modelOrigin = {
+                x: modelParams.position[0],
+                y: modelParams.position[1]
+            };
+            if (x >= modelOrigin.x && x <= modelOrigin.x + modelWidth && y >= modelOrigin.y && y <= modelOrigin.y + modelHeight) {
+                return model;
+            }
+        }
+        return null;
     }
 
 
 
     private update(s: State, c: StateChanges) {
-        if (s && (!c || c.includes("printState"))) {
+        if (s && (!c || c.includes("printState") || c.includes("models"))) {
             this.bedWidth = s.printState.printerParams.buildPlate.width;
             this.bedHeight = s.printState.printerParams.buildPlate.height;
-            this.dotsPerMM = maxCanvasSize / (this.bedWidth + 2 * simmargin);
-            this.encoderYAxis = s.printState.printerParams.encoder.yAxis;
-            this.models = s.printState.models;
+            this.encoderPrintAxis = s.printState.printerParams.encoder.printAxis;
+            this.models = s.models;
+            this.modelParams = s.printState.modelParams;
+            for (let model of this.models) {
+                let modelParams = s.printState.modelParams[model.id];
+                this.modelPositionMap.set(model, { x: modelParams.position[0], y: modelParams.position[1] });
+            }
             let layerChanged = this.viewLayer != s.printState.viewLayer;
             this.viewLayer = s.printState.viewLayer;
             this.layerDisplay.innerText = this.viewLayer.toString();
@@ -150,38 +206,16 @@ export class PrintBedSimulation extends HTMLElement {
             }
             this.rangeInput.max = (maxLayerNum - 1).toString();
             this.initialized = true;
-
-            const printheadSwathePerpendicular = 17.417;
-            const printheadAngleRads = 0;
-            const numNozzles = 128;
-            const printheadSwathe = printheadSwathePerpendicular * Math.cos(printheadAngleRads);
-
-            if (this.models.length > 0) {
-                this.printerParams = {
-                    buildPlate: s.printState.printerParams.buildPlate,
-                    encoder: s.printState.printerParams.encoder,
-                    numNozzles: numNozzles,
-                    nozzleDistance: printheadSwathe / (numNozzles - 1)
-                };
-                this.printingParams = {
-                    fireEveryTicks: 4,
-                    printFirstLineAfterEncoderTick: 1,
-                    sequentialFires: 1
-                };
-                let trackSlicer = new TrackSlicer(this.models[0], this.viewLayer,
-                    this.printerParams,
-                    this.printingParams
-                );
-                this.track = trackSlicer.getTrack(check);
-                console.log(this.track);
-            }
-
+            this.track = s.printState.slicingState.track;
+            this.printerParams = s.printState.printerParams;
+            this.printingParams = s.printState.printingParams;
+            this.moveAxisPos = s.printState.slicingState.moveAxisPos;
             this.render(layerChanged);
         }
     }
 
     private mmToDots(mm: number) {
-        return mm * this.dotsPerMM * this.zoom;
+        return mm * this.dotsPerMM;
     }
 
     private getCanvasPosition(mmX: number, mmY: number) {
@@ -196,8 +230,21 @@ export class PrintBedSimulation extends HTMLElement {
     }
 
     private setCanvasSize() {
-        this.printCanvas.width = this.mmToDots(this.bedWidth + 2 * simmargin) / this.zoom;
-        this.printCanvas.height = this.mmToDots(this.bedHeight + 2 * simmargin) / this.zoom;
+        let dpr = window.devicePixelRatio || 1;
+        let rect = this.printCanvas.parentElement.getBoundingClientRect();
+        let width = Math.min(rect.width * dpr, maxCanvasSize);
+        let height = Math.min(rect.height * dpr, maxCanvasSize);
+        let displayWidthMM = (this.bedWidth + 2 * simmargin) / this.zoom;
+        let displayHeightMM = (this.bedHeight + 2 * simmargin) / this.zoom;
+        if (width / displayWidthMM < height / displayHeightMM) {
+            this.dotsPerMM = width / displayWidthMM;
+        } else {
+            this.dotsPerMM = height / displayHeightMM;
+        }
+        this.printCanvas.width = width;
+        this.printCanvas.height = height;
+        this.printCanvas.style.width = `${rect.width}px`;
+        this.printCanvas.style.height = `${rect.height}px`;
     }
 
     private drawBuildPlateOutline() {
@@ -211,12 +258,12 @@ export class PrintBedSimulation extends HTMLElement {
     private drawEncoderTicks() {
         let lineLength = 5;
         let margin = 2;
-        let encoderLineSpacing = 25.4 / this.encoderYAxis.dpi;
+        let encoderLineSpacing = 25.4 / this.encoderPrintAxis.dpi;
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = this.mmToDots(0.005);
-        let end = this.getCanvasPosition(simmargin, 0);
-        for (let i = 0; i < this.encoderYAxis.ticks; i++) {
-            let start = this.getCanvasPosition(simmargin - lineLength, simmargin + this.bedHeight - i * encoderLineSpacing);
+        let end = this.getCanvasPosition(simmargin - margin, 0);
+        for (let i = 0; i < this.encoderPrintAxis.ticks; i++) {
+            let start = this.getCanvasPosition(simmargin - lineLength - margin, simmargin + this.bedHeight - i * encoderLineSpacing);
             this.ctx.beginPath();
             this.ctx.moveTo(start.x, start.y);
             this.ctx.lineTo(end.x, start.y);
@@ -270,14 +317,14 @@ export class PrintBedSimulation extends HTMLElement {
         ctx.fill();
     }
 
-    private drawModel(model: Model, fillColor: string, layerChanged: boolean) {
+    private drawModel(model: Model, fillColor: string, redraw: boolean) {
         let modelWidth = model.boundingBox.max[0] - model.boundingBox.min[0];
         let modelHeight = model.boundingBox.max[1] - model.boundingBox.min[1];
-        if (!this.modelCanvasMap.has(model) || layerChanged) {
+        if (!this.modelCanvasMap.has(model) || redraw) {
             let modelCanvas = this.modelCanvasMap.get(model) || document.createElement("canvas");
             this.modelCanvasMap.set(model, modelCanvas);
-            modelCanvas.width = modelCanvasSize;
-            modelCanvas.height = modelHeight / modelWidth * modelCanvasSize;
+            modelCanvas.width = modelWidth * this.dotsPerMM;
+            modelCanvas.height = modelHeight * this.dotsPerMM;
             let ctx = modelCanvas.getContext("2d");
             ctx.fillStyle = "transparent";
             ctx.fillRect(0, 0, modelCanvas.width, modelCanvas.height);
@@ -297,7 +344,8 @@ export class PrintBedSimulation extends HTMLElement {
         let modelCanvas = this.modelCanvasMap.get(model);
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = this.mmToDots(0.2);
-        let modelOrigin = this.buildPlatePositionToCanvasPosition(model.position[0], model.position[1] + modelHeight);
+        let modelPosition = this.modelPositionMap.get(model);
+        let modelOrigin = this.buildPlatePositionToCanvasPosition(modelPosition.x, modelPosition.y + modelHeight);
         this.ctx.strokeRect(
             modelOrigin.x,
             modelOrigin.y,
@@ -316,6 +364,7 @@ export class PrintBedSimulation extends HTMLElement {
     private drawOrigin() {
         let origin = this.buildPlatePositionToCanvasPosition(0, 0);
         this.ctx.strokeStyle = "red";
+        this.ctx.lineWidth = this.mmToDots(0.2);
         this.ctx.beginPath();
         this.ctx.arc(origin.x, origin.y, this.mmToDots(1), 0, 2 * Math.PI);
         this.ctx.stroke();
@@ -336,10 +385,11 @@ export class PrintBedSimulation extends HTMLElement {
         printerParams: PrinterParams,
         printingParams: PrintingParams
     ) {
-        let encoderMMperDot = 25.4 / printerParams.encoder.yAxis.dpi;
+        let nozzleDistance = getNozzleDistance(printerParams);
+        let encoderMMperDot = 25.4 / printerParams.encoder.printAxis.dpi;
         let tickAccumulator = printingParams.fireEveryTicks - 1;
         let line = 0;
-        for (let tick = printingParams.printFirstLineAfterEncoderTick; tick < printerParams.encoder.yAxis.ticks; tick++) {
+        for (let tick = printingParams.printFirstLineAfterEncoderTick; tick < printerParams.encoder.printAxis.ticks; tick++) {
             tickAccumulator = (tickAccumulator + 1) % printingParams.fireEveryTicks;
             if (tickAccumulator == 0) {
                 for (let fire = 0; fire < printingParams.sequentialFires; fire++) {
@@ -347,7 +397,7 @@ export class PrintBedSimulation extends HTMLElement {
                         let patternid = Math.floor(nozzle / 32);
                         let bitid = nozzle % 32;
                         if (lineData[line * 4 + patternid] & (1 << bitid)) {
-                            let nozzleX = x + ((printerParams.numNozzles - 1) - nozzle) * printerParams.nozzleDistance;
+                            let nozzleX = x + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance;
                             let nozzleY = tick * encoderMMperDot + (fire / printingParams.sequentialFires) * encoderMMperDot * printingParams.fireEveryTicks;
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = "black";
@@ -362,29 +412,33 @@ export class PrintBedSimulation extends HTMLElement {
         }
     }
 
-    private render(layerChanged: boolean) {
+    private render(redrawModels: boolean) {
         if (!this.initialized) {
             return;
         }
         requestAnimationFrame(() => {
             this.setCanvasSize();
+            if (this.dotsPerMM < 0.1) {
+                return;
+            }
             this.ctx.clearRect(0, 0, this.printCanvas.width, this.printCanvas.height);
             this.fillBuildPlateWithBackgroundLines();
             this.drawBuildPlateOutline();
             this.drawEncoderTicks();
             for (let model of this.models) {
                 let color = modelColors[this.models.indexOf(model) % modelColors.length];
-                this.drawModel(model, color, layerChanged);
+                this.drawModel(model, color, redrawModels);
             }
             this.drawOrigin();
             if (this.track) {
-                this.drawTrack(check, this.track, this.printerParams, this.printingParams);
+                this.drawTrack(this.moveAxisPos, this.track, this.printerParams, this.printingParams);
             }
         });
     }
 
     disconnectedCallback() {
         this.abortController.abort();
+        this.resizeObserver.disconnect();
     }
 }
 
