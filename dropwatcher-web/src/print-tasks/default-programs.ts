@@ -8,9 +8,6 @@ export const HomeProgram: PrinterProgram = {
         // },
         {
             type: PrinterTaskType.PrimeNozzle,
-            feedLimitPressure: 20,
-            feedLimitPwm: 1,
-            feedTime: 10
         },
         {
             type: PrinterTaskType.SetTargetPressure,
@@ -69,39 +66,6 @@ export const MoveTestProgram: PrinterProgram = {
             feedRate: 400
         }
     ]
-};
-
-function generateEncoderProgramSteps() {
-    let steps: PrinterTasks[] = [];
-    let x = 60;
-    for (let i = 0; i < 100; i++) {
-        steps.push({
-            type: PrinterTaskType.Move,
-            x: x,
-            y: 175,
-            z: 0.5,
-            feedRate: 10000
-        });
-        steps.push({
-            type: PrinterTaskType.ResetEncoder,
-            fireEveryTicks: 1,
-            printFirstLineAfterEncoderTick: 100,
-            sequentialFires: 1
-        });
-        steps.push({
-            type: PrinterTaskType.Move,
-            x: x,
-            y: 0,
-            z: 0.5,
-            feedRate: 3000
-        });
-    }
-    return steps;
-
-}
-
-export const PrintEncoderProgram: PrinterProgram = {
-    tasks: generateEncoderProgramSteps()
 };
 
 // export const HelloWorldProgram : PrinterProgram = {

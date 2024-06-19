@@ -25,6 +25,8 @@ void request_set_nozzle_data(uint32_t *data);
 
 void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t *settings);
 
+void request_prime_nozzles();
+
 enum printer_system_smf_state printer_system_smf_get_state();
 
 #endif // PRINTER_SYSTEM_SMF_H

@@ -344,6 +344,9 @@ export class PrintControlState implements IPrintControlState {
     /** PrintControlState printedLines. */
     public printedLines: number;
 
+    /** PrintControlState nozzlePrimingActive. */
+    public nozzlePrimingActive: boolean;
+
     /**
      * Creates a new PrintControlState instance using the specified properties.
      * @param [properties] Properties to set
@@ -1232,6 +1235,93 @@ export class ChangePrintMemoryRequest implements IChangePrintMemoryRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a NozzlePrimingRequest. */
+export class NozzlePrimingRequest implements INozzlePrimingRequest {
+
+    /**
+     * Constructs a new NozzlePrimingRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: INozzlePrimingRequest);
+
+    /**
+     * Creates a new NozzlePrimingRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns NozzlePrimingRequest instance
+     */
+    public static create(properties?: INozzlePrimingRequest): NozzlePrimingRequest;
+
+    /**
+     * Encodes the specified NozzlePrimingRequest message. Does not implicitly {@link NozzlePrimingRequest.verify|verify} messages.
+     * @param message NozzlePrimingRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: INozzlePrimingRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified NozzlePrimingRequest message, length delimited. Does not implicitly {@link NozzlePrimingRequest.verify|verify} messages.
+     * @param message NozzlePrimingRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: INozzlePrimingRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a NozzlePrimingRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns NozzlePrimingRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): NozzlePrimingRequest;
+
+    /**
+     * Decodes a NozzlePrimingRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns NozzlePrimingRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): NozzlePrimingRequest;
+
+    /**
+     * Verifies a NozzlePrimingRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a NozzlePrimingRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns NozzlePrimingRequest
+     */
+    public static fromObject(object: { [k: string]: any }): NozzlePrimingRequest;
+
+    /**
+     * Creates a plain object from a NozzlePrimingRequest message. Also converts values to other types if specified.
+     * @param message NozzlePrimingRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: NozzlePrimingRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this NozzlePrimingRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for NozzlePrimingRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterRequest. */
 export class PrinterRequest implements IPrinterRequest {
 
@@ -1268,6 +1358,9 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest changePrintMemoryRequest. */
     public changePrintMemoryRequest?: (IChangePrintMemoryRequest|null);
 
+    /** PrinterRequest nozzlePrimingRequest. */
+    public nozzlePrimingRequest?: (INozzlePrimingRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -1294,6 +1387,9 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _changePrintMemoryRequest. */
     public _changePrintMemoryRequest?: "changePrintMemoryRequest";
+
+    /** PrinterRequest _nozzlePrimingRequest. */
+    public _nozzlePrimingRequest?: "nozzlePrimingRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.

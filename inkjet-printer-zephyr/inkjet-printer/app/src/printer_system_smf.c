@@ -20,6 +20,7 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_REQUEST_FIRE (1 << 3)
 #define PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA (1 << 4)
 #define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS (1 << 5)
+#define PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES (1 << 6)
 
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 
@@ -238,6 +239,20 @@ static void printer_system_print_run(void *o)
                 return;
             }
         }
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES)
+        {
+            int ret = print_control_nozzle_priming();
+            if (ret != 0)
+            {
+                failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
+                LOG_ERR("Failed to prime nozzles %d", ret);
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
+            }
+            else
+            {
+                LOG_INF("Priming nozzles");
+            }
+        }
         k_timer_start(&timout_timer, K_MINUTES(30), K_NO_WAIT);
     }
 }
@@ -274,6 +289,11 @@ void go_to_print()
 void request_printhead_fire()
 {
     event_post(PRINTER_SYSTEM_REQUEST_FIRE);
+}
+
+void request_prime_nozzles()
+{
+    event_post(PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES);
 }
 
 void request_set_nozzle_data(uint32_t *data)

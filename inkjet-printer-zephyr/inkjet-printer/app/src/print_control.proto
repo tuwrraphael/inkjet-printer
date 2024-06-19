@@ -13,4 +13,5 @@ message PrintControlState {
   int32 last_printed_line = 4;
   uint32 lost_lines_count = 5;
   uint32 printed_lines = 6;
+  bool nozzle_priming_active = 7;
 }

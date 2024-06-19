@@ -3,6 +3,7 @@
 #include <zephyr/drivers/sensor.h>
 
 #include <lib/inkjetcontrol/encoder.h>
+#include <lib/inkjetcontrol/nozzle_data.h>
 #include <lib/inkjetcontrol/test_pattern.h>
 #include <zephyr/drivers/printer.h>
 #include <zephyr/drivers/printer_fire.h>
@@ -31,6 +32,8 @@ K_SEM_DEFINE(load_line_sem, 0, 1);
 
 static bool encoder_mode = false;
 
+static bool nozzle_priming_active = false;
+
 static void load_line_handler(void)
 {
     while (true)
@@ -47,7 +50,7 @@ static void load_line_handler(void)
                 continue;
             }
         }
-        ret = printer_set_pixels(printhead, &print_memory[line_to_load]);
+        ret = printer_set_pixels(printhead, &print_memory[line_to_load*4]);
         if (ret != 0)
         {
             error_callback(ERROR_PRINTHEAD_COMMUNICATION);
@@ -166,7 +169,8 @@ void print_control_disable()
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
 }
 
-void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t length) {
+void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t length)
+{
     memcpy(&print_memory[offset], data, length * sizeof(uint32_t));
 }
 
@@ -211,6 +215,82 @@ void print_control_get_info(print_control_info_t *info)
     info->lost_lines_count = encoder_print_status.lost_lines_count;
     info->printed_lines = encoder_print_status.printed_lines;
     info->encoder_value = get_value_cb(NULL);
+    info->nozzle_priming_active = nozzle_priming_active;
+}
+
+static int priming_cycle(uint32_t *data, uint32_t times)
+{
+    int ret = printer_set_pixels(printhead, data);
+    if (ret != 0)
+    {
+        failure_handling_set_error_state(ERROR_PRINTHEAD_COMMUNICATION);
+        LOG_ERR("Failed to set nozzle data %d", ret);
+        return ret;
+    }
+    for (uint32_t j = j; j < times; j++)
+    {
+        k_sleep(K_MSEC(1));
+        if (failure_handling_is_in_error_state())
+        {
+            return -ECANCELED;
+        }
+        ret = print_control_request_fire();
+        if (ret != 0)
+        {
+            failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
+            return ret;
+        }
+    }
+    return 0;
+}
+
+int print_control_nozzle_priming()
+{
+    nozzle_priming_active = true;
+    int ret = print_control_start_manual_fire_mode();
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to start manual fire mode.");
+        return ret;
+    }
+    uint32_t data[4] = {0};
+    for (uint32_t i = 0; i < 128; i++)
+    {
+        if (i % 2 == 0)
+        {
+            set_nozzle(i, true, data);
+        }
+    }
+    ret = priming_cycle(data, 1000);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    memset(data, 0, sizeof(data));
+    for (uint32_t i = 0; i < 128; i++)
+    {
+        if (i % 2 == 1)
+        {
+            set_nozzle(i, true, data);
+        }
+    }
+    ret = priming_cycle(data, 1000);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    for (uint32_t i = 0; i < 128; i++)
+    {
+        memset(data, 0, sizeof(data));
+        set_nozzle(i, true, data);
+        ret = priming_cycle(data, 10);
+        if (ret != 0)
+        {
+            return ret;
+        }
+    }
+    nozzle_priming_active = false;
+    return 0;
 }
 
 #define LOAD_LINE_STACK (512)

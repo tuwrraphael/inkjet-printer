@@ -16,6 +16,14 @@ export class GCodeRunner {
         await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} Y${y} Z${z} F${feedrate}`);
     }
 
+    async moveAbsoluteXAndWait(x: number, feedrate: number) {
+        await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} F${feedrate}`);
+    }
+
+    async moveAbsoluteXYAndWait(x: number, y: number, feedrate: number) {
+        await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} Y${y} F${feedrate}`);
+    }
+
     async disableAxes() {
         await this.movementStage.sendGcode("M18");
     }

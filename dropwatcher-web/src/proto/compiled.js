@@ -969,6 +969,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
      * @property {number|null} [lastPrintedLine] PrintControlState lastPrintedLine
      * @property {number|null} [lostLinesCount] PrintControlState lostLinesCount
      * @property {number|null} [printedLines] PrintControlState printedLines
+     * @property {boolean|null} [nozzlePrimingActive] PrintControlState nozzlePrimingActive
      */
 
     /**
@@ -1035,6 +1036,14 @@ export const PrintControlState = $root.PrintControlState = (() => {
     PrintControlState.prototype.printedLines = 0;
 
     /**
+     * PrintControlState nozzlePrimingActive.
+     * @member {boolean} nozzlePrimingActive
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.nozzlePrimingActive = false;
+
+    /**
      * Creates a new PrintControlState instance using the specified properties.
      * @function create
      * @memberof PrintControlState
@@ -1070,6 +1079,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.lostLinesCount);
         if (message.printedLines != null && Object.hasOwnProperty.call(message, "printedLines"))
             writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.printedLines);
+        if (message.nozzlePrimingActive != null && Object.hasOwnProperty.call(message, "nozzlePrimingActive"))
+            writer.uint32(/* id 7, wireType 0 =*/56).bool(message.nozzlePrimingActive);
         return writer;
     };
 
@@ -1128,6 +1139,10 @@ export const PrintControlState = $root.PrintControlState = (() => {
                     message.printedLines = reader.uint32();
                     break;
                 }
+            case 7: {
+                    message.nozzlePrimingActive = reader.bool();
+                    break;
+                }
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -1183,6 +1198,9 @@ export const PrintControlState = $root.PrintControlState = (() => {
         if (message.printedLines != null && message.hasOwnProperty("printedLines"))
             if (!$util.isInteger(message.printedLines))
                 return "printedLines: integer expected";
+        if (message.nozzlePrimingActive != null && message.hasOwnProperty("nozzlePrimingActive"))
+            if (typeof message.nozzlePrimingActive !== "boolean")
+                return "nozzlePrimingActive: boolean expected";
         return null;
     };
 
@@ -1213,6 +1231,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             message.lostLinesCount = object.lostLinesCount >>> 0;
         if (object.printedLines != null)
             message.printedLines = object.printedLines >>> 0;
+        if (object.nozzlePrimingActive != null)
+            message.nozzlePrimingActive = Boolean(object.nozzlePrimingActive);
         return message;
     };
 
@@ -1236,6 +1256,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.lastPrintedLine = 0;
             object.lostLinesCount = 0;
             object.printedLines = 0;
+            object.nozzlePrimingActive = false;
         }
         if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings"))
             object.encoderModeSettings = $root.PrintControlEncoderModeSettings.toObject(message.encoderModeSettings, options);
@@ -1249,6 +1270,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.lostLinesCount = message.lostLinesCount;
         if (message.printedLines != null && message.hasOwnProperty("printedLines"))
             object.printedLines = message.printedLines;
+        if (message.nozzlePrimingActive != null && message.hasOwnProperty("nozzlePrimingActive"))
+            object.nozzlePrimingActive = message.nozzlePrimingActive;
         return object;
     };
 
@@ -3197,6 +3220,181 @@ export const ChangePrintMemoryRequest = $root.ChangePrintMemoryRequest = (() => 
     return ChangePrintMemoryRequest;
 })();
 
+export const NozzlePrimingRequest = $root.NozzlePrimingRequest = (() => {
+
+    /**
+     * Properties of a NozzlePrimingRequest.
+     * @exports INozzlePrimingRequest
+     * @interface INozzlePrimingRequest
+     */
+
+    /**
+     * Constructs a new NozzlePrimingRequest.
+     * @exports NozzlePrimingRequest
+     * @classdesc Represents a NozzlePrimingRequest.
+     * @implements INozzlePrimingRequest
+     * @constructor
+     * @param {INozzlePrimingRequest=} [properties] Properties to set
+     */
+    function NozzlePrimingRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Creates a new NozzlePrimingRequest instance using the specified properties.
+     * @function create
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {INozzlePrimingRequest=} [properties] Properties to set
+     * @returns {NozzlePrimingRequest} NozzlePrimingRequest instance
+     */
+    NozzlePrimingRequest.create = function create(properties) {
+        return new NozzlePrimingRequest(properties);
+    };
+
+    /**
+     * Encodes the specified NozzlePrimingRequest message. Does not implicitly {@link NozzlePrimingRequest.verify|verify} messages.
+     * @function encode
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {INozzlePrimingRequest} message NozzlePrimingRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NozzlePrimingRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified NozzlePrimingRequest message, length delimited. Does not implicitly {@link NozzlePrimingRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {INozzlePrimingRequest} message NozzlePrimingRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    NozzlePrimingRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a NozzlePrimingRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {NozzlePrimingRequest} NozzlePrimingRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NozzlePrimingRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.NozzlePrimingRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a NozzlePrimingRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {NozzlePrimingRequest} NozzlePrimingRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    NozzlePrimingRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a NozzlePrimingRequest message.
+     * @function verify
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    NozzlePrimingRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        return null;
+    };
+
+    /**
+     * Creates a NozzlePrimingRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {NozzlePrimingRequest} NozzlePrimingRequest
+     */
+    NozzlePrimingRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.NozzlePrimingRequest)
+            return object;
+        return new $root.NozzlePrimingRequest();
+    };
+
+    /**
+     * Creates a plain object from a NozzlePrimingRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {NozzlePrimingRequest} message NozzlePrimingRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    NozzlePrimingRequest.toObject = function toObject() {
+        return {};
+    };
+
+    /**
+     * Converts this NozzlePrimingRequest to JSON.
+     * @function toJSON
+     * @memberof NozzlePrimingRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    NozzlePrimingRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for NozzlePrimingRequest
+     * @function getTypeUrl
+     * @memberof NozzlePrimingRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    NozzlePrimingRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/NozzlePrimingRequest";
+    };
+
+    return NozzlePrimingRequest;
+})();
+
 export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
@@ -3212,6 +3410,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {IChangeEncoderPositionRequest|null} [changeEncoderPositionRequest] PrinterRequest changeEncoderPositionRequest
      * @property {IChangeEncoderModeSettingsRequest|null} [changeEncoderModeSettingsRequest] PrinterRequest changeEncoderModeSettingsRequest
      * @property {IChangePrintMemoryRequest|null} [changePrintMemoryRequest] PrinterRequest changePrintMemoryRequest
+     * @property {INozzlePrimingRequest|null} [nozzlePrimingRequest] PrinterRequest nozzlePrimingRequest
      */
 
     /**
@@ -3300,6 +3499,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @instance
      */
     PrinterRequest.prototype.changePrintMemoryRequest = null;
+
+    /**
+     * PrinterRequest nozzlePrimingRequest.
+     * @member {INozzlePrimingRequest|null|undefined} nozzlePrimingRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.nozzlePrimingRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -3404,6 +3611,17 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
+     * PrinterRequest _nozzlePrimingRequest.
+     * @member {"nozzlePrimingRequest"|undefined} _nozzlePrimingRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_nozzlePrimingRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["nozzlePrimingRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrinterRequest instance using the specified properties.
      * @function create
      * @memberof PrinterRequest
@@ -3445,6 +3663,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.ChangeEncoderModeSettingsRequest.encode(message.changeEncoderModeSettingsRequest, writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
         if (message.changePrintMemoryRequest != null && Object.hasOwnProperty.call(message, "changePrintMemoryRequest"))
             $root.ChangePrintMemoryRequest.encode(message.changePrintMemoryRequest, writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
+        if (message.nozzlePrimingRequest != null && Object.hasOwnProperty.call(message, "nozzlePrimingRequest"))
+            $root.NozzlePrimingRequest.encode(message.nozzlePrimingRequest, writer.uint32(/* id 10, wireType 2 =*/82).fork()).ldelim();
         return writer;
     };
 
@@ -3513,6 +3733,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 }
             case 9: {
                     message.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 10: {
+                    message.nozzlePrimingRequest = $root.NozzlePrimingRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -3623,6 +3847,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "changePrintMemoryRequest." + error;
             }
         }
+        if (message.nozzlePrimingRequest != null && message.hasOwnProperty("nozzlePrimingRequest")) {
+            properties._nozzlePrimingRequest = 1;
+            {
+                let error = $root.NozzlePrimingRequest.verify(message.nozzlePrimingRequest);
+                if (error)
+                    return "nozzlePrimingRequest." + error;
+            }
+        }
         return null;
     };
 
@@ -3682,6 +3914,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (typeof object.changePrintMemoryRequest !== "object")
                 throw TypeError(".PrinterRequest.changePrintMemoryRequest: object expected");
             message.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.fromObject(object.changePrintMemoryRequest);
+        }
+        if (object.nozzlePrimingRequest != null) {
+            if (typeof object.nozzlePrimingRequest !== "object")
+                throw TypeError(".PrinterRequest.nozzlePrimingRequest: object expected");
+            message.nozzlePrimingRequest = $root.NozzlePrimingRequest.fromObject(object.nozzlePrimingRequest);
         }
         return message;
     };
@@ -3743,6 +3980,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             object.changePrintMemoryRequest = $root.ChangePrintMemoryRequest.toObject(message.changePrintMemoryRequest, options);
             if (options.oneofs)
                 object._changePrintMemoryRequest = "changePrintMemoryRequest";
+        }
+        if (message.nozzlePrimingRequest != null && message.hasOwnProperty("nozzlePrimingRequest")) {
+            object.nozzlePrimingRequest = $root.NozzlePrimingRequest.toObject(message.nozzlePrimingRequest, options);
+            if (options.oneofs)
+                object._nozzlePrimingRequest = "nozzlePrimingRequest";
         }
         return object;
     };

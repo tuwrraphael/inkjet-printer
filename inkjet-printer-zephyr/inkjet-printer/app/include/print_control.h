@@ -23,6 +23,7 @@ typedef struct {
     int32_t last_printed_line;
     uint32_t lost_lines_count;
     uint32_t printed_lines;
+    bool nozzle_priming_active;
 } print_control_info_t;
  
 int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init);
@@ -34,5 +35,6 @@ void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t le
 int print_control_initialize(print_control_init_t *init);
 void print_control_get_info(print_control_info_t *info);
 void print_control_go_to_safe_state();
+int print_control_nozzle_priming();
 
 #endif

@@ -317,6 +317,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			response.print_control.last_printed_line = print_control_info.last_printed_line;
 			response.print_control.lost_lines_count = print_control_info.lost_lines_count;
 			response.print_control.printed_lines = print_control_info.printed_lines;
+			response.print_control.nozzle_priming_active = print_control_info.nozzle_priming_active;
 			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
 			if (status)
 			{
@@ -481,6 +482,20 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		else
 		{
 			LOG_ERR("Failed to decode ChangePrintMemoryRequest");
+		}
+	}
+	else if (type == NozzlePrimingRequest_fields)
+	{
+		NozzlePrimingRequest request = {};
+		status = decode_unionmessage_contents(&stream, NozzlePrimingRequest_fields, &request);
+		if (status)
+		{
+			request_prime_nozzles();
+			LOG_INF("NozzlePrimingRequest");
+		}
+		else
+		{
+			LOG_ERR("Failed to decode NozzlePrimingRequest");
 		}
 	}
 	else

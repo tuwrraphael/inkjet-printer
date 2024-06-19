@@ -5,7 +5,13 @@ export const enum PrinterTaskType {
     SetNozzleData,
     RequestFire,
     Move,
-    ResetEncoder
+    ResetEncoder,
+    MoveAndSliceNext,
+    IncrementLayer,
+    WriteTrack,
+    ZeroEncoder,
+    Wait,
+    PrintTrack
 }
 
 export interface PrinterTask {
@@ -18,9 +24,6 @@ export interface PrinterTaskHome extends PrinterTask {
 
 export interface PrinterTaskPrimeNozzle extends PrinterTask {
     readonly type: PrinterTaskType.PrimeNozzle;
-    feedTime: number;
-    feedLimitPressure: number;
-    feedLimitPwm: number;
 }
 
 export interface PrinterTaskSetTargetPressure extends PrinterTask {
@@ -51,6 +54,33 @@ export interface PrinterTaskMove extends PrinterTask {
     feedRate: number;
 }
 
+export interface PrinterTaskMoveAndSliceNext extends PrinterTask {
+    readonly type: PrinterTaskType.MoveAndSliceNext;
+}
+
+export interface PrinterTaskIncrementLayer extends PrinterTask {
+    readonly type: PrinterTaskType.IncrementLayer;
+    zero: boolean;
+}
+
+export interface PrinterTaskWriteTrack extends PrinterTask {
+    readonly type: PrinterTaskType.WriteTrack;
+}
+
+export interface PrinterTaskZeroEncoder extends PrinterTask {
+    readonly type: PrinterTaskType.ZeroEncoder;
+}
+
+export interface PrinterTaskWait extends PrinterTask {
+    readonly type: PrinterTaskType.Wait;
+    durationMs: number;
+}
+
+export interface PrinterTaskPrintTrack extends PrinterTask {
+    readonly type: PrinterTaskType.PrintTrack;
+    moveLimit : number;
+}
+
 export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrimeNozzle
     | PrinterTaskSetTargetPressure
@@ -59,6 +89,12 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskMove
     | PrinterTaskHome
     | PrinterTaskResetEncoder
+    | PrinterTaskMoveAndSliceNext
+    | PrinterTaskIncrementLayer
+    | PrinterTaskWriteTrack
+    | PrinterTaskZeroEncoder
+    | PrinterTaskWait
+    | PrinterTaskPrintTrack
     ;
 
 

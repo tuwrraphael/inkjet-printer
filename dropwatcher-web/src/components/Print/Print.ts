@@ -1,6 +1,5 @@
 import { MovementStage } from "../../movement-stage";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
-import { PrintEncoderProgram } from "../../print-tasks/default-programs";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { PrinterUSB } from "../../printer-usb";
 import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
@@ -19,6 +18,8 @@ import { svgToModel } from "../../utils/svgToModel";
 import { SlicePositionChanged } from "../../state/actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "../../state/actions/SlicePositionIncrement";
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
+import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
+
 
 export class PrintComponent extends HTMLElement {
 
@@ -68,6 +69,9 @@ export class PrintComponent extends HTMLElement {
         this.currentProgram = document.querySelector("#current-program");
         abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {
             ev.preventDefault();
+            const PrintEncoderProgram: PrinterProgram = {
+                tasks: this.generateEncoderProgramSteps()
+            };
             TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#cancel-print"), "click", async (ev) => {
@@ -84,9 +88,9 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
-            encoderModeSettings.fireEveryTicks = 4;
-            encoderModeSettings.printFirstLineAfterEncoderTick = 100;
-            encoderModeSettings.sequentialFires = 1;
+            encoderModeSettings.fireEveryTicks = this.store.state.printState.printingParams.fireEveryTicks;
+            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.printingParams.printFirstLineAfterEncoderTick;
+            encoderModeSettings.sequentialFires = this.store.state.printState.printingParams.sequentialFires;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUsb.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
         }, this.abortController.signal);
@@ -102,11 +106,11 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#go-start"), "click", async (ev) => {
             ev.preventDefault();
-            await this.movementStage.sendGcodeAndWaitForFinished("G0 Y175 F400");
+            await this.movementStage.sendGcodeAndWaitForFinished("G0 Y175 F4000");
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#go-end"), "click", async (ev) => {
             ev.preventDefault();
-            await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F400");
+            await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F4000");
         }, this.abortController.signal);
         abortableEventListener(this.moveAxisPos, "change", async (ev) => {
             ev.preventDefault();
@@ -119,7 +123,7 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#move-stage-to"), "click", async (ev) => {
             ev.preventDefault();
-            this.movementStage.movementExecutor.moveRelativeAndWait(this.store.state.printState.slicingState.moveAxisPos, 0, 0, 400);
+            await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.store.state.printState.slicingState.moveAxisPos, 1000);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#sync-from-stage"), "click", async (ev) => {
             ev.preventDefault();
@@ -146,8 +150,71 @@ export class PrintComponent extends HTMLElement {
             }
             console.log("Done writing track data");
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
+            ev.preventDefault();
+            await this.printerUsb.sendNozzlePrimingRequest();
+        }, this.abortController.signal);
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);
     }
+
+    private generateEncoderProgramSteps() {
+        let height = 0.5;
+        let steps: PrinterTasks[] = [
+            // {
+            //     type: PrinterTaskType.Home,
+            // },
+            {
+                type: PrinterTaskType.Move,
+                x: 0,
+                y: 0,
+                z: height,
+                feedRate: 10000
+            },
+            {
+                type: PrinterTaskType.ZeroEncoder
+            },
+            {
+                type: PrinterTaskType.IncrementLayer,
+                zero: true
+            }
+        ];
+        steps.push({
+            type: PrinterTaskType.PrimeNozzle
+        });
+        steps.push({
+            type: PrinterTaskType.Wait,
+            durationMs: 3000
+        });
+        let maxLayers = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
+        let tracks = 4;
+        for (let i = 0; i < maxLayers; i++) {
+            for (let j = 0; j < tracks; j++) {
+                steps.push({
+                    type: PrinterTaskType.WriteTrack,
+                });
+                steps.push({
+                    type: PrinterTaskType.ResetEncoder,
+                    fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
+                    printFirstLineAfterEncoderTick: this.store.state.printState.printingParams.printFirstLineAfterEncoderTick,
+                    sequentialFires: this.store.state.printState.printingParams.sequentialFires
+                });
+                steps.push({
+                    type: PrinterTaskType.PrintTrack,
+                    moveLimit: 100
+                });
+                steps.push({
+                    type: PrinterTaskType.MoveAndSliceNext
+                });
+            }
+            steps.push({
+                type: PrinterTaskType.IncrementLayer,
+                zero: false
+            });
+        }
+        return steps;
+
+    }
+
 
     update(s: State, c: StateChanges): void {
         if (c.includes("programRunnerState")) {
