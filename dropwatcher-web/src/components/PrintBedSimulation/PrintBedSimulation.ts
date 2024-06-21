@@ -24,6 +24,8 @@ let modelColors = [
     "#BAFFC9", // pastel green
 ];
 
+const zoomLevels = [1.0, 1.10, 1.25, 1.50, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0];
+
 export class PrintBedSimulation extends HTMLElement {
 
     private rendered = false;
@@ -36,6 +38,7 @@ export class PrintBedSimulation extends HTMLElement {
     private dotsPerMM: number;
     private encoderPrintAxis: { dpi: number; ticks: number; };
     private zoom: number;
+    private currentZoomLevel = 0;
     private initialized = false;
     private pan: { x: number; y: number; };
     private printCanvasInfo: HTMLDivElement;
@@ -51,6 +54,7 @@ export class PrintBedSimulation extends HTMLElement {
     private resizeObserver: ResizeObserver;
     private moveAxisPos: number;
     private modelParams: { [id: string]: ModelParams; };
+    private printCanvasDevicePixelContentBoxSize: { inlineSize: number; blockSize: number; };
 
     constructor() {
         super();
@@ -68,12 +72,11 @@ export class PrintBedSimulation extends HTMLElement {
             this.layerDisplay = this.querySelector("#layer-display");
             this.rangeInput = this.querySelector("#layer-range");
             this.ctx = this.printCanvas.getContext("2d");
-            this.resizeObserver = new ResizeObserver(() => this.onResized());
+            this.resizeObserver = new ResizeObserver((entries, observer) => this.onResized(entries, observer));
         }
         this.abortController = new AbortController();
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
         this.update(this.store.state, null);
-        let zoomConstant = 0.008;
         abortableEventListener(this.printCanvas, "mousedown", (ev) => {
 
             ev.preventDefault();
@@ -84,7 +87,7 @@ export class PrintBedSimulation extends HTMLElement {
             let mouseDownBedPos = this.bedPositionFromMouseEvent(ev);
             let middleButton = ev.button === 1;
             let model = this.bedPositionOnModel(mouseDownBedPos);
-            let modelParams = model ?  this.modelParams[model.id] : null;
+            let modelParams = model ? this.modelParams[model.id] : null;
             let modelOrigin = model ? { x: modelParams.position[0], y: modelParams.position[1] } : null;
             let mouseMove = (ev: MouseEvent) => {
                 if (model && !middleButton) {
@@ -125,9 +128,14 @@ export class PrintBedSimulation extends HTMLElement {
             ev.preventDefault();
             let rect = this.printCanvas.getBoundingClientRect();
             let canvasFactor = rect.width / this.printCanvas.width;
-
-            let newZoom = this.zoom + this.zoom * ev.deltaY * -zoomConstant;
-            newZoom = Math.max(1.0, newZoom);
+            let advanceZoomLevels = -ev.deltaY/rect.height*5;
+            if (advanceZoomLevels > 0) {
+                advanceZoomLevels = Math.ceil(advanceZoomLevels);
+            } else {
+                advanceZoomLevels = Math.floor(advanceZoomLevels);
+            }
+            let newZoomLevel = Math.max(0, Math.min(zoomLevels.length - 1, this.currentZoomLevel + advanceZoomLevels));
+            let newZoom = zoomLevels[newZoomLevel];
 
             let newDotsPerMM = this.dotsPerMM * newZoom / this.zoom;
 
@@ -139,6 +147,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.pan.y = newPanY;
 
             this.zoom = newZoom;
+            this.currentZoomLevel = newZoomLevel;
             if (Math.abs(this.zoom - 1.0) < 0.01) {
                 this.pan = { x: 0, y: 0 };
             }
@@ -150,10 +159,18 @@ export class PrintBedSimulation extends HTMLElement {
         abortableEventListener(this.rangeInput, "change", (ev) => {
             this.store.postAction(new ViewLayerChanged(parseInt(this.rangeInput.value)));
         }, this.abortController.signal);
-        this.resizeObserver.observe(this.printCanvas.parentElement);
+        this.resizeObserver.observe(this.printCanvas, { box: "device-pixel-content-box" });
     }
 
-    onResized(): void {
+    onResized(entries: ResizeObserverEntry[], observer: ResizeObserver): void {
+        const entry = Array.from(entries).find((entry) => entry.target === this.printCanvas);
+        if (!entry) {
+            return;
+        }
+        this.printCanvasDevicePixelContentBoxSize = {
+            inlineSize: entry.devicePixelContentBoxSize[0].inlineSize,
+            blockSize: entry.devicePixelContentBoxSize[0].blockSize
+        };
         this.render(true);
     }
 
@@ -230,10 +247,14 @@ export class PrintBedSimulation extends HTMLElement {
     }
 
     private setCanvasSize() {
-        let dpr = window.devicePixelRatio || 1;
-        let rect = this.printCanvas.parentElement.getBoundingClientRect();
-        let width = Math.min(rect.width * dpr, maxCanvasSize);
-        let height = Math.min(rect.height * dpr, maxCanvasSize);
+        if (!this.printCanvasDevicePixelContentBoxSize
+            || this.printCanvasDevicePixelContentBoxSize.inlineSize == 0
+            || this.printCanvasDevicePixelContentBoxSize.blockSize == 0
+        ) {
+            return;
+        }
+        let width = Math.min(this.printCanvasDevicePixelContentBoxSize.inlineSize, maxCanvasSize);
+        let height = Math.min(this.printCanvasDevicePixelContentBoxSize.blockSize, maxCanvasSize);
         let displayWidthMM = (this.bedWidth + 2 * simmargin) / this.zoom;
         let displayHeightMM = (this.bedHeight + 2 * simmargin) / this.zoom;
         if (width / displayWidthMM < height / displayHeightMM) {
@@ -243,8 +264,6 @@ export class PrintBedSimulation extends HTMLElement {
         }
         this.printCanvas.width = width;
         this.printCanvas.height = height;
-        this.printCanvas.style.width = `${rect.width}px`;
-        this.printCanvas.style.height = `${rect.height}px`;
     }
 
     private drawBuildPlateOutline() {
@@ -323,13 +342,14 @@ export class PrintBedSimulation extends HTMLElement {
         if (!this.modelCanvasMap.has(model) || redraw) {
             let modelCanvas = this.modelCanvasMap.get(model) || document.createElement("canvas");
             this.modelCanvasMap.set(model, modelCanvas);
-            modelCanvas.width = modelWidth * this.dotsPerMM;
-            modelCanvas.height = modelHeight * this.dotsPerMM;
+            modelCanvas.width = Math.min(modelWidth * this.dotsPerMM, maxCanvasSize);
+            let scale = modelCanvas.width / modelWidth;
+            modelCanvas.height = scale * modelHeight;
             let ctx = modelCanvas.getContext("2d");
             ctx.fillStyle = "transparent";
             ctx.fillRect(0, 0, modelCanvas.width, modelCanvas.height);
             let currentLayer = model.layers[this.viewLayer];
-            let scale = modelCanvas.width / modelWidth;
+            
             for (let polygon of currentLayer.polygons) {
                 let transformed = this.mirrorY(polygon.points, modelHeight);
                 if (polygon.type == PolygonType.Contour) {
