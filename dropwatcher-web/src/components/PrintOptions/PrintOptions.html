@@ -1,0 +1,21 @@
+<form id="print-options-form">
+    <div>
+        <label for="fire-every">DPI</label>
+        <select name="fire-every" required="required" id="fire-every">
+            <option value="1">720</option>
+            <option value="2">360</option>
+            <option value="3">240</option>
+            <option value="4">180</option>
+            <option value="5">144</option>
+            <option value="6">120</option>
+            <option value="7">102</option>
+            <option value="8">90</option>
+        </select>
+    </div>
+    <div>
+        <label for="first-layer-height">First Layer Height</label>
+        <input type="number" name="first-layer-height" required="required" id="first-layer-height" value="0" min="0"
+            max="10" step="0.01">
+    </div>
+    <button>Save</button>
+</form>

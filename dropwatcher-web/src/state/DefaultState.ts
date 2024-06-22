@@ -57,7 +57,8 @@ export const DefaultState: State =
         printingParams: {
             fireEveryTicks: 4,
             printFirstLineAfterEncoderTick: 1,
-            sequentialFires: 1
+            sequentialFires: 1,
+            firstLayerHeight: 1.5
         },
         slicingState: {
             moveAxisPos: 0,

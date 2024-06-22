@@ -19,6 +19,7 @@ import { SlicePositionChanged } from "../../state/actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "../../state/actions/SlicePositionIncrement";
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
 import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
+import "../PrintOptions/PrintOptions";
 
 
 export class PrintComponent extends HTMLElement {
@@ -100,6 +101,12 @@ export class PrintComponent extends HTMLElement {
             changePrinterSystemStateRequest.state = PrinterSystemState.PrinterSystemState_PRINT;
             await this.printerUsb.sendChangeSystemStateRequest(changePrinterSystemStateRequest);
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#enter-idle"), "click", async (ev) => {
+            ev.preventDefault();
+            let changePrinterSystemStateRequest = new ChangePrinterSystemStateRequest();
+            changePrinterSystemStateRequest.state = PrinterSystemState.PrinterSystemState_IDLE;
+            await this.printerUsb.sendChangeSystemStateRequest(changePrinterSystemStateRequest);
+        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#home"), "click", async (ev) => {
             ev.preventDefault();
             await this.movementStage.movementExecutor.home();
@@ -158,11 +165,11 @@ export class PrintComponent extends HTMLElement {
     }
 
     private generateEncoderProgramSteps() {
-        let height = 0.5;
+        let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
-            // {
-            //     type: PrinterTaskType.Home,
-            // },
+            {
+                type: PrinterTaskType.Home,
+            },
             {
                 type: PrinterTaskType.Move,
                 x: 0,
@@ -183,7 +190,7 @@ export class PrintComponent extends HTMLElement {
         });
         steps.push({
             type: PrinterTaskType.Wait,
-            durationMs: 3000
+            durationMs: 6000
         });
         let maxLayers = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
         let tracks = 4;
@@ -209,6 +216,10 @@ export class PrintComponent extends HTMLElement {
             steps.push({
                 type: PrinterTaskType.IncrementLayer,
                 zero: false
+            });
+            steps.push({
+                type: PrinterTaskType.Wait,
+                durationMs: 10000
             });
         }
         return steps;

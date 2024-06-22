@@ -55,6 +55,8 @@ export class PrintBedSimulation extends HTMLElement {
     private moveAxisPos: number;
     private modelParams: { [id: string]: ModelParams; };
     private printCanvasDevicePixelContentBoxSize: { inlineSize: number; blockSize: number; };
+    private nextRenderNeedsModelRedraw = false;
+    private modelMoving = false;
 
     constructor() {
         super();
@@ -87,13 +89,25 @@ export class PrintBedSimulation extends HTMLElement {
             let mouseDownBedPos = this.bedPositionFromMouseEvent(ev);
             let middleButton = ev.button === 1;
             let model = this.bedPositionOnModel(mouseDownBedPos);
-            let modelParams = model ? this.modelParams[model.id] : null;
-            let modelOrigin = model ? { x: modelParams.position[0], y: modelParams.position[1] } : null;
+            let modelParams: ModelParams;
+            let modelOrigin: { x: number, y: number };
+            if (model) {
+                this.modelMoving = true;
+                modelParams = this.modelParams[model.id];
+                modelOrigin = { x: modelParams.position[0], y: modelParams.position[1] };
+            }
             let mouseMove = (ev: MouseEvent) => {
-                if (model && !middleButton) {
+                if (this.modelMoving && !middleButton) {
+                    let snapToGrid = ev.shiftKey;
                     let movedPos = this.bedPositionFromMouseEvent(ev);
-                    this.modelPositionMap.set(model, { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) });
-                    this.render(false);
+                    let newModelPos = { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) };
+                    if (snapToGrid) {
+                        newModelPos.x = Math.round(newModelPos.x);
+                        newModelPos.y = Math.round(newModelPos.y);
+                    }
+                    this.modelPositionMap.set(model, newModelPos);
+                    this.render();
+                    this.printCanvasInfo.innerText = `Move Model to X: ${newModelPos.x.toFixed(2)} mm, Y: ${newModelPos.y.toFixed(2)} mm`;
                     return;
                 }
                 if (Math.abs(this.zoom - 1.0) < 0.01) {
@@ -104,12 +118,13 @@ export class PrintBedSimulation extends HTMLElement {
 
                 mouseDownX = ev.clientX;
                 mouseDownY = ev.clientY;
-                this.render(false);
+                this.render();
             };
             let mouseUp = (ev: MouseEvent) => {
                 document.removeEventListener("mousemove", mouseMove);
                 document.removeEventListener("mouseup", mouseUp);
-                if (model && !middleButton) {
+                if (this.modelMoving) {
+                    this.modelMoving = false;
                     let updatedPos = this.modelPositionMap.get(model);
                     this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
                 }
@@ -119,7 +134,9 @@ export class PrintBedSimulation extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.printCanvas, "mousemove", (ev) => {
             let { x, y } = this.bedPositionFromMouseEvent(ev);
-            this.printCanvasInfo.innerText = `X: ${x.toFixed(2)} mm, Y: ${y.toFixed(2)} mm`;
+            if (!this.modelMoving) {
+                this.printCanvasInfo.innerText = `X: ${x.toFixed(2)} mm, Y: ${y.toFixed(2)} mm`;
+            }
         }, this.abortController.signal);
         abortableEventListener(this.printCanvas, "wheel", (ev) => {
             if (!ev.ctrlKey) {
@@ -128,7 +145,7 @@ export class PrintBedSimulation extends HTMLElement {
             ev.preventDefault();
             let rect = this.printCanvas.getBoundingClientRect();
             let canvasFactor = rect.width / this.printCanvas.width;
-            let advanceZoomLevels = -ev.deltaY/rect.height*5;
+            let advanceZoomLevels = -ev.deltaY / rect.height * 5;
             if (advanceZoomLevels > 0) {
                 advanceZoomLevels = Math.ceil(advanceZoomLevels);
             } else {
@@ -151,7 +168,8 @@ export class PrintBedSimulation extends HTMLElement {
             if (Math.abs(this.zoom - 1.0) < 0.01) {
                 this.pan = { x: 0, y: 0 };
             }
-            this.render(true);
+            this.nextRenderNeedsModelRedraw = true;
+            this.render();
         }, this.abortController.signal);
         abortableEventListener(this.rangeInput, "input", (ev) => {
             this.layerDisplay.innerText = this.rangeInput.value;
@@ -171,7 +189,8 @@ export class PrintBedSimulation extends HTMLElement {
             inlineSize: entry.devicePixelContentBoxSize[0].inlineSize,
             blockSize: entry.devicePixelContentBoxSize[0].blockSize
         };
-        this.render(true);
+        this.nextRenderNeedsModelRedraw = true;
+        this.render();
     }
 
     private bedPositionFromMouseEvent(ev: MouseEvent) {
@@ -184,7 +203,8 @@ export class PrintBedSimulation extends HTMLElement {
     }
 
     private bedPositionOnModel({ x, y }: { x: number, y: number }): Model | null {
-        for (let model of this.models) {
+        let reversed = [...this.models].reverse();
+        for (let model of reversed) {
 
             let modelWidth = model.boundingBox.max[0] - model.boundingBox.min[0];
             let modelHeight = model.boundingBox.max[1] - model.boundingBox.min[1];
@@ -227,7 +247,10 @@ export class PrintBedSimulation extends HTMLElement {
             this.printerParams = s.printState.printerParams;
             this.printingParams = s.printState.printingParams;
             this.moveAxisPos = s.printState.slicingState.moveAxisPos;
-            this.render(layerChanged);
+            if (layerChanged || c.includes("models")) {
+                this.nextRenderNeedsModelRedraw = true;
+            }
+            this.render();
         }
     }
 
@@ -251,7 +274,7 @@ export class PrintBedSimulation extends HTMLElement {
             || this.printCanvasDevicePixelContentBoxSize.inlineSize == 0
             || this.printCanvasDevicePixelContentBoxSize.blockSize == 0
         ) {
-            return;
+            return false;
         }
         let width = Math.min(this.printCanvasDevicePixelContentBoxSize.inlineSize, maxCanvasSize);
         let height = Math.min(this.printCanvasDevicePixelContentBoxSize.blockSize, maxCanvasSize);
@@ -264,6 +287,7 @@ export class PrintBedSimulation extends HTMLElement {
         }
         this.printCanvas.width = width;
         this.printCanvas.height = height;
+        return true;
     }
 
     private drawBuildPlateOutline() {
@@ -294,18 +318,18 @@ export class PrintBedSimulation extends HTMLElement {
         let spacing = 10;
         this.ctx.strokeStyle = "lightgray";
         this.ctx.lineWidth = this.mmToDots(0.1);
-        for (let x = simmargin; x < this.bedWidth + simmargin; x += spacing) {
-            let start = this.getCanvasPosition(x, simmargin);
-            let end = this.getCanvasPosition(x, this.bedHeight + simmargin);
+        for (let x = 0; x < this.bedWidth; x += spacing) {
+            let start = this.buildPlatePositionToCanvasPosition(x, 0);
+            let end = this.buildPlatePositionToCanvasPosition(x, this.bedHeight);
             this.ctx.beginPath();
             this.ctx.setLineDash([this.mmToDots(0.5), this.mmToDots(0.5)]);
             this.ctx.moveTo(start.x, start.y);
             this.ctx.lineTo(end.x, end.y);
             this.ctx.stroke();
         }
-        for (let y = simmargin; y < this.bedHeight + simmargin; y += spacing) {
-            let start = this.getCanvasPosition(simmargin, y);
-            let end = this.getCanvasPosition(this.bedWidth + simmargin, y);
+        for (let y = 0; y < this.bedHeight; y += spacing) {
+            let start = this.buildPlatePositionToCanvasPosition(0, y);
+            let end = this.buildPlatePositionToCanvasPosition(this.bedWidth, y);
             this.ctx.beginPath();
             this.ctx.setLineDash([this.mmToDots(0.5), this.mmToDots(0.5)]);
             this.ctx.moveTo(start.x, start.y);
@@ -339,7 +363,11 @@ export class PrintBedSimulation extends HTMLElement {
     private drawModel(model: Model, fillColor: string, redraw: boolean) {
         let modelWidth = model.boundingBox.max[0] - model.boundingBox.min[0];
         let modelHeight = model.boundingBox.max[1] - model.boundingBox.min[1];
+        if (model.layers.length <= this.viewLayer) {
+            return;
+        }
         if (!this.modelCanvasMap.has(model) || redraw) {
+
             let modelCanvas = this.modelCanvasMap.get(model) || document.createElement("canvas");
             this.modelCanvasMap.set(model, modelCanvas);
             modelCanvas.width = Math.min(modelWidth * this.dotsPerMM, maxCanvasSize);
@@ -349,7 +377,7 @@ export class PrintBedSimulation extends HTMLElement {
             ctx.fillStyle = "transparent";
             ctx.fillRect(0, 0, modelCanvas.width, modelCanvas.height);
             let currentLayer = model.layers[this.viewLayer];
-            
+
             for (let polygon of currentLayer.polygons) {
                 let transformed = this.mirrorY(polygon.points, modelHeight);
                 if (polygon.type == PolygonType.Contour) {
@@ -432,14 +460,14 @@ export class PrintBedSimulation extends HTMLElement {
         }
     }
 
-    private render(redrawModels: boolean) {
+    private render() {
         if (!this.initialized) {
             return;
         }
         requestAnimationFrame(() => {
-            this.setCanvasSize();
-            if (this.dotsPerMM < 0.1) {
-                return;
+            let redrawModels = !this.modelMoving && this.nextRenderNeedsModelRedraw;
+            if (!this.setCanvasSize()) {
+                return 0;
             }
             this.ctx.clearRect(0, 0, this.printCanvas.width, this.printCanvas.height);
             this.fillBuildPlateWithBackgroundLines();
@@ -452,6 +480,9 @@ export class PrintBedSimulation extends HTMLElement {
             this.drawOrigin();
             if (this.track) {
                 this.drawTrack(this.moveAxisPos, this.track, this.printerParams, this.printingParams);
+            }
+            if (redrawModels) {
+                this.nextRenderNeedsModelRedraw = false;
             }
         });
     }

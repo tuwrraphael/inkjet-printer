@@ -34,6 +34,7 @@ export interface PrintControlState {
     lastPrintedLine: number;
     lostLinesCount: number;
     printedLines: number;
+    nozzlePrimingActive : boolean;
 }
 
 export interface PrintControlEncoderModeSettings {

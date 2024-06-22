@@ -13,5 +13,6 @@ export const enum ActionType {
     ViewLayerChanged,
     ModelPositionChanged,
     SlicePositionChanged,
-    SlicePositionIncrement
+    SlicePositionIncrement,
+    PrintingParamsChanged
 }

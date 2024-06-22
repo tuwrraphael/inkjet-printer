@@ -23,6 +23,7 @@ import { TrackSlicer } from "../slicer/TrackSlicer";
 import { SlicePositionChanged } from "./actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
+import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -39,6 +40,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | ModelPositionChanged
     | SlicePositionChanged
     | SlicePositionIncrement
+    | PrintingParamsChanged
     ;
 let state: State;
 let initialized = false;
@@ -150,9 +152,7 @@ async function updateSlicerParams() {
             }
         }
     }));
-    let model = state.models[0];
-    let modelParams = state.printState.modelParams[model.id];
-    trackSlicer = new TrackSlicer(model, modelParams, state.printState.viewLayer, state.printState.printerParams, state.printState.printingParams);
+    trackSlicer = new TrackSlicer(state.models, state.printState.modelParams, state.printState.viewLayer, state.printState.printerParams, state.printState.printingParams);
     let track = trackSlicer.getTrack(state.printState.slicingState.moveAxisPos);
     updateState(oldState => ({
         printState: {
@@ -215,20 +215,20 @@ function reslice() {
     }));
 }
 
-function slicePositionIncrement(msg:SlicePositionIncrement) {
+function slicePositionIncrement(msg: SlicePositionIncrement) {
     let swathe = getPrintheadSwathe(state.printState.printerParams);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                moveAxisPos: oldState.printState.slicingState.moveAxisPos + (swathe *msg.increment),
+                moveAxisPos: oldState.printState.slicingState.moveAxisPos + (swathe * msg.increment),
                 slicingStatus: SlicingStatus.None,
                 track: null
             }
         }
     }));
-    reslice();  
+    reslice();
 }
 
 function slicePositionChanged(msg: SlicePositionChanged) {
@@ -295,7 +295,8 @@ async function handleMessage(msg: Actions) {
                             expectedEncoderValue: msg.response.printControl.expectedEncoderValue || 0,
                             lastPrintedLine: msg.response.printControl.lastPrintedLine || 0,
                             lostLinesCount: msg.response.printControl.lostLinesCount || 0,
-                            printedLines: msg.response.printControl.printedLines || 0
+                            printedLines: msg.response.printControl.printedLines || 0,
+                            nozzlePrimingActive: msg.response.printControl.nozzlePrimingActive || false,
                         } : null
                     }
                 };
@@ -401,6 +402,19 @@ async function handleMessage(msg: Actions) {
             break;
         case ActionType.SlicePositionIncrement:
             slicePositionIncrement(msg);
+            break;
+        case ActionType.PrintingParamsChanged:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    printingParams: {
+                        ...oldState.printState.printingParams,
+                        ...msg.printingParams
+                    }
+                }
+            }));
+            console.log("Printing params changed", msg);
+            updateSlicerParams();
             break;
     }
 }

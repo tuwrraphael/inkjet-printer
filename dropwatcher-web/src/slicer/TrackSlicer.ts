@@ -22,37 +22,45 @@ export interface PrintingParams {
     fireEveryTicks: number;
     printFirstLineAfterEncoderTick: number;
     sequentialFires: number;
+    firstLayerHeight: number;
 }
 
-export class TrackSlicer {
-    private polygons: {
+interface SliceModelInfo {
+    polygons: {
         polygon: Polygon;
         transformedCoordinates: Point[];
         boundingBox: {
             minX: number; minY: number; maxX: number; maxY: number;
         };
-    }[];
+    }[],
     contourBoundingBoxes: { minX: number; minY: number; maxX: number; maxY: number; }[];
+};
 
-    constructor(private model: Model,
-        private modelParams: ModelParams,
+export class TrackSlicer {
+    private map: Map<string, SliceModelInfo> = new Map();
+
+    constructor(private models: Model[],
+        private modelParamsDict: { [id: string]: ModelParams },
         private layer: number,
         private printerParams: PrinterParams,
         private printingParams: PrintingParams) {
-        this.polygons = [...model.layers[layer]?.polygons || []].reverse().map(p => {
-            let transformedCoordinates = this.transformCoordinates(p.points);
-            return {
-                polygon: p,
-                transformedCoordinates: transformedCoordinates,
-                boundingBox: this.getBoundingBox(transformedCoordinates)
-            };
-        });
-        this.contourBoundingBoxes = this.polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
+        for (let model of models) {
+            let polygons = [...model.layers[layer]?.polygons || []].reverse().map(p => {
+                let transformedCoordinates = this.transformCoordinates(p.points, modelParamsDict[model.id]);
+                return {
+                    polygon: p,
+                    transformedCoordinates: transformedCoordinates,
+                    boundingBox: this.getBoundingBox(transformedCoordinates)
+                };
+            });
+            let contourBoundingBoxes = polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
+            this.map.set(model.id, { polygons, contourBoundingBoxes });
+        }
     }
 
-    private transformCoordinates(points: Point[]): Point[] {
+    private transformCoordinates(points: Point[], modelParams: ModelParams): Point[] {
         return points.map(([x, y]) => {
-            return [x + this.modelParams.position[0], y + this.modelParams.position[1]];
+            return [x + modelParams.position[0], y + modelParams.position[1]];
         });
     }
 
@@ -109,24 +117,27 @@ export class TrackSlicer {
     }
 
     insideLayer(point: [number, number]) {
-        if (!this.contourBoundingBoxes.some(bb => {
-            return point[0] >= bb.minX && point[0] <= bb.maxX && point[1] >= bb.minY && point[1] <= bb.maxY;
-        })) {
-            return false;
-        }
-        for (let polygon of this.polygons) {
-            let polygonPoints = polygon.transformedCoordinates;
-            if (polygon.polygon.type === PolygonType.Hole) {
-                let insideHole = pointInPolygon(polygonPoints.map(p => p), point) === -1;
-                if (insideHole) {
-                    return false;
-                }
-            } else {
-                let inside = pointInPolygon(polygonPoints.map(p => p), point) <= 0;
-                if (inside) {
-                    return true;
+        for (let [modelId, sliceModelInfo] of this.map) {
+            if (!sliceModelInfo.contourBoundingBoxes.some(bb => {
+                return point[0] >= bb.minX && point[0] <= bb.maxX && point[1] >= bb.minY && point[1] <= bb.maxY;
+            })) {
+                continue;
+            }
+            for (let polygon of sliceModelInfo.polygons) {
+                let polygonPoints = polygon.transformedCoordinates;
+                if (polygon.polygon.type === PolygonType.Hole) {
+                    let insideHole = pointInPolygon(polygonPoints.map(p => p), point) === -1;
+                    if (insideHole) {
+                        return false;
+                    }
+                } else {
+                    let inside = pointInPolygon(polygonPoints.map(p => p), point) <= 0;
+                    if (inside) {
+                        return true;
+                    }
                 }
             }
+            return false;
         }
         return false;
     }

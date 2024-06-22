@@ -40,6 +40,7 @@ export class PrinterStatus extends HTMLElement {
     private lastPrintedLine : HTMLTableCellElement;
     private lostLinesCount : HTMLTableCellElement;
     private printedLines : HTMLTableCellElement;
+    private nozzlePrimingActive : HTMLTableCellElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -75,6 +76,7 @@ export class PrinterStatus extends HTMLElement {
             this.lastPrintedLine = document.querySelector("#last-printed-line");
             this.lostLinesCount = document.querySelector("#lost-lines-count");
             this.printedLines = document.querySelector("#printed-lines");
+            this.nozzlePrimingActive = document.querySelector("#nozzle-priming-active");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -192,6 +194,7 @@ export class PrinterStatus extends HTMLElement {
             this.lastPrintedLine.innerText = this.formatNumber(s.printerSystemState.printControl?.lastPrintedLine);
             this.lostLinesCount.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesCount);
             this.printedLines.innerText = this.formatNumber(s.printerSystemState.printControl?.printedLines);
+            this.nozzlePrimingActive.innerText = s.printerSystemState.printControl?.nozzlePrimingActive ? "Active" : "Inactive";
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);
