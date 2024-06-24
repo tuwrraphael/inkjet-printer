@@ -1,6 +1,7 @@
 import pointInPolygon from "robust-point-in-polygon";
 import { Model, ModelParams, Point, Polygon, PolygonType } from "../state/State";
 import { getNozzleDistance } from "./getNozzleDistance";
+import { getBoundingBox } from "../utils/getBoundingBox";
 
 export interface PrinterParams {
     numNozzles: number;
@@ -30,10 +31,11 @@ interface SliceModelInfo {
         polygon: Polygon;
         transformedCoordinates: Point[];
         boundingBox: {
-            minX: number; minY: number; maxX: number; maxY: number;
-        };
+            min:Point;
+            max:Point;
+        }
     }[],
-    contourBoundingBoxes: { minX: number; minY: number; maxX: number; maxY: number; }[];
+    contourBoundingBoxes: { min: Point; max: Point; }[];
 };
 
 export class TrackSlicer {
@@ -50,7 +52,7 @@ export class TrackSlicer {
                 return {
                     polygon: p,
                     transformedCoordinates: transformedCoordinates,
-                    boundingBox: this.getBoundingBox(transformedCoordinates)
+                    boundingBox: getBoundingBox(transformedCoordinates)
                 };
             });
             let contourBoundingBoxes = polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
@@ -62,29 +64,6 @@ export class TrackSlicer {
         return points.map(([x, y]) => {
             return [x + modelParams.position[0], y + modelParams.position[1]];
         });
-    }
-
-    // private mirrorY(points: Point[]) : Point[] {
-    //     let height = (this.model.boundingBox.max[1] - this.model.boundingBox.min[1]);
-    //     return points.map(([x, y]) => {
-    //         return [x,height - y];
-    //     });
-    // }
-
-    private getBoundingBox(points: Point[]) {
-        let minX = Infinity;
-        let minY = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-        for (let [x, y] of points) {
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        }
-        return {
-            minX, minY, maxX, maxY
-        };
     }
 
     getTrack(x: number): Uint32Array {
@@ -119,7 +98,7 @@ export class TrackSlicer {
     insideLayer(point: [number, number]) {
         for (let [modelId, sliceModelInfo] of this.map) {
             if (!sliceModelInfo.contourBoundingBoxes.some(bb => {
-                return point[0] >= bb.minX && point[0] <= bb.maxX && point[1] >= bb.minY && point[1] <= bb.maxY;
+                return point[0] >= bb.min[0] && point[0] <= bb.max[0] && point[1] >= bb.min[1] && point[1] <= bb.max[1];
             })) {
                 continue;
             }

@@ -24,6 +24,7 @@ import { SlicePositionChanged } from "./actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
 import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
+import { getModelBoundingBox } from "../utils/getModelBoundingBox";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -106,25 +107,6 @@ function mapPressureControlAlgorithm(a: ProtoPressureControlAlgorithm): Pressure
     }
 }
 
-async function getBoundingBox(model: NewModel): Promise<{ min: Point, max: Point }> {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (let layer of model.layers) {
-        for (let polygon of layer.polygons) {
-            for (let point of polygon.points) {
-                minX = Math.min(minX, point[0]);
-                minY = Math.min(minY, point[1]);
-                maxX = Math.max(maxX, point[0]);
-                maxY = Math.max(maxY, point[1]);
-            }
-        }
-    }
-    return { min: [minX, minY], max: [maxX, maxY] };
-
-}
-
 let modelIds = 0;
 
 let trackSlicer: TrackSlicer = null;
@@ -167,7 +149,7 @@ async function updateSlicerParams() {
 }
 
 async function modelAdded(msg: ModelAdded) {
-    let bb = await getBoundingBox(msg.model);
+    let bb = getModelBoundingBox(msg.model);
     let model: Model = {
         fileName: msg.model.fileName,
         layers: msg.model.layers,

@@ -5,6 +5,8 @@
   "main": "index.html",
   "dependencies": {
     "@techstark/opencv-js": "^4.9.0-release.3",
+    "@types/bwip-js": "^3.2.3",
+    "bwip-js": "^4.4.0",
     "chart.js": "^4.4.2",
     "chartjs-adapter-date-fns": "^3.0.0",
     "core-js": "^3.36.0",

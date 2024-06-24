@@ -5,7 +5,7 @@ import { PrinterUSB } from "../../printer-usb";
 import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
 import { ChangePrinterSystemStateRequest } from "../../proto/compiled";
 import { ChangeEncoderModeSettingsRequest, ChangeEncoderPositionRequest } from "../../proto/compiled";
-import { SlicingStatus, State, StateChanges } from "../../state/State";
+import { NewModel, Polygon, PolygonType, SlicingStatus, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./Print.html";
@@ -20,6 +20,11 @@ import { SlicePositionIncrement } from "../../state/actions/SlicePositionIncreme
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
 import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
 import "../PrintOptions/PrintOptions";
+
+import bwipjs from 'bwip-js';
+import { getNozzleDistance } from "../../slicer/getNozzleDistance";
+import { getModelBoundingBox } from "../../utils/getModelBoundingBox";
+import { mirrorY } from "../../utils/mirrorY";
 
 
 export class PrintComponent extends HTMLElement {
@@ -160,6 +165,50 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
             ev.preventDefault();
             await this.printerUsb.sendNozzlePrimingRequest();
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
+            ev.preventDefault();
+            let code: any = bwipjs.raw("datamatrix", "G1,33.41V,180dpi,354", {});
+            const dotsPerPixel = 4;
+            const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams);
+            const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
+            let polygons: Polygon[] = [];
+            for (let i = 0; i < code[0].pixx; i++) {
+                for (let j = 0; j < code[0].pixy; j++) {
+                    if (code[0].pixs[j * code[0].pixx + i] == 1) {
+                        polygons.push({
+                            points: [
+                                [i * pixelWidth, j * pixelWidth],
+                                [(i + 1) * pixelWidth, j * pixelWidth],
+                                [(i + 1) * pixelWidth, (j + 1) * pixelWidth],
+                                [i * pixelWidth, (j + 1) * pixelWidth]
+                            ],
+                            type: PolygonType.Contour
+                        });
+                    }
+                }
+            }
+            let model: NewModel = {
+                fileName: "test",
+                layers: [
+                    {
+                        polygons: polygons
+                    }
+                ]
+            };
+            let bb = getModelBoundingBox(model);
+            model.layers = model.layers.map(l => {
+                return {
+                    ...l,
+                    polygons: l.polygons.map(p => {
+                        return {
+                            ...p,
+                            points: mirrorY(p.points, bb)
+                        };
+                    })
+                };
+            });
+            this.store.postAction(new ModelAdded(model));
         }, this.abortController.signal);
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);
     }
