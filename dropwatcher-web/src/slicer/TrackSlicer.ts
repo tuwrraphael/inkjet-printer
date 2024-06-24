@@ -31,8 +31,8 @@ interface SliceModelInfo {
         polygon: Polygon;
         transformedCoordinates: Point[];
         boundingBox: {
-            min:Point;
-            max:Point;
+            min: Point;
+            max: Point;
         }
     }[],
     contourBoundingBoxes: { min: Point; max: Point; }[];
@@ -69,7 +69,6 @@ export class TrackSlicer {
     getTrack(x: number): Uint32Array {
         let nozzleDistance = getNozzleDistance(this.printerParams);
         let lines = Math.ceil((this.printerParams.encoder.printAxis.ticks - this.printingParams.printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.sequentialFires;
-        console.log(lines);
         let swathe = new Uint32Array(lines * 4);
         swathe.fill(0);
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
@@ -82,7 +81,7 @@ export class TrackSlicer {
                     for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
                         let nozzleX = x + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance;
                         let nozzleY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
-                        if (this.insideLayer([nozzleX, nozzleY])) {
+                        if (this.insideLayer([nozzleX, nozzleY], nozzle)) {
                             let patternid = Math.floor(nozzle / 32);
                             let bitid = nozzle % 32;
                             swathe[line * 4 + patternid] |= (1 << (bitid));
@@ -95,8 +94,17 @@ export class TrackSlicer {
         return swathe;
     }
 
-    insideLayer(point: [number, number]) {
-        for (let [modelId, sliceModelInfo] of this.map) {
+    private * eligibleForNozzle(nozzleId: number): Iterable<[string, SliceModelInfo]> {
+        for (let [id, sliceModelInfo] of this.map) {
+            let skipNozzles = (this.modelParamsDict[id].skipNozzles || 0) + 1;
+            if (1 == skipNozzles || nozzleId % skipNozzles == 0) {
+                yield [id, sliceModelInfo];
+            }
+        }
+    }
+
+    private insideLayer(point: [number, number], nozzleId: number) {
+        for (let [modelId, sliceModelInfo] of this.eligibleForNozzle(nozzleId)) {
             if (!sliceModelInfo.contourBoundingBoxes.some(bb => {
                 return point[0] >= bb.min[0] && point[0] <= bb.max[0] && point[1] >= bb.min[1] && point[1] <= bb.max[1];
             })) {
@@ -107,7 +115,7 @@ export class TrackSlicer {
                 if (polygon.polygon.type === PolygonType.Hole) {
                     let insideHole = pointInPolygon(polygonPoints.map(p => p), point) === -1;
                     if (insideHole) {
-                        return false;
+                        break;
                     }
                 } else {
                     let inside = pointInPolygon(polygonPoints.map(p => p), point) <= 0;
@@ -116,7 +124,6 @@ export class TrackSlicer {
                     }
                 }
             }
-            return false;
         }
         return false;
     }

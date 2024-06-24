@@ -7,4 +7,3 @@ export class ModelPositionChanged implements Action {
     constructor(public id: string, public position: Point) { }
     readonly type = ActionType.ModelPositionChanged;
 }
-

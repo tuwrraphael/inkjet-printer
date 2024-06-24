@@ -75,6 +75,7 @@ export interface Model {
 
 export interface ModelParams {
     position: Point;
+    skipNozzles: number;
 }
 
 export enum SlicingStatus {
@@ -145,7 +146,8 @@ export interface State {
         currentFile: FileSystemFileHandle,
         saving: boolean,
         lastSaved: Date | null
-    } | null
+    } | null,
+    selectedModelId : string | null
 }
 
 export type StateChanges = (keyof State)[];

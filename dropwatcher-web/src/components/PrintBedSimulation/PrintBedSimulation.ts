@@ -7,6 +7,7 @@ import { ViewLayerChanged } from "../../state/actions/ViewLayerChanged";
 import { PrinterParams, PrintingParams } from "../../slicer/TrackSlicer";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
+import { ModelSelected } from "../../state/actions/ModelSelected";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
@@ -56,7 +57,7 @@ export class PrintBedSimulation extends HTMLElement {
     private modelParams: { [id: string]: ModelParams; };
     private printCanvasDevicePixelContentBoxSize: { inlineSize: number; blockSize: number; };
     private nextRenderNeedsModelRedraw = false;
-    private modelMoving = false;
+    private modelMoving: Model = null;
 
     constructor() {
         super();
@@ -92,9 +93,10 @@ export class PrintBedSimulation extends HTMLElement {
             let modelParams: ModelParams;
             let modelOrigin: { x: number, y: number };
             if (model) {
-                this.modelMoving = true;
+                this.modelMoving = model;
                 modelParams = this.modelParams[model.id];
                 modelOrigin = { x: modelParams.position[0], y: modelParams.position[1] };
+                this.store.postAction(new ModelSelected(model.id));
             }
             let mouseMove = (ev: MouseEvent) => {
                 if (this.modelMoving && !middleButton) {
@@ -124,9 +126,12 @@ export class PrintBedSimulation extends HTMLElement {
                 document.removeEventListener("mousemove", mouseMove);
                 document.removeEventListener("mouseup", mouseUp);
                 if (this.modelMoving) {
-                    this.modelMoving = false;
+                    this.modelMoving = null;
                     let updatedPos = this.modelPositionMap.get(model);
-                    this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
+                    const minimumMovement = 0.1;
+                    if (Math.abs(updatedPos.x - modelParams.position[0]) > minimumMovement || Math.abs(updatedPos.y - modelParams.position[1]) > minimumMovement) {
+                        this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
+                    }
                 }
             };
             document.addEventListener("mousemove", mouseMove);
@@ -172,7 +177,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.render();
         }, this.abortController.signal);
         abortableEventListener(this.rangeInput, "input", (ev) => {
-            this.layerDisplay.innerText = this.rangeInput.value;
+            this.layerDisplay.innerText = `${parseInt(this.rangeInput.value) + 1}`;
         }, this.abortController.signal);
         abortableEventListener(this.rangeInput, "change", (ev) => {
             this.store.postAction(new ViewLayerChanged(parseInt(this.rangeInput.value)));
@@ -235,13 +240,13 @@ export class PrintBedSimulation extends HTMLElement {
             }
             let layerChanged = this.viewLayer != s.printState.viewLayer;
             this.viewLayer = s.printState.viewLayer;
-            this.layerDisplay.innerText = this.viewLayer.toString();
+            this.layerDisplay.innerText = `${1+this.viewLayer}`;
             this.rangeInput.value = this.viewLayer.toString();
             let maxLayerNum = 0;
             for (let model of this.models) {
                 maxLayerNum = Math.max(maxLayerNum, model.layers.length);
             }
-            this.rangeInput.max = (maxLayerNum - 1).toString();
+            this.rangeInput.max = Math.max(this.viewLayer,(maxLayerNum - 1)).toString();
             this.initialized = true;
             this.track = s.printState.slicingState.track;
             this.printerParams = s.printState.printerParams;
@@ -394,12 +399,14 @@ export class PrintBedSimulation extends HTMLElement {
         this.ctx.lineWidth = this.mmToDots(0.2);
         let modelPosition = this.modelPositionMap.get(model);
         let modelOrigin = this.buildPlatePositionToCanvasPosition(modelPosition.x, modelPosition.y + modelHeight);
-        this.ctx.strokeRect(
-            modelOrigin.x,
-            modelOrigin.y,
-            this.mmToDots(modelWidth),
-            this.mmToDots(modelHeight)
-        );
+        if (this.modelMoving == model) {
+            this.ctx.strokeRect(
+                modelOrigin.x,
+                modelOrigin.y,
+                this.mmToDots(modelWidth),
+                this.mmToDots(modelHeight)
+            );
+        }
         this.ctx.drawImage(
             modelCanvas,
             modelOrigin.x,
@@ -465,6 +472,7 @@ export class PrintBedSimulation extends HTMLElement {
             return;
         }
         requestAnimationFrame(() => {
+            console.log("render");
             let redrawModels = !this.modelMoving && this.nextRenderNeedsModelRedraw;
             if (!this.setCanvasSize()) {
                 return 0;

@@ -17,5 +17,7 @@ export const enum ActionType {
     PrintingParamsChanged,
     SaveToFile,
     OpenFile,
-    SaveToCurrentFile
+    SaveToCurrentFile,
+    ModelSelected,
+    ModelParamsChanged
 }

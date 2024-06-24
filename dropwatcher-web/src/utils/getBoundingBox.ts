@@ -14,5 +14,3 @@ export function getBoundingBox(points: Point[]): { min: Point, max: Point } {
     }
     return { min: [minX, minY], max: [maxX, maxY] };
 }
-
-

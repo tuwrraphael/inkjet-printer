@@ -69,5 +69,6 @@ export const DefaultState: State =
         modelParams: {}
     },
     models: [],
-    currentFileState : null
+    currentFileState: null,
+    selectedModelId: null
 };

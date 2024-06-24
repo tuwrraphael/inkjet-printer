@@ -1,3 +1,25 @@
 print-container {
     display: grid;
 }
+
+.printbed-container {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "content modellist"
+        "content modelparams";
+    gap: 1em;
+
+    print-bed-simulation {
+        grid-area: content;
+    }
+
+    model-list {
+        grid-area: modellist;
+    }
+
+    model-params {
+        grid-area: modelparams;
+    }
+}

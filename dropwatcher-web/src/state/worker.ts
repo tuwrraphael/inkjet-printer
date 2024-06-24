@@ -28,6 +28,8 @@ import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
 import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 import { getModelBoundingBox } from "../utils/getModelBoundingBox";
 import { SaveToCurrentFile } from "./actions/SaveToCurrentFile";
+import { ModelSelected } from "./actions/ModelSelected";
+import { ModelParamsChanged } from "./actions/ModelParamsChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -48,6 +50,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | SaveToFile
     | OpenFile
     | SaveToCurrentFile
+    | ModelSelected
+    | ModelParamsChanged
     ;
 let state: State;
 let initialized = false;
@@ -113,7 +117,12 @@ function mapPressureControlAlgorithm(a: ProtoPressureControlAlgorithm): Pressure
     }
 }
 
-let modelIds = 0;
+function getNextModelId() {
+    if (!state.models || state.models.length < 1) {
+        return 0;
+    }
+    return Math.max(...state.models.map(m => Number(m.id))) + 1;
+}
 
 let trackSlicer: TrackSlicer = null;
 
@@ -160,7 +169,7 @@ async function modelAdded(msg: ModelAdded) {
         fileName: msg.model.fileName,
         layers: msg.model.layers,
         boundingBox: bb,
-        id: `${modelIds++}`
+        id: `${getNextModelId()}`
     };
     updateState(oldState => ({
         models: [...oldState.models, model],
@@ -169,7 +178,8 @@ async function modelAdded(msg: ModelAdded) {
             modelParams: {
                 ...oldState.printState.modelParams,
                 [model.id]: {
-                    position: [10, 10]
+                    position: [10, 10],
+                    skipNozzles: 0
                 }
             }
         }
@@ -396,6 +406,7 @@ async function handleMessage(msg: Actions) {
                     modelParams: {
                         ...oldState.printState.modelParams,
                         [msg.id]: {
+                            ...oldState.printState.modelParams[msg.id],
                             position: msg.position
                         }
                     }
@@ -435,6 +446,26 @@ async function handleMessage(msg: Actions) {
             }
             await saveToFile(state.currentFileState.currentFile);
             break;
+        case ActionType.ModelSelected:
+            updateState(oldState => ({
+                selectedModelId: msg.modelId
+            }));
+            break;
+        case ActionType.ModelParamsChanged:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    modelParams: {
+                        ...oldState.printState.modelParams,
+                        [msg.id]: {
+                            ...oldState.printState.modelParams[msg.id],
+                            ...msg.params
+                        }
+                    }
+                }
+            }));
+            updateSlicerParams();
+            break;
     }
 }
 self.addEventListener("message", ev => {
@@ -457,7 +488,8 @@ async function openFile(msg: OpenFile) {
             currentFile: msg.handle,
             saving: false,
             lastSaved: null
-        }
+        },
+        selectedModelId: null
     }));
     updateSlicerParams();
 }
@@ -472,7 +504,7 @@ async function saveToFile(handle: FileSystemFileHandle) {
     }));
     let writeable = await handle.createWritable();
     let saveTree = createSaveableTree();
-    console.log("Saving", saveTree);    
+    console.log("Saving", saveTree);
     let blob = new Blob([JSON.stringify(saveTree)], { type: "application/json" });
     await writeable.write(blob);
     await writeable.close();

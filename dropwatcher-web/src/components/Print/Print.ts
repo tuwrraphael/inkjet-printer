@@ -20,6 +20,8 @@ import { SlicePositionIncrement } from "../../state/actions/SlicePositionIncreme
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
 import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
 import "../PrintOptions/PrintOptions";
+import "../ModelList/ModelList";
+import "../ModelParams/ModelParams";
 
 import bwipjs from 'bwip-js';
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
@@ -168,8 +170,8 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
             ev.preventDefault();
-            let code: any = bwipjs.raw("datamatrix", "G1,33.41V,180dpi,354", {});
-            const dotsPerPixel = 4;
+            let code: any = bwipjs.raw("qrcode", "Hello World!", {});
+            const dotsPerPixel = 9;
             const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams);
             const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
             let polygons: Polygon[] = [];
