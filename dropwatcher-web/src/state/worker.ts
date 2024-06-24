@@ -16,6 +16,8 @@ import { DropwatcherNozzlePosChanged } from "./actions/DropwatcherNozzlePosChang
 import { NozzleDataChanged } from "./actions/NozzleDataSet";
 import { DropwatcherParametersChanged } from "./actions/DropwatcherParametersSet";
 import { CameraStateChanged } from "./actions/CameraStateChanged";
+import { OpenFile } from "./actions/OpenFile";
+import { SaveToFile } from "./actions/SaveToFile";
 import { ModelAdded } from "./actions/ModelAdded";
 import { ViewLayerChanged } from "./actions/ViewLayerChanged";
 import { ModelPositionChanged } from "./actions/ModelPositionChanged";
@@ -25,6 +27,7 @@ import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
 import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 import { getModelBoundingBox } from "../utils/getModelBoundingBox";
+import { SaveToCurrentFile } from "./actions/SaveToCurrentFile";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -42,6 +45,9 @@ type Actions = PrinterUSBConnectionStateChanged
     | SlicePositionChanged
     | SlicePositionIncrement
     | PrintingParamsChanged
+    | SaveToFile
+    | OpenFile
+    | SaveToCurrentFile
     ;
 let state: State;
 let initialized = false;
@@ -228,6 +234,24 @@ function slicePositionChanged(msg: SlicePositionChanged) {
     reslice();
 }
 
+interface SaveableTree {
+    models: typeof state.models;
+    printState: {
+        modelParams: typeof state.printState.modelParams;
+        printingParams: typeof state.printState.printingParams;
+    }
+}
+
+function createSaveableTree(): SaveableTree {
+    return {
+        models: state.models,
+        printState: {
+            modelParams: state.printState.modelParams,
+            printingParams: state.printState.printingParams
+        }
+    }
+}
+
 async function handleMessage(msg: Actions) {
     switch (msg.type) {
         case ActionType.PrinterUSBConnectionStateChanged:
@@ -398,9 +422,65 @@ async function handleMessage(msg: Actions) {
             console.log("Printing params changed", msg);
             updateSlicerParams();
             break;
+        case ActionType.SaveToFile:
+            await saveToFile(msg.handle);
+            break;
+        case ActionType.OpenFile:
+            await openFile(msg);
+            break;
+        case ActionType.SaveToCurrentFile:
+            if (null == state.currentFileState.currentFile) {
+                console.error("No current file to save to");
+                return;
+            }
+            await saveToFile(state.currentFileState.currentFile);
+            break;
     }
 }
 self.addEventListener("message", ev => {
     let msg: Actions = ev.data;
     handleMessage(msg).catch(err => console.error(err));
 });
+
+async function openFile(msg: OpenFile) {
+    let file = await msg.handle.getFile();
+    let text = await file.text();
+    let tree = JSON.parse(text);
+    updateState(oldState => ({
+        models: tree.models,
+        printState: {
+            ...oldState.printState,
+            modelParams: tree.printState.modelParams,
+            printingParams: tree.printState.printingParams
+        },
+        currentFileState: {
+            currentFile: msg.handle,
+            saving: false,
+            lastSaved: null
+        }
+    }));
+    updateSlicerParams();
+}
+
+async function saveToFile(handle: FileSystemFileHandle) {
+    updateState(oldState => ({
+        currentFileState: {
+            ...oldState.currentFileState,
+            currentFile: handle,
+            saving: true,
+        }
+    }));
+    let writeable = await handle.createWritable();
+    let saveTree = createSaveableTree();
+    console.log("Saving", saveTree);    
+    let blob = new Blob([JSON.stringify(saveTree)], { type: "application/json" });
+    await writeable.write(blob);
+    await writeable.close();
+    updateState(oldState => ({
+        currentFileState: {
+            ...oldState.currentFileState,
+            saving: false,
+            lastSaved: new Date()
+        }
+    }));
+}

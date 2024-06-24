@@ -1,10 +1,18 @@
 <div class="app-container">
     <div class="app-header">
-        <a href="">Home</a>
-        <a href="ink-control">Ink-Control</a>
-        <a href="movement-control">Movement-Control</a>
-        <a href="print">Print</a>
-        <a href="dropwatcher">Dropwatcher</a>
+        <div>
+            <a href="">Home</a>
+            <a href="ink-control">Ink-Control</a>
+            <a href="movement-control">Movement-Control</a>
+            <a href="print">Print</a>
+            <a href="dropwatcher">Dropwatcher</a>
+        </div>
+        <div>
+            <span id="file-status"></span>
+            <button id="open-file">Open</button>
+            <button id="save-as">Save As</button>
+            <button id="save">Save</button>
+        </div>
     </div>
     <div class="content" style="overflow-x: hidden;"></div>
     <printer-status class="app-status"></printer-status>

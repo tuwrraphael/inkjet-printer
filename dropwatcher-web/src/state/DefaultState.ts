@@ -68,5 +68,6 @@ export const DefaultState: State =
         viewLayer: 0,
         modelParams: {}
     },
-    models: []
+    models: [],
+    currentFileState : null
 };

@@ -14,4 +14,3 @@ export class CameraStateChanged implements Action {
     }) { }
     readonly type = ActionType.CameraStateChanged;
 }
-

@@ -34,7 +34,7 @@ export interface PrintControlState {
     lastPrintedLine: number;
     lostLinesCount: number;
     printedLines: number;
-    nozzlePrimingActive : boolean;
+    nozzlePrimingActive: boolean;
 }
 
 export interface PrintControlEncoderModeSettings {
@@ -140,7 +140,12 @@ export interface State {
         viewLayer: number,
         modelParams: { [id: string]: ModelParams }
     },
-    models: Model[]
+    models: Model[],
+    currentFileState: {
+        currentFile: FileSystemFileHandle,
+        saving: boolean,
+        lastSaved: Date | null
+    } | null
 }
 
 export type StateChanges = (keyof State)[];

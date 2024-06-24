@@ -14,5 +14,8 @@ export const enum ActionType {
     ModelPositionChanged,
     SlicePositionChanged,
     SlicePositionIncrement,
-    PrintingParamsChanged
+    PrintingParamsChanged,
+    SaveToFile,
+    OpenFile,
+    SaveToCurrentFile
 }
