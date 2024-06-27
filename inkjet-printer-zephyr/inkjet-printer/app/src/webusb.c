@@ -264,6 +264,20 @@ static pressure_control_algorithm_t map_proto_to_pressure_control_algorithm(Pres
 	}
 }
 
+static EncoderMode map_encoder_mode_to_proto(encoder_mode_t encoder_mode) {
+	switch (encoder_mode)
+	{
+	case ENCODER_MODE_OFF:
+		return EncoderMode_EncoderMode_OFF;
+	case ENCODER_MODE_ON:
+		return EncoderMode_EncoderMode_ON;
+	case ENCODER_MODE_PAUSED:
+		return EncoderMode_EncoderMode_PAUSED;
+	default:
+		return EncoderMode_EncoderMode_UNSPECIFIED;
+	}
+}
+
 static void webusb_read_cb(uint8_t ep, int size, void *priv)
 {
 	struct usb_cfg_data *cfg = priv;
@@ -318,6 +332,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			response.print_control.lost_lines_count = print_control_info.lost_lines_count;
 			response.print_control.printed_lines = print_control_info.printed_lines;
 			response.print_control.nozzle_priming_active = print_control_info.nozzle_priming_active;
+			response.print_control.encoder_mode = map_encoder_mode_to_proto(print_control_info.encoder_mode);
 			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
 			if (status)
 			{
@@ -461,6 +476,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			settings.fire_every_ticks = request.encoder_mode_settings.fire_every_ticks;
 			settings.print_first_line_after_encoder_tick = request.encoder_mode_settings.print_first_line_after_encoder_tick;
 			settings.sequential_fires = request.encoder_mode_settings.sequential_fires;
+			settings.start_paused = request.encoder_mode_settings.start_paused;
 			request_change_encoder_mode_settings(&settings);
 			LOG_INF("ChangeEncoderModeSettingsRequest: fire_every_ticks %d, print_first_line_after_encoder_tick %d, sequential_fires %d",
 					request.encoder_mode_settings.fire_every_ticks, request.encoder_mode_settings.print_first_line_after_encoder_tick, request.encoder_mode_settings.sequential_fires);
@@ -496,6 +512,19 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		else
 		{
 			LOG_ERR("Failed to decode NozzlePrimingRequest");
+		}
+	}
+	else if (type == ChangeEncoderModeRequest_fields) {
+		ChangeEncoderModeRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeEncoderModeRequest_fields, &request);
+		if (status)
+		{
+			request_change_encoder_mode(request.paused);
+			LOG_INF("ChangeEncoderModeRequest: paused %d", request.paused);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangeEncoderModeRequest");
 		}
 	}
 	else

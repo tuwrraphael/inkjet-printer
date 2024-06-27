@@ -210,6 +210,10 @@ export class PrintComponent extends HTMLElement {
                     })
                 };
             });
+            let duplicateLayers = 10;
+            for (let i = 0; i < duplicateLayers; i++) {
+                model.layers = [...model.layers, model.layers[0]];
+            }
             this.store.postAction(new ModelAdded(model));
         }, this.abortController.signal);
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);

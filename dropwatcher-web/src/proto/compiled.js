@@ -716,6 +716,7 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
      * @property {number|null} [sequentialFires] PrintControlEncoderModeSettings sequentialFires
      * @property {number|null} [fireEveryTicks] PrintControlEncoderModeSettings fireEveryTicks
      * @property {number|null} [printFirstLineAfterEncoderTick] PrintControlEncoderModeSettings printFirstLineAfterEncoderTick
+     * @property {boolean|null} [startPaused] PrintControlEncoderModeSettings startPaused
      */
 
     /**
@@ -758,6 +759,28 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
     PrintControlEncoderModeSettings.prototype.printFirstLineAfterEncoderTick = 0;
 
     /**
+     * PrintControlEncoderModeSettings startPaused.
+     * @member {boolean|null|undefined} startPaused
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    PrintControlEncoderModeSettings.prototype.startPaused = null;
+
+    // OneOf field names bound to virtual getters and setters
+    let $oneOfFields;
+
+    /**
+     * PrintControlEncoderModeSettings _startPaused.
+     * @member {"startPaused"|undefined} _startPaused
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    Object.defineProperty(PrintControlEncoderModeSettings.prototype, "_startPaused", {
+        get: $util.oneOfGetter($oneOfFields = ["startPaused"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrintControlEncoderModeSettings instance using the specified properties.
      * @function create
      * @memberof PrintControlEncoderModeSettings
@@ -787,6 +810,8 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.fireEveryTicks);
         if (message.printFirstLineAfterEncoderTick != null && Object.hasOwnProperty.call(message, "printFirstLineAfterEncoderTick"))
             writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.printFirstLineAfterEncoderTick);
+        if (message.startPaused != null && Object.hasOwnProperty.call(message, "startPaused"))
+            writer.uint32(/* id 4, wireType 0 =*/32).bool(message.startPaused);
         return writer;
     };
 
@@ -833,6 +858,10 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
                     message.printFirstLineAfterEncoderTick = reader.uint32();
                     break;
                 }
+            case 4: {
+                    message.startPaused = reader.bool();
+                    break;
+                }
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -868,6 +897,7 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
     PrintControlEncoderModeSettings.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        let properties = {};
         if (message.sequentialFires != null && message.hasOwnProperty("sequentialFires"))
             if (!$util.isInteger(message.sequentialFires))
                 return "sequentialFires: integer expected";
@@ -877,6 +907,11 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
         if (message.printFirstLineAfterEncoderTick != null && message.hasOwnProperty("printFirstLineAfterEncoderTick"))
             if (!$util.isInteger(message.printFirstLineAfterEncoderTick))
                 return "printFirstLineAfterEncoderTick: integer expected";
+        if (message.startPaused != null && message.hasOwnProperty("startPaused")) {
+            properties._startPaused = 1;
+            if (typeof message.startPaused !== "boolean")
+                return "startPaused: boolean expected";
+        }
         return null;
     };
 
@@ -898,6 +933,8 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             message.fireEveryTicks = object.fireEveryTicks >>> 0;
         if (object.printFirstLineAfterEncoderTick != null)
             message.printFirstLineAfterEncoderTick = object.printFirstLineAfterEncoderTick >>> 0;
+        if (object.startPaused != null)
+            message.startPaused = Boolean(object.startPaused);
         return message;
     };
 
@@ -925,6 +962,11 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             object.fireEveryTicks = message.fireEveryTicks;
         if (message.printFirstLineAfterEncoderTick != null && message.hasOwnProperty("printFirstLineAfterEncoderTick"))
             object.printFirstLineAfterEncoderTick = message.printFirstLineAfterEncoderTick;
+        if (message.startPaused != null && message.hasOwnProperty("startPaused")) {
+            object.startPaused = message.startPaused;
+            if (options.oneofs)
+                object._startPaused = "startPaused";
+        }
         return object;
     };
 
@@ -957,6 +999,24 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
     return PrintControlEncoderModeSettings;
 })();
 
+/**
+ * EncoderMode enum.
+ * @exports EncoderMode
+ * @enum {number}
+ * @property {number} EncoderMode_UNSPECIFIED=0 EncoderMode_UNSPECIFIED value
+ * @property {number} EncoderMode_OFF=1 EncoderMode_OFF value
+ * @property {number} EncoderMode_ON=2 EncoderMode_ON value
+ * @property {number} EncoderMode_PAUSED=3 EncoderMode_PAUSED value
+ */
+export const EncoderMode = $root.EncoderMode = (() => {
+    const valuesById = {}, values = Object.create(valuesById);
+    values[valuesById[0] = "EncoderMode_UNSPECIFIED"] = 0;
+    values[valuesById[1] = "EncoderMode_OFF"] = 1;
+    values[valuesById[2] = "EncoderMode_ON"] = 2;
+    values[valuesById[3] = "EncoderMode_PAUSED"] = 3;
+    return values;
+})();
+
 export const PrintControlState = $root.PrintControlState = (() => {
 
     /**
@@ -970,6 +1030,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
      * @property {number|null} [lostLinesCount] PrintControlState lostLinesCount
      * @property {number|null} [printedLines] PrintControlState printedLines
      * @property {boolean|null} [nozzlePrimingActive] PrintControlState nozzlePrimingActive
+     * @property {EncoderMode|null} [encoderMode] PrintControlState encoderMode
      */
 
     /**
@@ -1044,6 +1105,14 @@ export const PrintControlState = $root.PrintControlState = (() => {
     PrintControlState.prototype.nozzlePrimingActive = false;
 
     /**
+     * PrintControlState encoderMode.
+     * @member {EncoderMode} encoderMode
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.encoderMode = 0;
+
+    /**
      * Creates a new PrintControlState instance using the specified properties.
      * @function create
      * @memberof PrintControlState
@@ -1081,6 +1150,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.printedLines);
         if (message.nozzlePrimingActive != null && Object.hasOwnProperty.call(message, "nozzlePrimingActive"))
             writer.uint32(/* id 7, wireType 0 =*/56).bool(message.nozzlePrimingActive);
+        if (message.encoderMode != null && Object.hasOwnProperty.call(message, "encoderMode"))
+            writer.uint32(/* id 8, wireType 0 =*/64).int32(message.encoderMode);
         return writer;
     };
 
@@ -1143,6 +1214,10 @@ export const PrintControlState = $root.PrintControlState = (() => {
                     message.nozzlePrimingActive = reader.bool();
                     break;
                 }
+            case 8: {
+                    message.encoderMode = reader.int32();
+                    break;
+                }
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -1201,6 +1276,16 @@ export const PrintControlState = $root.PrintControlState = (() => {
         if (message.nozzlePrimingActive != null && message.hasOwnProperty("nozzlePrimingActive"))
             if (typeof message.nozzlePrimingActive !== "boolean")
                 return "nozzlePrimingActive: boolean expected";
+        if (message.encoderMode != null && message.hasOwnProperty("encoderMode"))
+            switch (message.encoderMode) {
+            default:
+                return "encoderMode: enum value expected";
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                break;
+            }
         return null;
     };
 
@@ -1233,6 +1318,30 @@ export const PrintControlState = $root.PrintControlState = (() => {
             message.printedLines = object.printedLines >>> 0;
         if (object.nozzlePrimingActive != null)
             message.nozzlePrimingActive = Boolean(object.nozzlePrimingActive);
+        switch (object.encoderMode) {
+        default:
+            if (typeof object.encoderMode === "number") {
+                message.encoderMode = object.encoderMode;
+                break;
+            }
+            break;
+        case "EncoderMode_UNSPECIFIED":
+        case 0:
+            message.encoderMode = 0;
+            break;
+        case "EncoderMode_OFF":
+        case 1:
+            message.encoderMode = 1;
+            break;
+        case "EncoderMode_ON":
+        case 2:
+            message.encoderMode = 2;
+            break;
+        case "EncoderMode_PAUSED":
+        case 3:
+            message.encoderMode = 3;
+            break;
+        }
         return message;
     };
 
@@ -1257,6 +1366,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.lostLinesCount = 0;
             object.printedLines = 0;
             object.nozzlePrimingActive = false;
+            object.encoderMode = options.enums === String ? "EncoderMode_UNSPECIFIED" : 0;
         }
         if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings"))
             object.encoderModeSettings = $root.PrintControlEncoderModeSettings.toObject(message.encoderModeSettings, options);
@@ -1272,6 +1382,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.printedLines = message.printedLines;
         if (message.nozzlePrimingActive != null && message.hasOwnProperty("nozzlePrimingActive"))
             object.nozzlePrimingActive = message.nozzlePrimingActive;
+        if (message.encoderMode != null && message.hasOwnProperty("encoderMode"))
+            object.encoderMode = options.enums === String ? $root.EncoderMode[message.encoderMode] === undefined ? message.encoderMode : $root.EncoderMode[message.encoderMode] : message.encoderMode;
         return object;
     };
 
@@ -3395,6 +3507,209 @@ export const NozzlePrimingRequest = $root.NozzlePrimingRequest = (() => {
     return NozzlePrimingRequest;
 })();
 
+export const ChangeEncoderModeRequest = $root.ChangeEncoderModeRequest = (() => {
+
+    /**
+     * Properties of a ChangeEncoderModeRequest.
+     * @exports IChangeEncoderModeRequest
+     * @interface IChangeEncoderModeRequest
+     * @property {boolean|null} [paused] ChangeEncoderModeRequest paused
+     */
+
+    /**
+     * Constructs a new ChangeEncoderModeRequest.
+     * @exports ChangeEncoderModeRequest
+     * @classdesc Represents a ChangeEncoderModeRequest.
+     * @implements IChangeEncoderModeRequest
+     * @constructor
+     * @param {IChangeEncoderModeRequest=} [properties] Properties to set
+     */
+    function ChangeEncoderModeRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangeEncoderModeRequest paused.
+     * @member {boolean} paused
+     * @memberof ChangeEncoderModeRequest
+     * @instance
+     */
+    ChangeEncoderModeRequest.prototype.paused = false;
+
+    /**
+     * Creates a new ChangeEncoderModeRequest instance using the specified properties.
+     * @function create
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {IChangeEncoderModeRequest=} [properties] Properties to set
+     * @returns {ChangeEncoderModeRequest} ChangeEncoderModeRequest instance
+     */
+    ChangeEncoderModeRequest.create = function create(properties) {
+        return new ChangeEncoderModeRequest(properties);
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderModeRequest message. Does not implicitly {@link ChangeEncoderModeRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {IChangeEncoderModeRequest} message ChangeEncoderModeRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderModeRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.paused != null && Object.hasOwnProperty.call(message, "paused"))
+            writer.uint32(/* id 1, wireType 0 =*/8).bool(message.paused);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ChangeEncoderModeRequest message, length delimited. Does not implicitly {@link ChangeEncoderModeRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {IChangeEncoderModeRequest} message ChangeEncoderModeRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeEncoderModeRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ChangeEncoderModeRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangeEncoderModeRequest} ChangeEncoderModeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderModeRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeEncoderModeRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.paused = reader.bool();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ChangeEncoderModeRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ChangeEncoderModeRequest} ChangeEncoderModeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeEncoderModeRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ChangeEncoderModeRequest message.
+     * @function verify
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ChangeEncoderModeRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.paused != null && message.hasOwnProperty("paused"))
+            if (typeof message.paused !== "boolean")
+                return "paused: boolean expected";
+        return null;
+    };
+
+    /**
+     * Creates a ChangeEncoderModeRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ChangeEncoderModeRequest} ChangeEncoderModeRequest
+     */
+    ChangeEncoderModeRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangeEncoderModeRequest)
+            return object;
+        let message = new $root.ChangeEncoderModeRequest();
+        if (object.paused != null)
+            message.paused = Boolean(object.paused);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ChangeEncoderModeRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {ChangeEncoderModeRequest} message ChangeEncoderModeRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ChangeEncoderModeRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.paused = false;
+        if (message.paused != null && message.hasOwnProperty("paused"))
+            object.paused = message.paused;
+        return object;
+    };
+
+    /**
+     * Converts this ChangeEncoderModeRequest to JSON.
+     * @function toJSON
+     * @memberof ChangeEncoderModeRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ChangeEncoderModeRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for ChangeEncoderModeRequest
+     * @function getTypeUrl
+     * @memberof ChangeEncoderModeRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    ChangeEncoderModeRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/ChangeEncoderModeRequest";
+    };
+
+    return ChangeEncoderModeRequest;
+})();
+
 export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
@@ -3411,6 +3726,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {IChangeEncoderModeSettingsRequest|null} [changeEncoderModeSettingsRequest] PrinterRequest changeEncoderModeSettingsRequest
      * @property {IChangePrintMemoryRequest|null} [changePrintMemoryRequest] PrinterRequest changePrintMemoryRequest
      * @property {INozzlePrimingRequest|null} [nozzlePrimingRequest] PrinterRequest nozzlePrimingRequest
+     * @property {IChangeEncoderModeRequest|null} [changeEncoderModeRequest] PrinterRequest changeEncoderModeRequest
      */
 
     /**
@@ -3507,6 +3823,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @instance
      */
     PrinterRequest.prototype.nozzlePrimingRequest = null;
+
+    /**
+     * PrinterRequest changeEncoderModeRequest.
+     * @member {IChangeEncoderModeRequest|null|undefined} changeEncoderModeRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.changeEncoderModeRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -3622,6 +3946,17 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
+     * PrinterRequest _changeEncoderModeRequest.
+     * @member {"changeEncoderModeRequest"|undefined} _changeEncoderModeRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_changeEncoderModeRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changeEncoderModeRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrinterRequest instance using the specified properties.
      * @function create
      * @memberof PrinterRequest
@@ -3665,6 +4000,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.ChangePrintMemoryRequest.encode(message.changePrintMemoryRequest, writer.uint32(/* id 9, wireType 2 =*/74).fork()).ldelim();
         if (message.nozzlePrimingRequest != null && Object.hasOwnProperty.call(message, "nozzlePrimingRequest"))
             $root.NozzlePrimingRequest.encode(message.nozzlePrimingRequest, writer.uint32(/* id 10, wireType 2 =*/82).fork()).ldelim();
+        if (message.changeEncoderModeRequest != null && Object.hasOwnProperty.call(message, "changeEncoderModeRequest"))
+            $root.ChangeEncoderModeRequest.encode(message.changeEncoderModeRequest, writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
         return writer;
     };
 
@@ -3737,6 +4074,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 }
             case 10: {
                     message.nozzlePrimingRequest = $root.NozzlePrimingRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 11: {
+                    message.changeEncoderModeRequest = $root.ChangeEncoderModeRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -3855,6 +4196,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "nozzlePrimingRequest." + error;
             }
         }
+        if (message.changeEncoderModeRequest != null && message.hasOwnProperty("changeEncoderModeRequest")) {
+            properties._changeEncoderModeRequest = 1;
+            {
+                let error = $root.ChangeEncoderModeRequest.verify(message.changeEncoderModeRequest);
+                if (error)
+                    return "changeEncoderModeRequest." + error;
+            }
+        }
         return null;
     };
 
@@ -3919,6 +4268,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (typeof object.nozzlePrimingRequest !== "object")
                 throw TypeError(".PrinterRequest.nozzlePrimingRequest: object expected");
             message.nozzlePrimingRequest = $root.NozzlePrimingRequest.fromObject(object.nozzlePrimingRequest);
+        }
+        if (object.changeEncoderModeRequest != null) {
+            if (typeof object.changeEncoderModeRequest !== "object")
+                throw TypeError(".PrinterRequest.changeEncoderModeRequest: object expected");
+            message.changeEncoderModeRequest = $root.ChangeEncoderModeRequest.fromObject(object.changeEncoderModeRequest);
         }
         return message;
     };
@@ -3985,6 +4339,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             object.nozzlePrimingRequest = $root.NozzlePrimingRequest.toObject(message.nozzlePrimingRequest, options);
             if (options.oneofs)
                 object._nozzlePrimingRequest = "nozzlePrimingRequest";
+        }
+        if (message.changeEncoderModeRequest != null && message.hasOwnProperty("changeEncoderModeRequest")) {
+            object.changeEncoderModeRequest = $root.ChangeEncoderModeRequest.toObject(message.changeEncoderModeRequest, options);
+            if (options.oneofs)
+                object._changeEncoderModeRequest = "changeEncoderModeRequest";
         }
         return object;
     };

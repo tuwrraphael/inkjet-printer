@@ -30,7 +30,7 @@ static void load_line_handler(void);
 
 K_SEM_DEFINE(load_line_sem, 0, 1);
 
-static bool encoder_mode = false;
+static encoder_mode_t encoder_mode = ENCODER_MODE_OFF;
 
 static bool nozzle_priming_active = false;
 
@@ -50,7 +50,7 @@ static void load_line_handler(void)
                 continue;
             }
         }
-        ret = printer_set_pixels(printhead, &print_memory[line_to_load*4]);
+        ret = printer_set_pixels(printhead, &print_memory[line_to_load * 4]);
         if (ret != 0)
         {
             error_callback(ERROR_PRINTHEAD_COMMUNICATION);
@@ -86,7 +86,7 @@ static void load_line_cb(void *inst, uint32_t line, bool wait_fired)
 
 static void fire_issued_cb()
 {
-    if (encoder_mode)
+    if (encoder_mode == ENCODER_MODE_ON)
     {
         encoder_fire_issued_handler(&encoder_print_status);
     }
@@ -94,7 +94,7 @@ static void fire_issued_cb()
 
 static void fire_completed_cb()
 {
-    if (encoder_mode)
+    if (encoder_mode == ENCODER_MODE_ON)
     {
         encoder_fire_cycle_completed_handler(&encoder_print_status);
     }
@@ -102,7 +102,7 @@ static void fire_completed_cb()
 
 static void trigger_cb()
 {
-    if (encoder_mode)
+    if (encoder_mode == ENCODER_MODE_ON)
     {
         encoder_tick_handler(&encoder_print_status);
     }
@@ -121,18 +121,28 @@ int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init
     print_init.print_first_line_after_encoder_tick = init->print_first_line_after_encoder_tick;
     encoder_print_init(&encoder_print_status, &print_init);
     printer_fire_set_timing(printer_fire, 10300, 1000, 10300, 2000);
-    printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
-    printer_fire_set_trigger_reset(printer_fire, false);
     printer_fire_set_fire_issued_callback(printer_fire, fire_issued_cb);
     printer_fire_set_fire_cycle_completed_callback(printer_fire, fire_completed_cb);
     printer_fire_set_trigger_callback(printer_fire, trigger_cb);
-    printer_fire_request_fire(printer_fire);
-    encoder_mode = true;
+    printer_fire_set_trigger_reset(printer_fire, true);
+    printer_fire_abort(printer_fire);
+    printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
+    if (init->start_paused)
+    {
+        encoder_mode = ENCODER_MODE_PAUSED;
+    }
+    else
+    {
+        printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
+        printer_fire_set_trigger_reset(printer_fire, false);
+        printer_fire_request_fire(printer_fire);
+        encoder_mode = ENCODER_MODE_ON;
+    }
     return 0;
 }
 int print_control_start_manual_fire_mode()
 {
-    encoder_mode = false;
+    encoder_mode = ENCODER_MODE_OFF;
     printer_fire_set_timing(printer_fire, 40000, 1000, 250, 1000);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
     printer_fire_set_trigger_reset(printer_fire, true);
@@ -163,7 +173,7 @@ void print_control_set_encoder_position(int32_t value)
 
 void print_control_disable()
 {
-    encoder_mode = false;
+    encoder_mode = ENCODER_MODE_OFF;
     printer_fire_set_trigger_reset(printer_fire, true);
     printer_fire_abort(printer_fire);
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
@@ -216,6 +226,7 @@ void print_control_get_info(print_control_info_t *info)
     info->printed_lines = encoder_print_status.printed_lines;
     info->encoder_value = get_value_cb(NULL);
     info->nozzle_priming_active = nozzle_priming_active;
+    info->encoder_mode = encoder_mode;
 }
 
 static int priming_cycle(uint32_t *data, uint32_t times)
@@ -291,6 +302,38 @@ int print_control_nozzle_priming()
     }
     nozzle_priming_active = false;
     return 0;
+}
+
+void print_control_pause_encoder_mode()
+{
+    if (encoder_mode == ENCODER_MODE_ON)
+    {
+        encoder_mode = ENCODER_MODE_PAUSED;
+    }
+    else
+    {
+        LOG_ERR("Encoder mode not active");
+        return;
+    }
+    printer_fire_set_trigger_reset(printer_fire, true);
+    printer_fire_abort(printer_fire);
+    printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_CLOCK);
+}
+
+void print_control_resume_encoder_mode()
+{
+    if (encoder_mode == ENCODER_MODE_PAUSED)
+    {
+        encoder_mode = ENCODER_MODE_ON;
+    }
+    else
+    {
+        LOG_ERR("Encoder mode not paused");
+        return;
+    }
+    printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
+    printer_fire_set_trigger_reset(printer_fire, false);
+    printer_fire_request_fire(printer_fire);
 }
 
 #define LOAD_LINE_STACK (512)

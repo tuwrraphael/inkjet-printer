@@ -12,6 +12,7 @@ export class ResetEncoderTaskRunner {
         encoderModeSettings.fireEveryTicks = this.task.fireEveryTicks;
         encoderModeSettings.printFirstLineAfterEncoderTick = this.task.printFirstLineAfterEncoderTick;
         encoderModeSettings.sequentialFires = this.task.sequentialFires;
+        encoderModeSettings.startPaused = false;
         changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
         await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
     }

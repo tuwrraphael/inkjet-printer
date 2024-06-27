@@ -4,6 +4,14 @@ message PrintControlEncoderModeSettings {
   uint32 sequential_fires = 1;
   uint32 fire_every_ticks= 2;
   uint32 print_first_line_after_encoder_tick = 3;
+  optional bool start_paused = 4;
+}
+
+enum EncoderMode {
+  EncoderMode_UNSPECIFIED = 0;
+  EncoderMode_OFF = 1;
+  EncoderMode_ON = 2;
+  EncoderMode_PAUSED = 3; 
 }
 
 message PrintControlState {
@@ -14,4 +22,5 @@ message PrintControlState {
   uint32 lost_lines_count = 5;
   uint32 printed_lines = 6;
   bool nozzle_priming_active = 7;
+  EncoderMode encoder_mode = 8;
 }

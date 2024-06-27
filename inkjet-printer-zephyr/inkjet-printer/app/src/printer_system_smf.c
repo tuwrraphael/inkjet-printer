@@ -21,6 +21,7 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA (1 << 4)
 #define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS (1 << 5)
 #define PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES (1 << 6)
+#define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE (1 << 7)
 
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 
@@ -50,6 +51,7 @@ struct printer_system_state_object
     int32_t events;
     uint32_t nozzle_data[4];
     print_control_encoder_mode_settings_t encoder_mode_settings;
+    bool change_encoder_mode_to_paused;
 } printer_system_state_object;
 
 static void timeout_timer_handler(struct k_timer *dummy)
@@ -253,6 +255,17 @@ static void printer_system_print_run(void *o)
                 LOG_INF("Priming nozzles");
             }
         }
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE)
+        {
+            if (printer_system_state_object.change_encoder_mode_to_paused)
+            {
+                print_control_pause_encoder_mode();
+            }
+            else
+            {
+                print_control_resume_encoder_mode();
+            }
+        }
         k_timer_start(&timout_timer, K_MINUTES(30), K_NO_WAIT);
     }
 }
@@ -306,6 +319,11 @@ void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t 
 {
     memcpy(&printer_system_state_object.encoder_mode_settings, settings, sizeof(print_control_encoder_mode_settings_t));
     event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS);
+}
+
+void request_change_encoder_mode(bool paused) {
+    printer_system_state_object.change_encoder_mode_to_paused = paused;
+    event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE);
 }
 
 int printer_system_smf()

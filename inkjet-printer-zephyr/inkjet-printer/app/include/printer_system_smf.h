@@ -27,6 +27,8 @@ void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t 
 
 void request_prime_nozzles();
 
+void request_change_encoder_mode(bool paused);
+
 enum printer_system_smf_state printer_system_smf_get_state();
 
 #endif // PRINTER_SYSTEM_SMF_H

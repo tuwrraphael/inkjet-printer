@@ -14,7 +14,15 @@ typedef struct
     uint32_t sequential_fires;
     uint32_t fire_every_ticks;
     uint32_t print_first_line_after_encoder_tick;
+    bool start_paused;
 } print_control_encoder_mode_settings_t;
+
+typedef enum
+{
+    ENCODER_MODE_OFF,
+    ENCODER_MODE_ON,
+    ENCODER_MODE_PAUSED
+} encoder_mode_t;
 
 typedef struct {
     print_control_encoder_mode_settings_t encoder_mode_settings;
@@ -24,10 +32,13 @@ typedef struct {
     uint32_t lost_lines_count;
     uint32_t printed_lines;
     bool nozzle_priming_active;
+    encoder_mode_t encoder_mode;
 } print_control_info_t;
  
 int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init);
 int print_control_start_manual_fire_mode();
+void print_control_pause_encoder_mode();
+void print_control_resume_encoder_mode();
 int print_control_request_fire();
 void print_control_set_encoder_position(int32_t value);
 void print_control_disable();

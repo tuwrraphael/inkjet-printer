@@ -27,6 +27,13 @@ export interface StagePos {
     z: number;
 }
 
+export enum PrintControlEncoderMode {
+    Unspecified = 0,
+    Off = 1,
+    On = 2,
+    Paused = 3
+}
+
 export interface PrintControlState {
     encoderModeSettings: PrintControlEncoderModeSettings;
     encoderValue: number;
@@ -35,6 +42,7 @@ export interface PrintControlState {
     lostLinesCount: number;
     printedLines: number;
     nozzlePrimingActive: boolean;
+    encoderMode : PrintControlEncoderMode;
 }
 
 export interface PrintControlEncoderModeSettings {

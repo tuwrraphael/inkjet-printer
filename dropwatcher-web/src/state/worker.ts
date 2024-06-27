@@ -1,5 +1,5 @@
 import { ActionType } from "./actions/ActionType";
-import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel, SlicingStatus } from "./State";
+import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel, SlicingStatus, PrintControlEncoderMode } from "./State";
 
 import { PrinterUSBConnectionStateChanged } from "./actions/PrinterUSBConnectionStateChanged";
 import { PrinterSystemStateResponseReceived } from "./actions/PrinterSystemStateResponseReceived";
@@ -7,7 +7,8 @@ import { InitializeWorker } from "./actions/InitializeWorker";
 import {
     PrinterSystemState as ProtoPrinterSystemState,
     PressureControlDirection as ProtoPressureControlDirection,
-    PressureControlAlgorithm as ProtoPressureControlAlgorithm
+    PressureControlAlgorithm as ProtoPressureControlAlgorithm,
+    EncoderMode as ProtoEncoderMode
 } from "../proto/compiled";
 import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
 import { MovementStagePositionChanged } from "./actions/MovementStagePositionChanged";
@@ -114,6 +115,21 @@ function mapPressureControlAlgorithm(a: ProtoPressureControlAlgorithm): Pressure
             return PressureControlAlgorithm.FeedwithLimit;
         default:
             return PressureControlAlgorithm.Unspecified;
+    }
+}
+
+function mapEncoderMode(a:ProtoEncoderMode) : PrintControlEncoderMode {
+    switch(a) {
+        case ProtoEncoderMode.EncoderMode_UNSPECIFIED:
+            return PrintControlEncoderMode.Unspecified;
+        case ProtoEncoderMode.EncoderMode_OFF:
+            return PrintControlEncoderMode.Off;
+        case ProtoEncoderMode.EncoderMode_ON:
+            return PrintControlEncoderMode.On;
+        case ProtoEncoderMode.EncoderMode_PAUSED:
+            return PrintControlEncoderMode.Paused;
+        default:
+            return PrintControlEncoderMode.Unspecified;
     }
 }
 
@@ -273,8 +289,7 @@ async function handleMessage(msg: Actions) {
             }));
             break;
         case ActionType.PrinterSystemStateResponseReceived:
-
-
+            console.log("Printer system state response received", msg.response)
             updateState(oldState => {
                 let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
                 if (pressure.length > maxPressureHistory) {
@@ -298,7 +313,7 @@ async function handleMessage(msg: Actions) {
                                 feedPwm: msg.response.pressureControl.parameters.feedPwm,
                                 limitPressure: msg.response.pressureControl.parameters.limitPressure,
                                 algorithm: msg.response.pressureControl.parameters.algorithm ? mapPressureControlAlgorithm(msg.response.pressureControl.parameters.algorithm) : PressureControlAlgorithm.Unspecified,
-                                enabled: msg.response.pressureControl.parameters.enabled
+                                enabled: msg.response.pressureControl.parameters.enabled,
                             } : null
                         } : null,
                         printControl: msg.response.printControl ? {
@@ -313,6 +328,7 @@ async function handleMessage(msg: Actions) {
                             lostLinesCount: msg.response.printControl.lostLinesCount || 0,
                             printedLines: msg.response.printControl.printedLines || 0,
                             nozzlePrimingActive: msg.response.printControl.nozzlePrimingActive || false,
+                            encoderMode: msg.response.printControl.encoderMode ? mapEncoderMode(msg.response.printControl.encoderMode) : PrintControlEncoderMode.Unspecified
                         } : null
                     }
                 };

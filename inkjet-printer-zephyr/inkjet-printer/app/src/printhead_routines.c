@@ -24,22 +24,22 @@ static const struct gpio_dt_spec n_reset_in = GPIO_DT_SPEC_GET(DT_NODELABEL(n_re
 
 static struct gpio_dt_spec nFAULT = GPIO_DT_SPEC_GET(DT_NODELABEL(nfault), gpios);
 
+static void printhead_routine_activate_enable_clock_run(void *o);
 static void printhead_routine_activate_enable_vpp_run(void *o);
 static void printhead_routine_activate_enable_vpp_pulse_run(void *o);
 static void printhead_routine_activate_enable_comm_reset_run(void *o);
 static void printhead_routine_activate_enable_reset_pulse_run(void *o);
-static void printhead_routine_activate_enable_clock_run(void *o);
-static void printhead_routine_shutdown_disable_comm_reset_run(void *o);
+static void printhead_routine_shutdown_disable_reset_run(void *o);
 static void printhead_routine_shutdown_disable_vpp_run(void *o);
-static void printhead_routine_shutdown_disable_comm_reset_entry(void *o);
+static void printhead_routine_shutdown_disable_reset_entry(void *o);
 
 const struct smf_state printhead_routine_states[] = {
+    [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_CLOCK] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_clock_run, NULL),
     [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_VPP] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_vpp_run, NULL),
     [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_VPP_PULSE] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_vpp_pulse_run, NULL),
     [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_COMM_RESET] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_comm_reset_run, NULL),
     [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_RESET_PULSE] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_reset_pulse_run, NULL),
-    [PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_CLOCK] = SMF_CREATE_STATE(NULL, printhead_routine_activate_enable_clock_run, NULL),
-    [PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_COMM_RESET] = SMF_CREATE_STATE(printhead_routine_shutdown_disable_comm_reset_entry, printhead_routine_shutdown_disable_comm_reset_run, NULL),
+    [PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_RESET] = SMF_CREATE_STATE(printhead_routine_shutdown_disable_reset_entry, printhead_routine_shutdown_disable_reset_run, NULL),
     [PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_VPP] = SMF_CREATE_STATE(NULL, printhead_routine_shutdown_disable_vpp_run, NULL)};
 
 struct printhead_routine_state_object
@@ -60,6 +60,17 @@ static int check_nfault()
     }
     return 0;
 }
+
+static void printhead_routine_activate_enable_clock_run(void *o)
+{
+    const struct device *printhead;
+    printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
+    printer_clock_enable(printhead);
+    LOG_INF("Printhead clock enabled");
+    printhead_routine_state_object.next_delay = K_NO_WAIT;
+    smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_VPP]);
+}
+
 
 static void printhead_routine_activate_enable_vpp_run(void *o)
 {
@@ -116,33 +127,17 @@ static void printhead_routine_activate_enable_reset_pulse_run(void *o)
         return;
     }
     watch_reset = true;
-    smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_CLOCK]);
-    printhead_routine_state_object.next_delay = K_NO_WAIT;
-}
-
-static void printhead_routine_activate_enable_clock_run(void *o)
-{
-    const struct device *printhead;
-    printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-    printer_clock_enable(printhead);
-    LOG_INF("Printhead ready");
     smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_DONE);
 }
 
-static void printhead_routine_shutdown_disable_comm_reset_run(void *o)
+static void printhead_routine_shutdown_disable_reset_run(void *o)
 {
     watch_reset = false;
     bool reset_enabled = false;
-    bool comm_disabled = false;
     if (gpio_pin_get_dt(&n_reset_mcu) == 1)
     {
         gpio_pin_set_dt(&n_reset_mcu, 0);
         reset_enabled = true;
-    }
-    if (gpio_pin_get_dt(&comm_enable) == 1)
-    {
-        gpio_pin_set_dt(&comm_enable, 0);
-        comm_disabled = true;
     }
     if (reset_enabled)
     {
@@ -151,14 +146,6 @@ static void printhead_routine_shutdown_disable_comm_reset_run(void *o)
     else
     {
         LOG_INF("Reset was already enabled");
-    }
-    if (comm_disabled)
-    {
-        LOG_INF("Comm disabled");
-    }
-    else
-    {
-        LOG_INF("Comm was already disabled");
     }
     smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_VPP]);
     printhead_routine_state_object.next_delay = K_MSEC(1);
@@ -178,7 +165,7 @@ static void printhead_routine_shutdown_disable_vpp_run(void *o)
     smf_set_terminate(SMF_CTX(&printhead_routine_state_object), PRINTHEAD_SMF_DONE);
 }
 
-static void printhead_routine_shutdown_disable_comm_reset_entry(void *o)
+static void printhead_routine_shutdown_disable_reset_entry(void *o)
 {
     printhead_routine_state_object.disable_phase = true;
 }
@@ -194,7 +181,7 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
         if (failure_handling_is_in_error_state() && !printhead_routine_state_object.disable_phase)
         {
             LOG_WRN("Printhead routine cancelled");
-            smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_DISABLE_COMM_RESET]);
+            smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL]);
         }
         int ret = smf_run_state(SMF_CTX(&printhead_routine_state_object));
         if (ret != 0)

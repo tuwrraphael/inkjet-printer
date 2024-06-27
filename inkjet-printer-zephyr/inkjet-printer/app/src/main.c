@@ -130,11 +130,6 @@ K_EVENT_DEFINE(btn_event);
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 					uint32_t pins)
 {
-	// printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
-	// const struct device *fire_dev;
-	// fire_dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
-	// // printer_fire(fire_dev);
-	// k_event_post(&btn_event, 0x1);
 	failure_handling_set_error_state(ERROR_USER_ABORT);
 }
 
@@ -600,6 +595,10 @@ static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
+	if (gpio_pin_get_dt(&comm_enable) != 0) {
+		shell_print(sh, "COMM_ENABLE must be low");
+		return;
+	}
 	printer_fire_request_fire(dev);
 }
 

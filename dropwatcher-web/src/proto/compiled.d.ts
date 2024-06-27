@@ -239,6 +239,12 @@ export class PrintControlEncoderModeSettings implements IPrintControlEncoderMode
     /** PrintControlEncoderModeSettings printFirstLineAfterEncoderTick. */
     public printFirstLineAfterEncoderTick: number;
 
+    /** PrintControlEncoderModeSettings startPaused. */
+    public startPaused?: (boolean|null);
+
+    /** PrintControlEncoderModeSettings _startPaused. */
+    public _startPaused?: "startPaused";
+
     /**
      * Creates a new PrintControlEncoderModeSettings instance using the specified properties.
      * @param [properties] Properties to set
@@ -317,6 +323,14 @@ export class PrintControlEncoderModeSettings implements IPrintControlEncoderMode
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** EncoderMode enum. */
+export enum EncoderMode {
+    EncoderMode_UNSPECIFIED = 0,
+    EncoderMode_OFF = 1,
+    EncoderMode_ON = 2,
+    EncoderMode_PAUSED = 3
+}
+
 /** Represents a PrintControlState. */
 export class PrintControlState implements IPrintControlState {
 
@@ -346,6 +360,9 @@ export class PrintControlState implements IPrintControlState {
 
     /** PrintControlState nozzlePrimingActive. */
     public nozzlePrimingActive: boolean;
+
+    /** PrintControlState encoderMode. */
+    public encoderMode: EncoderMode;
 
     /**
      * Creates a new PrintControlState instance using the specified properties.
@@ -1322,6 +1339,96 @@ export class NozzlePrimingRequest implements INozzlePrimingRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a ChangeEncoderModeRequest. */
+export class ChangeEncoderModeRequest implements IChangeEncoderModeRequest {
+
+    /**
+     * Constructs a new ChangeEncoderModeRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangeEncoderModeRequest);
+
+    /** ChangeEncoderModeRequest paused. */
+    public paused: boolean;
+
+    /**
+     * Creates a new ChangeEncoderModeRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ChangeEncoderModeRequest instance
+     */
+    public static create(properties?: IChangeEncoderModeRequest): ChangeEncoderModeRequest;
+
+    /**
+     * Encodes the specified ChangeEncoderModeRequest message. Does not implicitly {@link ChangeEncoderModeRequest.verify|verify} messages.
+     * @param message ChangeEncoderModeRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IChangeEncoderModeRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ChangeEncoderModeRequest message, length delimited. Does not implicitly {@link ChangeEncoderModeRequest.verify|verify} messages.
+     * @param message ChangeEncoderModeRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IChangeEncoderModeRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangeEncoderModeRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangeEncoderModeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangeEncoderModeRequest;
+
+    /**
+     * Decodes a ChangeEncoderModeRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ChangeEncoderModeRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangeEncoderModeRequest;
+
+    /**
+     * Verifies a ChangeEncoderModeRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ChangeEncoderModeRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ChangeEncoderModeRequest
+     */
+    public static fromObject(object: { [k: string]: any }): ChangeEncoderModeRequest;
+
+    /**
+     * Creates a plain object from a ChangeEncoderModeRequest message. Also converts values to other types if specified.
+     * @param message ChangeEncoderModeRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ChangeEncoderModeRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ChangeEncoderModeRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for ChangeEncoderModeRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterRequest. */
 export class PrinterRequest implements IPrinterRequest {
 
@@ -1361,6 +1468,9 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest nozzlePrimingRequest. */
     public nozzlePrimingRequest?: (INozzlePrimingRequest|null);
 
+    /** PrinterRequest changeEncoderModeRequest. */
+    public changeEncoderModeRequest?: (IChangeEncoderModeRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -1390,6 +1500,9 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _nozzlePrimingRequest. */
     public _nozzlePrimingRequest?: "nozzlePrimingRequest";
+
+    /** PrinterRequest _changeEncoderModeRequest. */
+    public _changeEncoderModeRequest?: "changeEncoderModeRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.
