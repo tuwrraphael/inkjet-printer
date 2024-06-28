@@ -4,19 +4,15 @@ import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
 import { MoveTaskRunner } from "./runners/MoveTaskRunner";
-import { ResetEncoderTaskRunner } from "./runners/ResetEncoderTaskRunner";
 import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "./printer-program";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
 import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
 import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
-import { IncrementLayerTaskRunner } from "./runners/IncrementLayerTaskRunner";
-import { WriteTrackTaskRunner } from "./runners/WriteTrackTaskRunner";
-import { th } from "date-fns/locale";
-import { MoveAndSliceNextTaskRunner } from "./runners/MoveAndSliceNextTaskRunner";
 import { WaitTaskRunner } from "./runners/WaitTaskRunner";
 import { ZeroEncoderTaskRunner } from "./runners/ZeroEncoderTaskRunner";
 import { PrintTrackTaskRunner } from "./runners/PrintTrackTaskRunner";
+import { SlicerClient } from "../slicer/SlicerClient";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -24,11 +20,13 @@ export class PrintTaskRunner {
     private store: Store;
     private programRunnerState: any;
     private canceled = false;
+    private slicerClient: SlicerClient;
 
     constructor(public program: PrinterProgram) {
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
         this.store = Store.getInstance();
+        this.slicerClient = SlicerClient.getInstance();
     }
 
     async isRunning() {
@@ -101,20 +99,8 @@ export class PrintTaskRunner {
                 let moveTaskRunner = new MoveTaskRunner(task, this.movementStage);
                 await moveTaskRunner.run();
                 break;
-            case PrinterTaskType.ResetEncoder:
-                let resetEncoderTaskRunner = new ResetEncoderTaskRunner(task, this.printerUsb);
-                await resetEncoderTaskRunner.run();
-                break;
-            case PrinterTaskType.IncrementLayer:
-                let incrementLayerTaskRunner = new IncrementLayerTaskRunner(task, this.movementStage, this.store);
-                await incrementLayerTaskRunner.run();
-                break;
-            case PrinterTaskType.WriteTrack:
-                let writeTrackTaskRunner = new WriteTrackTaskRunner(task, this.printerUsb, this.store);
-                await writeTrackTaskRunner.run();
-                break;
-            case PrinterTaskType.MoveAndSliceNext:
-                let moveAndSliceNextTaskRunner = new MoveAndSliceNextTaskRunner(task, this.movementStage, this.store);
+            case PrinterTaskType.PrintTrack:
+                let moveAndSliceNextTaskRunner = new PrintTrackTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
                 await moveAndSliceNextTaskRunner.run();
                 break;
             case PrinterTaskType.Wait:
@@ -124,10 +110,6 @@ export class PrintTaskRunner {
             case PrinterTaskType.ZeroEncoder:
                 let zeroEncoderTaskRunner = new ZeroEncoderTaskRunner(task, this.printerUsb);
                 await zeroEncoderTaskRunner.run();
-                break;
-            case PrinterTaskType.PrintTrack:
-                let printTrackTaskRunner = new PrintTrackTaskRunner(task, this.movementStage, this.store);
-                await printTrackTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

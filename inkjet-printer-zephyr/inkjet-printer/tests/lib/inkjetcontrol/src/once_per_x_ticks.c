@@ -85,6 +85,7 @@ ZTEST(encoder_print_once_x_ticks, test_not_printing_before_first_line)
 		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 3,
+		.lines_to_print = 1000,
 		.print_first_line_after_encoder_tick = 7};
 
 	encoder_print_init(&encoder_print_status, &init);
@@ -111,6 +112,7 @@ ZTEST(encoder_print_once_x_ticks, test_normal_operation)
 			.inst = &encoder_print_status,
 			.sequential_fires = 1,
 			.fire_every_ticks = fire_every_ticks,
+			.lines_to_print = 1000,
 			.print_first_line_after_encoder_tick = 2};
 
 		encoder_print_init(&encoder_print_status, &init);
@@ -143,6 +145,7 @@ ZTEST(encoder_print_once_x_ticks, test_encoder_fire_after_skip)
 		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 3,
+		.lines_to_print = 1000,
 		.print_first_line_after_encoder_tick = 1};
 
 	encoder_print_init(&encoder_print_status, &init);
@@ -171,6 +174,7 @@ ZTEST(encoder_print_once_x_ticks, test_every2_missed_tick)
 		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 2,
+		.lines_to_print = 1000,
 		.print_first_line_after_encoder_tick = 1};
 
 	encoder_print_init(&encoder_print_status, &init);
@@ -205,6 +209,7 @@ ZTEST(encoder_print_once_x_ticks, test_every2_missed_tick_late)
 		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 2,
+		.lines_to_print = 1000,
 		.print_first_line_after_encoder_tick = 1};
 
 	encoder_print_init(&encoder_print_status, &init);
@@ -242,6 +247,7 @@ ZTEST(encoder_print_once_x_ticks, test_every3_missed_tick)
 		.inst = &encoder_print_status,
 		.sequential_fires = 1,
 		.fire_every_ticks = 3,
+		.lines_to_print = 1000,
 		.print_first_line_after_encoder_tick = 1};
 
 	encoder_print_init(&encoder_print_status, &init);

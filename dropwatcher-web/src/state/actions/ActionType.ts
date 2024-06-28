@@ -19,5 +19,7 @@ export const enum ActionType {
     OpenFile,
     SaveToCurrentFile,
     ModelSelected,
-    ModelParamsChanged
+    ModelParamsChanged,
+    SetSlicerWorker,
+    PrintingTrack
 }

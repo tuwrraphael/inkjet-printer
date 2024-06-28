@@ -624,7 +624,8 @@ static int cmd_print_control_set_mode(const struct shell *sh, size_t argc, char 
 		print_control_encoder_mode_settings_t init = {
 			.sequential_fires = 1,
 			.fire_every_ticks = 1,
-			.print_first_line_after_encoder_tick = 1};
+			.lines_to_print = 1000,
+			.print_first_line_after_encoder_tick = 250};
 		print_control_start_encoder_mode(&init);
 	}
 	else

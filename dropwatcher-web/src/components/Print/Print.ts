@@ -97,8 +97,10 @@ export class PrintComponent extends HTMLElement {
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
             encoderModeSettings.fireEveryTicks = this.store.state.printState.printingParams.fireEveryTicks;
-            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.printingParams.printFirstLineAfterEncoderTick;
+            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.slicingState.track.printFirstLineAfterEncoderTick
             encoderModeSettings.sequentialFires = this.store.state.printState.printingParams.sequentialFires;
+            encoderModeSettings.startPaused = false;
+            encoderModeSettings.linesToPrint = this.store.state.printState.slicingState.track.linesToPrint;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUsb.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
         }, this.abortController.signal);
@@ -131,6 +133,11 @@ export class PrintComponent extends HTMLElement {
             let moveAxisPos = parseInt(this.moveAxisPos.value);
             this.store.postAction(new SlicePositionChanged(moveAxisPos));
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#slice-first-track"), "click", async (ev) => {
+            ev.preventDefault();
+            console.log(this.store.state.printState.slicingState.currentLayerPlan);
+            this.store.postAction(new SlicePositionChanged(this.store.state.printState.slicingState.currentLayerPlan.tracks[0].startMoveAxisPosition || 0));
+        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#slice-next-track"), "click", async (ev) => {
             ev.preventDefault();
             this.store.postAction(new SlicePositionIncrement(1));
@@ -152,7 +159,7 @@ export class PrintComponent extends HTMLElement {
                 console.error("No track data to write");
                 return;
             }
-            let data = this.store.state.printState.slicingState.track;
+            let data = this.store.state.printState.slicingState.track.data;
             console.log("Writing track data", data);
             let chunkSize = 8;
             for (let i = 0; i < data.length; i += chunkSize) {
@@ -172,7 +179,7 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             let code: any = bwipjs.raw("qrcode", "Hello World!", {});
             const dotsPerPixel = 9;
-            const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams);
+            const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams).x;
             const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
             let polygons: Polygon[] = [];
             for (let i = 0; i < code[0].pixx; i++) {
@@ -222,8 +229,22 @@ export class PrintComponent extends HTMLElement {
     private generateEncoderProgramSteps() {
         let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
+            // {
+            //     type: PrinterTaskType.Home,
+            // },
             {
-                type: PrinterTaskType.Home,
+                type: PrinterTaskType.Move,
+                x: 0,
+                y: 175,
+                z: height,
+                feedRate: 10000
+            },
+            // {
+            //     type: PrinterTaskType.PrimeNozzle
+            // },
+            {
+                type: PrinterTaskType.Wait,
+                durationMs: 3000
             },
             {
                 type: PrinterTaskType.Move,
@@ -234,49 +255,35 @@ export class PrintComponent extends HTMLElement {
             },
             {
                 type: PrinterTaskType.ZeroEncoder
-            },
-            {
-                type: PrinterTaskType.IncrementLayer,
-                zero: true
             }
         ];
-        steps.push({
-            type: PrinterTaskType.PrimeNozzle
-        });
-        steps.push({
-            type: PrinterTaskType.Wait,
-            durationMs: 6000
-        });
         let maxLayers = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
-        let tracks = 4;
-        for (let i = 0; i < maxLayers; i++) {
-            for (let j = 0; j < tracks; j++) {
-                steps.push({
-                    type: PrinterTaskType.WriteTrack,
-                });
-                steps.push({
-                    type: PrinterTaskType.ResetEncoder,
-                    fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
-                    printFirstLineAfterEncoderTick: this.store.state.printState.printingParams.printFirstLineAfterEncoderTick,
-                    sequentialFires: this.store.state.printState.printingParams.sequentialFires
-                });
+        let completePlan = this.store.state.printState.slicingState.completePlan;
+        for (let i = 0; i < completePlan.length; i++) {
+            let layerPlan = completePlan[i];
+            for (let j = 0; j < layerPlan.tracks.length; j++) {
                 steps.push({
                     type: PrinterTaskType.PrintTrack,
-                    moveLimit: 100
-                });
-                steps.push({
-                    type: PrinterTaskType.MoveAndSliceNext
+                    fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
+                    sequentialFires: this.store.state.printState.printingParams.sequentialFires,
+                    layer: i,
+                    moveAxisPos: layerPlan.tracks[j].startMoveAxisPosition
                 });
             }
-            steps.push({
-                type: PrinterTaskType.IncrementLayer,
-                zero: false
-            });
-            steps.push({
-                type: PrinterTaskType.Wait,
-                durationMs: 10000
-            });
+            if (i < maxLayers - 1) {
+                steps.push({
+                    type: PrinterTaskType.Wait,
+                    durationMs: 10000
+                });
+            }
         }
+        steps.push({
+            type: PrinterTaskType.Move,
+            x: 100,
+            y: 100,
+            z: height,
+            feedRate: 3000
+        });
         return steps;
 
     }

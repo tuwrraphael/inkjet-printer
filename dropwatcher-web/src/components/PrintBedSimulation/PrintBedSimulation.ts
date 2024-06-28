@@ -4,7 +4,7 @@ import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
 import "./PrintBedSimulation.scss";
 import { ViewLayerChanged } from "../../state/actions/ViewLayerChanged";
-import { PrinterParams, PrintingParams } from "../../slicer/TrackSlicer";
+import { LayerPlan, PrinterParams, PrintingParams, TrackRasterizationResult } from "../../slicer/TrackSlicer";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
@@ -49,7 +49,7 @@ export class PrintBedSimulation extends HTMLElement {
     private rangeInput: HTMLInputElement;
     private layerDisplay: HTMLSpanElement;
     private modelPositionMap: WeakMap<Model, { x: number, y: number }> = new WeakMap();
-    private track: Uint32Array;
+    private track: TrackRasterizationResult;
     private printerParams: PrinterParams;
     private printingParams: PrintingParams;
     private resizeObserver: ResizeObserver;
@@ -58,6 +58,7 @@ export class PrintBedSimulation extends HTMLElement {
     private printCanvasDevicePixelContentBoxSize: { inlineSize: number; blockSize: number; };
     private nextRenderNeedsModelRedraw = false;
     private modelMoving: Model = null;
+    private currentLayerPlan: LayerPlan;
 
     constructor() {
         super();
@@ -240,15 +241,16 @@ export class PrintBedSimulation extends HTMLElement {
             }
             let layerChanged = this.viewLayer != s.printState.viewLayer;
             this.viewLayer = s.printState.viewLayer;
-            this.layerDisplay.innerText = `${1+this.viewLayer}`;
+            this.layerDisplay.innerText = `${1 + this.viewLayer}`;
             this.rangeInput.value = this.viewLayer.toString();
             let maxLayerNum = 0;
             for (let model of this.models) {
                 maxLayerNum = Math.max(maxLayerNum, model.layers.length);
             }
-            this.rangeInput.max = Math.max(this.viewLayer,(maxLayerNum - 1)).toString();
+            this.rangeInput.max = Math.max(this.viewLayer, (maxLayerNum - 1)).toString();
             this.initialized = true;
             this.track = s.printState.slicingState.track;
+            this.currentLayerPlan = s.printState.slicingState.currentLayerPlan;
             this.printerParams = s.printState.printerParams;
             this.printingParams = s.printState.printingParams;
             this.moveAxisPos = s.printState.slicingState.moveAxisPos;
@@ -435,24 +437,29 @@ export class PrintBedSimulation extends HTMLElement {
         }
     }
 
-    private drawTrack(x: number,
-        lineData: Uint32Array,
+    private drawTrack(moveAxisPos: number,
+        track: TrackRasterizationResult,
         printerParams: PrinterParams,
         printingParams: PrintingParams
     ) {
         let nozzleDistance = getNozzleDistance(printerParams);
         let encoderMMperDot = 25.4 / printerParams.encoder.printAxis.dpi;
-        let tickAccumulator = printingParams.fireEveryTicks - 1;
         let line = 0;
-        for (let tick = printingParams.printFirstLineAfterEncoderTick; tick < printerParams.encoder.printAxis.ticks; tick++) {
-            tickAccumulator = (tickAccumulator + 1) % printingParams.fireEveryTicks;
-            if (tickAccumulator == 0) {
+        for (let tick = 0; tick <= printerParams.encoder.printAxis.ticks; tick++) {
+            if (tick < track.printFirstLineAfterEncoderTick) {
+                continue;
+            }
+            if (line >= track.linesToPrint) {
+                break;
+            }
+            let printNow = (tick- track.printFirstLineAfterEncoderTick) % printingParams.fireEveryTicks == 0;
+            if (printNow) {
                 for (let fire = 0; fire < printingParams.sequentialFires; fire++) {
                     for (let nozzle = 0; nozzle < printerParams.numNozzles; nozzle++) {
                         let patternid = Math.floor(nozzle / 32);
                         let bitid = nozzle % 32;
-                        if (lineData[line * 4 + patternid] & (1 << bitid)) {
-                            let nozzleX = x + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance;
+                        if (track.data[line * 4 + patternid] & (1 << bitid)) {
+                            let nozzleX = moveAxisPos + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                             let nozzleY = tick * encoderMMperDot + (fire / printingParams.sequentialFires) * encoderMMperDot * printingParams.fireEveryTicks;
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = "black";
@@ -465,6 +472,41 @@ export class PrintBedSimulation extends HTMLElement {
                 line++;
             }
         }
+        this.drawTrackOutline(moveAxisPos, track);
+    }
+
+    private drawTrackOutline(moveAxisPos: number,
+        track: TrackRasterizationResult) {
+        let nozzleDistance = getNozzleDistance(this.printerParams);
+        
+            let firstNozzlePos = this.buildPlatePositionToCanvasPosition(
+                moveAxisPos + (this.printerParams.numNozzles - 1) * nozzleDistance.x,
+                track.startPrintAxisPosition + (this.printerParams.numNozzles - 1) * nozzleDistance.y
+            );
+            let lastNozzlePos = this.buildPlatePositionToCanvasPosition(
+                moveAxisPos,
+                track.startPrintAxisPosition
+            );
+            let firstNozzlePosAfterTrack = this.buildPlatePositionToCanvasPosition(
+                moveAxisPos + (this.printerParams.numNozzles - 1) * nozzleDistance.x,
+                track.endPrintAxisPosition + (this.printerParams.numNozzles - 1) * nozzleDistance.y
+            );
+            let lastNozzlePosAfterTrack = this.buildPlatePositionToCanvasPosition(
+                moveAxisPos,
+                track.endPrintAxisPosition
+            );
+            this.ctx.strokeStyle = "coral";
+            this.ctx.lineWidth = this.mmToDots(0.2);
+            this.ctx.setLineDash([this.mmToDots(0.5), this.mmToDots(0.5)]);
+            this.ctx.beginPath();
+            this.ctx.moveTo(firstNozzlePos.x, firstNozzlePos.y);
+            this.ctx.lineTo(lastNozzlePos.x, lastNozzlePos.y);
+            this.ctx.lineTo(lastNozzlePosAfterTrack.x, lastNozzlePosAfterTrack.y);
+            this.ctx.lineTo(firstNozzlePosAfterTrack.x, firstNozzlePosAfterTrack.y);
+            this.ctx.closePath();
+            this.ctx.stroke();
+        
+        this.ctx.setLineDash([0, 0]);
     }
 
     private render() {
@@ -472,7 +514,6 @@ export class PrintBedSimulation extends HTMLElement {
             return;
         }
         requestAnimationFrame(() => {
-            console.log("render");
             let redrawModels = !this.modelMoving && this.nextRenderNeedsModelRedraw;
             if (!this.setCanvasSize()) {
                 return 0;
@@ -488,6 +529,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.drawOrigin();
             if (this.track) {
                 this.drawTrack(this.moveAxisPos, this.track, this.printerParams, this.printingParams);
+                // this.drawPrintPlan();
             }
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;

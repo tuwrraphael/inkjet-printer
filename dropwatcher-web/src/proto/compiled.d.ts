@@ -242,6 +242,9 @@ export class PrintControlEncoderModeSettings implements IPrintControlEncoderMode
     /** PrintControlEncoderModeSettings startPaused. */
     public startPaused?: (boolean|null);
 
+    /** PrintControlEncoderModeSettings linesToPrint. */
+    public linesToPrint: number;
+
     /** PrintControlEncoderModeSettings _startPaused. */
     public _startPaused?: "startPaused";
 
@@ -363,6 +366,9 @@ export class PrintControlState implements IPrintControlState {
 
     /** PrintControlState encoderMode. */
     public encoderMode: EncoderMode;
+
+    /** PrintControlState lostLinesBySlowData. */
+    public lostLinesBySlowData: number;
 
     /**
      * Creates a new PrintControlState instance using the specified properties.

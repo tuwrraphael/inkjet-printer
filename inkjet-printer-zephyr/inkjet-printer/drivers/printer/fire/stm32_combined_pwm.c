@@ -413,6 +413,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 		LOG_ERR("Timer PWM ConfigChannel 1 failed");
 		return -ENODEV;
 	}
+	htim1.Instance->CCMR1 &= ~(TIM_CCMR1_OC1PE);
 	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
 	sConfigOC.Pulse = pulse12_start_cycles;
 	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
@@ -420,6 +421,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 		LOG_ERR("Timer PWM ConfigChannel 2 failed");
 		return -ENODEV;
 	}
+	htim1.Instance->CCMR1 &= ~(TIM_CCMR1_OC2PE);
 	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM2;
 	sConfigOC.Pulse = pulse34_start_cycles;
 	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
@@ -427,6 +429,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 		LOG_ERR("Timer PWM ConfigChannel 3 failed");
 		return -ENODEV;
 	}
+	htim1.Instance->CCMR2 &= ~(TIM_CCMR2_OC3PE);
 	sConfigOC.OCMode = TIM_OCMODE_COMBINED_PWM1;
 	sConfigOC.Pulse = pulse34_end_cycles;
 	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
@@ -434,6 +437,7 @@ static int fire_stm32_combined_pwm_init(const struct device *dev)
 		LOG_ERR("Timer PWM ConfigChannel 4 failed");
 		return -ENODEV;
 	}
+	htim1.Instance->CCMR2 &= ~(TIM_CCMR2_OC4PE);
 	sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
 	sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
 	sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;

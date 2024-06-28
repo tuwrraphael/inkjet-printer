@@ -119,6 +119,7 @@ int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init
     print_init.sequential_fires = init->sequential_fires;
     print_init.fire_every_ticks = init->fire_every_ticks;
     print_init.print_first_line_after_encoder_tick = init->print_first_line_after_encoder_tick;
+    print_init.lines_to_print = init->lines_to_print;
     encoder_print_init(&encoder_print_status, &print_init);
     printer_fire_set_timing(printer_fire, 10300, 1000, 10300, 2000);
     printer_fire_set_fire_issued_callback(printer_fire, fire_issued_cb);
@@ -227,6 +228,7 @@ void print_control_get_info(print_control_info_t *info)
     info->encoder_value = get_value_cb(NULL);
     info->nozzle_priming_active = nozzle_priming_active;
     info->encoder_mode = encoder_mode;
+    info->lost_lines_by_slow_data = encoder_print_status.lost_lines_by_slow_data;
 }
 
 static int priming_cycle(uint32_t *data, uint32_t times)

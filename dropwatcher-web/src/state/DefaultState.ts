@@ -58,11 +58,14 @@ export const DefaultState: State =
             fireEveryTicks: 4,
             printFirstLineAfterEncoderTick: 1,
             sequentialFires: 1,
-            firstLayerHeight: 1.5
+            firstLayerHeight: 1.5,
+            encoderMargin: 2
         },
         slicingState: {
             moveAxisPos: 0,
             track: null,
+            currentLayerPlan: null,
+            completePlan: null,
             slicingStatus: SlicingStatus.None
         },
         viewLayer: 0,

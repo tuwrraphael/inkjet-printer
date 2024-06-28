@@ -10,6 +10,7 @@
     "bwip-js": "^4.4.0",
     "chart.js": "^4.4.2",
     "chartjs-adapter-date-fns": "^3.0.0",
+    "comlink": "^4.4.1",
     "core-js": "^3.36.0",
     "custom-elements-hmr-polyfill": "^1.0.3",
     "date-fns": "^3.6.0",

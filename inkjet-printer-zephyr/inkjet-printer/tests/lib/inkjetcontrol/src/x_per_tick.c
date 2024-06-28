@@ -89,6 +89,7 @@ ZTEST(encoder_print_x_per_tick, test_normal_operation)
         .inst = &encoder_print_status,
         .sequential_fires = 2,
         .fire_every_ticks = 1,
+        .lines_to_print = 1000,
         .print_first_line_after_encoder_tick = 1};
 
     encoder_print_init(&encoder_print_status, &init);
@@ -108,6 +109,7 @@ ZTEST(encoder_print_x_per_tick, test_2x_missed_tick)
         .inst = &encoder_print_status,
         .sequential_fires = 2,
         .fire_every_ticks = 1,
+        .lines_to_print = 1000,
         .print_first_line_after_encoder_tick = 1};
 
     encoder_print_init(&encoder_print_status, &init);

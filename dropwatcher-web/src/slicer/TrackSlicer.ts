@@ -2,6 +2,7 @@ import pointInPolygon from "robust-point-in-polygon";
 import { Model, ModelParams, Point, Polygon, PolygonType } from "../state/State";
 import { getNozzleDistance } from "./getNozzleDistance";
 import { getBoundingBox } from "../utils/getBoundingBox";
+import { getPrintheadSwathe } from "./getPrintheadSwathe";
 
 export interface PrinterParams {
     numNozzles: number;
@@ -24,6 +25,7 @@ export interface PrintingParams {
     printFirstLineAfterEncoderTick: number;
     sequentialFires: number;
     firstLayerHeight: number;
+    encoderMargin: number;
 }
 
 interface SliceModelInfo {
@@ -38,26 +40,33 @@ interface SliceModelInfo {
     contourBoundingBoxes: { min: Point; max: Point; }[];
 };
 
-export class TrackSlicer {
-    private map: Map<string, SliceModelInfo> = new Map();
+export interface TrackPlan {
+    printFirstLineAfterEncoderTick: number;
+    printLastLineAfterEncoderTick: number,
+    startMoveAxisPosition: number;
+    startPrintAxisPosition: number;
+    endPrintAxisPosition: number;
+    linesToPrint: number;
+}
 
+export interface LayerPlan {
+    tracks: TrackPlan[];
+    increment: number;
+}
+
+
+export class PrintPlanner {
+
+    private layerMap: Map<number, {
+        modelmap: Map<string, SliceModelInfo>;
+        plan: LayerPlan;
+    }> = new Map();
+    private maxLayers: number;
     constructor(private models: Model[],
         private modelParamsDict: { [id: string]: ModelParams },
-        private layer: number,
         private printerParams: PrinterParams,
         private printingParams: PrintingParams) {
-        for (let model of models) {
-            let polygons = [...model.layers[layer]?.polygons || []].reverse().map(p => {
-                let transformedCoordinates = this.transformCoordinates(p.points, modelParamsDict[model.id]);
-                return {
-                    polygon: p,
-                    transformedCoordinates: transformedCoordinates,
-                    boundingBox: getBoundingBox(transformedCoordinates)
-                };
-            });
-            let contourBoundingBoxes = polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
-            this.map.set(model.id, { polygons, contourBoundingBoxes });
-        }
+        this.maxLayers = Math.max(...models.map(m => m.layers.length));
     }
 
     private transformCoordinates(points: Point[], modelParams: ModelParams): Point[] {
@@ -66,32 +75,153 @@ export class TrackSlicer {
         });
     }
 
-    getTrack(x: number): Uint32Array {
-        let nozzleDistance = getNozzleDistance(this.printerParams);
-        let lines = Math.ceil((this.printerParams.encoder.printAxis.ticks - this.printingParams.printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.sequentialFires;
-        let swathe = new Uint32Array(lines * 4);
-        swathe.fill(0);
+    private getLayer(layer: number) {
+        if (this.layerMap.has(layer)) {
+            return this.layerMap.get(layer);
+        }
+        let modelmap = new Map<string, SliceModelInfo>();
+        for (let model of this.models) {
+            let polygons = [...model.layers[layer]?.polygons || []].reverse().map(p => {
+                let transformedCoordinates = this.transformCoordinates(p.points, this.modelParamsDict[model.id]);
+                return {
+                    polygon: p,
+                    transformedCoordinates: transformedCoordinates,
+                    boundingBox: getBoundingBox(transformedCoordinates)
+                };
+            });
+            let contourBoundingBoxes = polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
+            modelmap.set(model.id, { polygons, contourBoundingBoxes });
+        }
+        this.layerMap.set(layer, { modelmap, plan: this.createPlan(modelmap) });
+        return this.layerMap.get(layer);
+    }
+
+    private createPlan(modelmap: Map<string, SliceModelInfo>): LayerPlan {
+        let minY = this.printerParams.buildPlate.height;
+        let minX = this.printerParams.buildPlate.width;
+        let maxX = 0;
+        let maxY = 0;
+        for (let [id, sliceModelInfo] of modelmap) {
+            minY = Math.min(minY, sliceModelInfo.contourBoundingBoxes.reduce((acc, p) => { return Math.min(acc, p.min[1]) }, minY));
+            maxY = Math.max(maxY, sliceModelInfo.contourBoundingBoxes.reduce((acc, p) => { return Math.max(acc, p.max[1]) }, maxY));
+            minX = Math.min(minX, sliceModelInfo.contourBoundingBoxes.reduce((acc, p) => { return Math.min(acc, p.min[0]) }, minX));
+            maxX = Math.max(maxX, sliceModelInfo.contourBoundingBoxes.reduce((acc, p) => { return Math.max(acc, p.max[0]) }, maxX));
+        }
+        minX = Math.floor(minX * 100) / 100;
+        maxX = Math.ceil(maxX * 100) / 100;
+        let increment = getPrintheadSwathe(this.printerParams).x;
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
-        let tickAccumulator = this.printingParams.fireEveryTicks - 1;
+        let tracks: TrackPlan[] = [];
+        for (let moveAxisPosition = minX; moveAxisPosition < maxX; moveAxisPosition += increment) {
+            // todo optimize minY, maxY
+            let printFirstLineAfterEncoderTick = Math.max(1, Math.floor(minY / encoderMMperDot));
+            let printLastLineAfterEncoderTick = Math.ceil(maxY / encoderMMperDot);
+            let numLines = Math.ceil((printLastLineAfterEncoderTick - printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.sequentialFires;
+            let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin);
+            let endPrintAxisPosition = Math.min(this.printerParams.buildPlate.height, (printLastLineAfterEncoderTick) * encoderMMperDot + this.printingParams.encoderMargin);
+            tracks.push({
+                endPrintAxisPosition: endPrintAxisPosition,
+                linesToPrint: numLines,
+                printFirstLineAfterEncoderTick: printFirstLineAfterEncoderTick,
+                printLastLineAfterEncoderTick: printLastLineAfterEncoderTick,
+                startMoveAxisPosition: moveAxisPosition,
+                startPrintAxisPosition: startPrintAxisPosition,
+            });
+        }
+        return {
+            increment: increment,
+            tracks: tracks
+        };
+    }
+
+    getTrackRasterizer(layerNr: number): TrackRasterizer {
+        let layer = this.getLayer(layerNr);
+        return new TrackRasterizer(layer.modelmap, this.modelParamsDict, this.printerParams, this.printingParams, layerNr);
+    }
+
+    getCompletePlan(): LayerPlan[] {
+        let plans = [];
+        for (let i = 0; i < this.maxLayers; i++) {
+            let layer = this.getLayer(i);
+            plans.push(layer.plan);
+        }
+        console.log(plans);
+        return plans;
+    }
+
+    getLayerPlan(layerNr: number): LayerPlan {
+        return this.getLayer(layerNr).plan;
+    }
+}
+
+export interface TrackRasterizationResult {
+    data: Uint32Array;
+    linesToPrint: number;
+    printFirstLineAfterEncoderTick: number;
+    printLastLineAfterEncoderTick: number;
+    startPrintAxisPosition: number;
+    endPrintAxisPosition: number;
+}
+
+export class TrackRasterizer {
+
+    constructor(private map: Map<string, SliceModelInfo>,
+        private modelParamsDict: { [id: string]: ModelParams },
+        private printerParams: PrinterParams,
+        private printingParams: PrintingParams,
+        private layerNr: number) {
+    }
+
+    rasterize(moveAxisPos: number): TrackRasterizationResult {
+        let maxOffset = this.printingParams.fireEveryTicks - 1;
+        let offset = Math.min(maxOffset, this.modelParamsDict[Object.keys(this.modelParamsDict)[0]].iterativeOffset || 0);
+        let offsetThisLayer = this.layerNr * offset % this.printingParams.fireEveryTicks;
+        console.log("layer, offsetThisLayer, offset, maxOffset",this.layerNr, offsetThisLayer, offset, maxOffset);
+        let nozzleDistance = getNozzleDistance(this.printerParams);
+        let data = new Uint32Array(this.printerParams.encoder.printAxis.ticks * this.printingParams.sequentialFires * 4);
+        data.fill(0);
+        let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let line = 0;
-        for (let tick = this.printingParams.printFirstLineAfterEncoderTick; tick < this.printerParams.encoder.printAxis.ticks; tick++) {
-            tickAccumulator = (tickAccumulator + 1) % this.printingParams.fireEveryTicks;
-            if (tickAccumulator == 0) {
+        let lastLineWithData = -1;
+        let printFirstLineAfterEncoderTick = 0;
+        let printLastLineAfterEncoderTick = this.printerParams.encoder.printAxis.ticks;
+        for (let tick = 0; tick < this.printerParams.encoder.printAxis.ticks; tick++) {
+            let fireNow = printFirstLineAfterEncoderTick == 0 || ((tick - printFirstLineAfterEncoderTick) % this.printingParams.fireEveryTicks == 0);
+            if (fireNow) {
                 for (let fire = 0; fire < this.printingParams.sequentialFires; fire++) {
                     for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
-                        let nozzleX = x + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance;
+                        let nozzleX = moveAxisPos + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                         let nozzleY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
                         if (this.insideLayer([nozzleX, nozzleY], nozzle)) {
+                            if (printFirstLineAfterEncoderTick == 0) {
+                                // first line found
+                                line = 0;
+                                printFirstLineAfterEncoderTick = tick;
+                            }
+                            printLastLineAfterEncoderTick = tick;
                             let patternid = Math.floor(nozzle / 32);
                             let bitid = nozzle % 32;
-                            swathe[line * 4 + patternid] |= (1 << (bitid));
+                            data[line * 4 + patternid] |= (1 << (bitid));
+                            lastLineWithData = line;
                         }
                     }
                 }
                 line++;
             }
         }
-        return swathe;
+
+        data = data.slice(0, (lastLineWithData + 1) * 4);
+        console.log(lastLineWithData);
+        let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin);
+        let endPrintAxisPosition = Math.min(this.printerParams.buildPlate.height, (printLastLineAfterEncoderTick) * encoderMMperDot + this.printingParams.encoderMargin);
+        return {
+            data: data,
+            linesToPrint: (lastLineWithData + 1),
+            printFirstLineAfterEncoderTick: printFirstLineAfterEncoderTick + offsetThisLayer,
+            printLastLineAfterEncoderTick: printLastLineAfterEncoderTick,
+            startPrintAxisPosition: startPrintAxisPosition,
+            endPrintAxisPosition: endPrintAxisPosition
+        }
     }
 
     private * eligibleForNozzle(nozzleId: number): Iterable<[string, SliceModelInfo]> {

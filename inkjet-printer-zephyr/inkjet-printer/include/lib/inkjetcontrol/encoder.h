@@ -15,6 +15,7 @@ typedef struct
     uint16_t sequential_fires;
     uint16_t fire_every_ticks;
     int32_t print_first_line_after_encoder_tick;
+    uint32_t lines_to_print;
 } encoder_print_init_t;
 
 typedef struct
@@ -22,11 +23,13 @@ typedef struct
     encoder_print_init_t init;
     uint32_t remaining_sequential_fires;
     int32_t expected_encoder_value;
+    uint32_t expected_line;
     int32_t last_printed_line;
     uint32_t last_line_queued_for_loading;
     uint32_t last_loaded_line;
     uint32_t issued_line;
     uint32_t lost_lines_count;
+    uint32_t lost_lines_by_slow_data;
     int32_t lost_lines[MAX_LOST_LINES_MEMORY];
     uint32_t printed_lines;
     bool loading_line;

@@ -74,8 +74,12 @@ export class Store {
         }
     }
 
-    postAction(action: Action) {
-        this.worker.postMessage(action);
+    postAction(action: Action, transferables?: Transferable[]) {
+        if (null != transferables) {
+            this.worker.postMessage(action, transferables);
+        } else {
+            this.worker.postMessage(action);
+        }
     }
 }
 if (module.hot) {

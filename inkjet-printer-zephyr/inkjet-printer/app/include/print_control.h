@@ -14,6 +14,7 @@ typedef struct
     uint32_t sequential_fires;
     uint32_t fire_every_ticks;
     uint32_t print_first_line_after_encoder_tick;
+    uint32_t lines_to_print;
     bool start_paused;
 } print_control_encoder_mode_settings_t;
 
@@ -31,6 +32,7 @@ typedef struct {
     int32_t last_printed_line;
     uint32_t lost_lines_count;
     uint32_t printed_lines;
+    uint32_t lost_lines_by_slow_data;
     bool nozzle_priming_active;
     encoder_mode_t encoder_mode;
 } print_control_info_t;

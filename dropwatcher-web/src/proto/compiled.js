@@ -717,6 +717,7 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
      * @property {number|null} [fireEveryTicks] PrintControlEncoderModeSettings fireEveryTicks
      * @property {number|null} [printFirstLineAfterEncoderTick] PrintControlEncoderModeSettings printFirstLineAfterEncoderTick
      * @property {boolean|null} [startPaused] PrintControlEncoderModeSettings startPaused
+     * @property {number|null} [linesToPrint] PrintControlEncoderModeSettings linesToPrint
      */
 
     /**
@@ -766,6 +767,14 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
      */
     PrintControlEncoderModeSettings.prototype.startPaused = null;
 
+    /**
+     * PrintControlEncoderModeSettings linesToPrint.
+     * @member {number} linesToPrint
+     * @memberof PrintControlEncoderModeSettings
+     * @instance
+     */
+    PrintControlEncoderModeSettings.prototype.linesToPrint = 0;
+
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
 
@@ -812,6 +821,8 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.printFirstLineAfterEncoderTick);
         if (message.startPaused != null && Object.hasOwnProperty.call(message, "startPaused"))
             writer.uint32(/* id 4, wireType 0 =*/32).bool(message.startPaused);
+        if (message.linesToPrint != null && Object.hasOwnProperty.call(message, "linesToPrint"))
+            writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.linesToPrint);
         return writer;
     };
 
@@ -860,6 +871,10 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
                 }
             case 4: {
                     message.startPaused = reader.bool();
+                    break;
+                }
+            case 5: {
+                    message.linesToPrint = reader.uint32();
                     break;
                 }
             default:
@@ -912,6 +927,9 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             if (typeof message.startPaused !== "boolean")
                 return "startPaused: boolean expected";
         }
+        if (message.linesToPrint != null && message.hasOwnProperty("linesToPrint"))
+            if (!$util.isInteger(message.linesToPrint))
+                return "linesToPrint: integer expected";
         return null;
     };
 
@@ -935,6 +953,8 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             message.printFirstLineAfterEncoderTick = object.printFirstLineAfterEncoderTick >>> 0;
         if (object.startPaused != null)
             message.startPaused = Boolean(object.startPaused);
+        if (object.linesToPrint != null)
+            message.linesToPrint = object.linesToPrint >>> 0;
         return message;
     };
 
@@ -955,6 +975,7 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             object.sequentialFires = 0;
             object.fireEveryTicks = 0;
             object.printFirstLineAfterEncoderTick = 0;
+            object.linesToPrint = 0;
         }
         if (message.sequentialFires != null && message.hasOwnProperty("sequentialFires"))
             object.sequentialFires = message.sequentialFires;
@@ -967,6 +988,8 @@ export const PrintControlEncoderModeSettings = $root.PrintControlEncoderModeSett
             if (options.oneofs)
                 object._startPaused = "startPaused";
         }
+        if (message.linesToPrint != null && message.hasOwnProperty("linesToPrint"))
+            object.linesToPrint = message.linesToPrint;
         return object;
     };
 
@@ -1031,6 +1054,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
      * @property {number|null} [printedLines] PrintControlState printedLines
      * @property {boolean|null} [nozzlePrimingActive] PrintControlState nozzlePrimingActive
      * @property {EncoderMode|null} [encoderMode] PrintControlState encoderMode
+     * @property {number|null} [lostLinesBySlowData] PrintControlState lostLinesBySlowData
      */
 
     /**
@@ -1113,6 +1137,14 @@ export const PrintControlState = $root.PrintControlState = (() => {
     PrintControlState.prototype.encoderMode = 0;
 
     /**
+     * PrintControlState lostLinesBySlowData.
+     * @member {number} lostLinesBySlowData
+     * @memberof PrintControlState
+     * @instance
+     */
+    PrintControlState.prototype.lostLinesBySlowData = 0;
+
+    /**
      * Creates a new PrintControlState instance using the specified properties.
      * @function create
      * @memberof PrintControlState
@@ -1152,6 +1184,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             writer.uint32(/* id 7, wireType 0 =*/56).bool(message.nozzlePrimingActive);
         if (message.encoderMode != null && Object.hasOwnProperty.call(message, "encoderMode"))
             writer.uint32(/* id 8, wireType 0 =*/64).int32(message.encoderMode);
+        if (message.lostLinesBySlowData != null && Object.hasOwnProperty.call(message, "lostLinesBySlowData"))
+            writer.uint32(/* id 9, wireType 0 =*/72).uint32(message.lostLinesBySlowData);
         return writer;
     };
 
@@ -1216,6 +1250,10 @@ export const PrintControlState = $root.PrintControlState = (() => {
                 }
             case 8: {
                     message.encoderMode = reader.int32();
+                    break;
+                }
+            case 9: {
+                    message.lostLinesBySlowData = reader.uint32();
                     break;
                 }
             default:
@@ -1286,6 +1324,9 @@ export const PrintControlState = $root.PrintControlState = (() => {
             case 3:
                 break;
             }
+        if (message.lostLinesBySlowData != null && message.hasOwnProperty("lostLinesBySlowData"))
+            if (!$util.isInteger(message.lostLinesBySlowData))
+                return "lostLinesBySlowData: integer expected";
         return null;
     };
 
@@ -1342,6 +1383,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             message.encoderMode = 3;
             break;
         }
+        if (object.lostLinesBySlowData != null)
+            message.lostLinesBySlowData = object.lostLinesBySlowData >>> 0;
         return message;
     };
 
@@ -1367,6 +1410,7 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.printedLines = 0;
             object.nozzlePrimingActive = false;
             object.encoderMode = options.enums === String ? "EncoderMode_UNSPECIFIED" : 0;
+            object.lostLinesBySlowData = 0;
         }
         if (message.encoderModeSettings != null && message.hasOwnProperty("encoderModeSettings"))
             object.encoderModeSettings = $root.PrintControlEncoderModeSettings.toObject(message.encoderModeSettings, options);
@@ -1384,6 +1428,8 @@ export const PrintControlState = $root.PrintControlState = (() => {
             object.nozzlePrimingActive = message.nozzlePrimingActive;
         if (message.encoderMode != null && message.hasOwnProperty("encoderMode"))
             object.encoderMode = options.enums === String ? $root.EncoderMode[message.encoderMode] === undefined ? message.encoderMode : $root.EncoderMode[message.encoderMode] : message.encoderMode;
+        if (message.lostLinesBySlowData != null && message.hasOwnProperty("lostLinesBySlowData"))
+            object.lostLinesBySlowData = message.lostLinesBySlowData;
         return object;
     };
 

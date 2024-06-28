@@ -28,7 +28,9 @@ void encoder_print_init(encoder_print_status_t *status, encoder_print_init_t *in
 	status->last_printed_line = -1;
 	status->lost_lines_count = 0;
 	status->printed_lines = 0;
+	status->lost_lines_by_slow_data = 0;
 	status->loading_line = false;
+	status->expected_line = 0;
 	k_sem_reset(&encoder_sem);
 	k_sem_give(&encoder_sem);
 	for (uint32_t i = 0; i < MAX_LOST_LINES_MEMORY; i++)
@@ -64,6 +66,12 @@ void encoder_tick_handler(encoder_print_status_t *status)
 			LOG_INF("Encoder jumped back, stop timer");
 			k_sem_give(&encoder_sem);
 		}
+		else if ((status->last_printed_line+1) >= status->init.lines_to_print)
+		{
+			status->init.fire_abort(status->init.inst);
+			LOG_DBG("All lines printed");
+			k_sem_give(&encoder_sem);
+		}
 		else if (encoder_value > status->expected_encoder_value)
 		{
 			status->init.fire_abort(status->init.inst);
@@ -82,12 +90,20 @@ void encoder_tick_handler(encoder_print_status_t *status)
 			load_line(status, next_printable_line, false);
 			LOG_DBG("Encoder jumped forward, lost %d, total lost %d, loaded %d", lost_lines, status->lost_lines_count, next_printable_line);
 			status->expected_encoder_value = next_printable_encoder_value;
+			status->expected_line = next_printable_line;
 			k_sem_give(&encoder_sem);
 		}
 		else if (status->last_line_queued_for_loading != status->last_loaded_line)
 		{
 			status->init.fire_abort(status->init.inst);
 			LOG_ERR("Could not print line %d, still loading", status->last_line_queued_for_loading);
+			k_sem_give(&encoder_sem);
+		}
+		else if (status->last_loaded_line != status->expected_line)
+		{
+			status->init.fire_abort(status->init.inst);
+			status->lost_lines_by_slow_data++;
+			LOG_ERR("Could not print line %d, wrong line loaded", status->last_loaded_line);
 			k_sem_give(&encoder_sem);
 		}
 		else
@@ -111,7 +127,7 @@ void encoder_fire_cycle_completed_handler(encoder_print_status_t *status)
 	LOG_DBG("printed line %d", status->issued_line);
 	status->last_printed_line = status->issued_line;
 	status->printed_lines++;
-	if (status->remaining_sequential_fires > 1)
+	if (status->remaining_sequential_fires > 1 && status->printed_lines < status->init.lines_to_print)
 	{
 		if (status->last_line_queued_for_loading != status->last_loaded_line)
 		{
@@ -126,11 +142,12 @@ void encoder_fire_cycle_completed_handler(encoder_print_status_t *status)
 			LOG_DBG("remaining %d", status->remaining_sequential_fires);
 		}
 	}
-	else if (status->remaining_sequential_fires == 1)
+	else
 	{
 		status->init.fire_abort(status->init.inst);
-		status->remaining_sequential_fires--;
+		status->remaining_sequential_fires = 0;
 		status->expected_encoder_value += status->init.fire_every_ticks;
+		status->expected_line += status->init.sequential_fires;
 		LOG_DBG("Stop printing, expected %d", status->expected_encoder_value);
 		k_sem_give(&encoder_sem);
 	}

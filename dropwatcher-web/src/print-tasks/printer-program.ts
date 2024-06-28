@@ -5,10 +5,6 @@ export const enum PrinterTaskType {
     SetNozzleData,
     RequestFire,
     Move,
-    ResetEncoder,
-    MoveAndSliceNext,
-    IncrementLayer,
-    WriteTrack,
     ZeroEncoder,
     Wait,
     PrintTrack
@@ -39,13 +35,6 @@ export interface PrinterTaskRequestFire extends PrinterTask {
     readonly type: PrinterTaskType.RequestFire;
 }
 
-export interface PrinterTaskResetEncoder extends PrinterTask {
-    readonly type: PrinterTaskType.ResetEncoder;
-    fireEveryTicks: number;
-    printFirstLineAfterEncoderTick: number;
-    sequentialFires: number;
-}
-
 export interface PrinterTaskMove extends PrinterTask {
     readonly type: PrinterTaskType.Move;
     x: number;
@@ -54,17 +43,12 @@ export interface PrinterTaskMove extends PrinterTask {
     feedRate: number;
 }
 
-export interface PrinterTaskMoveAndSliceNext extends PrinterTask {
-    readonly type: PrinterTaskType.MoveAndSliceNext;
-}
-
-export interface PrinterTaskIncrementLayer extends PrinterTask {
-    readonly type: PrinterTaskType.IncrementLayer;
-    zero: boolean;
-}
-
-export interface PrinterTaskWriteTrack extends PrinterTask {
-    readonly type: PrinterTaskType.WriteTrack;
+export interface PrintTrackTask extends PrinterTask {
+    readonly type: PrinterTaskType.PrintTrack;
+    moveAxisPos : number;
+    layer: number;
+    sequentialFires: number;
+    fireEveryTicks: number;
 }
 
 export interface PrinterTaskZeroEncoder extends PrinterTask {
@@ -76,11 +60,6 @@ export interface PrinterTaskWait extends PrinterTask {
     durationMs: number;
 }
 
-export interface PrinterTaskPrintTrack extends PrinterTask {
-    readonly type: PrinterTaskType.PrintTrack;
-    moveLimit : number;
-}
-
 export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrimeNozzle
     | PrinterTaskSetTargetPressure
@@ -88,13 +67,9 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskRequestFire
     | PrinterTaskMove
     | PrinterTaskHome
-    | PrinterTaskResetEncoder
-    | PrinterTaskMoveAndSliceNext
-    | PrinterTaskIncrementLayer
-    | PrinterTaskWriteTrack
+    | PrintTrackTask
     | PrinterTaskZeroEncoder
     | PrinterTaskWait
-    | PrinterTaskPrintTrack
     ;
 
 

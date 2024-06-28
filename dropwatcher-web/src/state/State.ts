@@ -1,5 +1,5 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
-import { PrinterParams, PrintingParams } from "../slicer/TrackSlicer";
+import { LayerPlan, PrinterParams, PrintingParams, TrackRasterizationResult } from "../slicer/TrackSlicer";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -42,7 +42,8 @@ export interface PrintControlState {
     lostLinesCount: number;
     printedLines: number;
     nozzlePrimingActive: boolean;
-    encoderMode : PrintControlEncoderMode;
+    encoderMode: PrintControlEncoderMode;
+    lostLinesBySlowData : number;
 }
 
 export interface PrintControlEncoderModeSettings {
@@ -84,6 +85,7 @@ export interface Model {
 export interface ModelParams {
     position: Point;
     skipNozzles: number;
+    iterativeOffset : number | null;
 }
 
 export enum SlicingStatus {
@@ -143,7 +145,9 @@ export interface State {
         printingParams: PrintingParams,
         slicingState: {
             moveAxisPos: number;
-            track: Uint32Array;
+            track: TrackRasterizationResult;
+            currentLayerPlan: LayerPlan;
+            completePlan: LayerPlan[];
             slicingStatus: SlicingStatus;
         }
         viewLayer: number,
@@ -155,7 +159,7 @@ export interface State {
         saving: boolean,
         lastSaved: Date | null
     } | null,
-    selectedModelId : string | null
+    selectedModelId: string | null
 }
 
 export type StateChanges = (keyof State)[];

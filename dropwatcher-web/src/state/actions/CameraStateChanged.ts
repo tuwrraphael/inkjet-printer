@@ -1,7 +1,6 @@
 import { Action } from "./Action";
 import { ActionType } from "./ActionType";
 
-
 export class CameraStateChanged implements Action {
     constructor(public state: {
         cameraOn?: boolean;
