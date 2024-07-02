@@ -459,8 +459,10 @@ export class PrintBedSimulation extends HTMLElement {
                         let patternid = Math.floor(nozzle / 32);
                         let bitid = nozzle % 32;
                         if (track.data[line * 4 + patternid] & (1 << bitid)) {
-                            let nozzleX = moveAxisPos + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
-                            let nozzleY = tick * encoderMMperDot + (fire / printingParams.sequentialFires) * encoderMMperDot * printingParams.fireEveryTicks;
+                            let baseX = moveAxisPos;
+                            let baseY =  tick * encoderMMperDot + (fire / printingParams.sequentialFires) * encoderMMperDot * printingParams.fireEveryTicks;
+                            let nozzleX = baseX + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
+                            let nozzleY = baseY + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = "black";
                             this.ctx.beginPath();

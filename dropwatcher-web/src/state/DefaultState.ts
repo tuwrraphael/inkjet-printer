@@ -1,9 +1,5 @@
+import { deg2Rad } from "../utils/deg2Rad";
 import { PrinterSystemState, SlicingStatus, State } from "./State";
-
-const printheadSwathePerpendicular = 17.417;
-const printheadAngleRads = 0;
-const numNozzles = 128;
-const printheadSwathe = printheadSwathePerpendicular * Math.cos(printheadAngleRads);
 
 export const DefaultState: State =
 {
@@ -52,7 +48,7 @@ export const DefaultState: State =
             },
             numNozzles: 128,
             printheadSwathePerpendicular: 17.417,
-            printheadAngleRads: 0
+            printheadAngleRads: deg2Rad(30),
         },
         printingParams: {
             fireEveryTicks: 4,

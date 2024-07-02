@@ -190,8 +190,11 @@ export class TrackRasterizer {
             if (fireNow) {
                 for (let fire = 0; fire < this.printingParams.sequentialFires; fire++) {
                     for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
-                        let nozzleX = moveAxisPos + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
-                        let nozzleY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
+
+                        let baseX = moveAxisPos;
+                            let baseY =  tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
+                            let nozzleX = baseX + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
+                            let nozzleY = baseY + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                         if (this.insideLayer([nozzleX, nozzleY], nozzle)) {
                             if (printFirstLineAfterEncoderTick == 0) {
                                 // first line found
