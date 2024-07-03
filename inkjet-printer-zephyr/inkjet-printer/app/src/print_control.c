@@ -231,7 +231,7 @@ void print_control_get_info(print_control_info_t *info)
     info->lost_lines_by_slow_data = encoder_print_status.lost_lines_by_slow_data;
 }
 
-static int priming_cycle(uint32_t *data, uint32_t times)
+static int priming_cycle(uint32_t *data, uint32_t times, k_timeout_t pause)
 {
     int ret = printer_set_pixels(printhead, data);
     if (ret != 0)
@@ -242,7 +242,7 @@ static int priming_cycle(uint32_t *data, uint32_t times)
     }
     for (uint32_t j = j; j < times; j++)
     {
-        k_sleep(K_MSEC(1));
+        k_sleep(pause);
         if (failure_handling_is_in_error_state())
         {
             return -ECANCELED;
@@ -274,7 +274,7 @@ int print_control_nozzle_priming()
             set_nozzle(i, true, data);
         }
     }
-    ret = priming_cycle(data, 1000);
+    ret = priming_cycle(data, 100,K_USEC(235));
     if (ret != 0)
     {
         return ret;
@@ -287,7 +287,7 @@ int print_control_nozzle_priming()
             set_nozzle(i, true, data);
         }
     }
-    ret = priming_cycle(data, 1000);
+    ret = priming_cycle(data, 100, K_USEC(235));
     if (ret != 0)
     {
         return ret;
@@ -296,7 +296,7 @@ int print_control_nozzle_priming()
     {
         memset(data, 0, sizeof(data));
         set_nozzle(i, true, data);
-        ret = priming_cycle(data, 10);
+        ret = priming_cycle(data, 10, K_MSEC(2));
         if (ret != 0)
         {
             return ret;

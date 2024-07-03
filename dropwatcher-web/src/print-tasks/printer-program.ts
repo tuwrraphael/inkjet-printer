@@ -1,3 +1,5 @@
+import { CustomTrack } from "../state/State";
+
 export const enum PrinterTaskType {
     Home,
     PrimeNozzle,
@@ -7,7 +9,9 @@ export const enum PrinterTaskType {
     Move,
     ZeroEncoder,
     Wait,
-    PrintTrack
+    PrintTrack,
+    PrintCustomTracks,
+    HeatBed
 }
 
 export interface PrinterTask {
@@ -37,19 +41,30 @@ export interface PrinterTaskRequestFire extends PrinterTask {
 
 export interface PrinterTaskMove extends PrinterTask {
     readonly type: PrinterTaskType.Move;
-    x: number;
-    y: number;
-    z: number;
+    movement: { x: number, y: number } | { z: number } | { x: number, y: number, z: number };
     feedRate: number;
+}
+
+export interface PrinterTaskHeadBed extends PrinterTask {
+    readonly type: PrinterTaskType.HeatBed;
+    temperature: number;
 }
 
 export interface PrintTrackTask extends PrinterTask {
     readonly type: PrinterTaskType.PrintTrack;
-    moveAxisPos : number;
+    moveAxisPos: number;
     layer: number;
     sequentialFires: number;
     fireEveryTicks: number;
 }
+
+export interface PrinterTaskPrintCustomTracksTask extends PrinterTask {
+    readonly type: PrinterTaskType.PrintCustomTracks;
+    customTracks: CustomTrack[];
+    sequentialFires: number;
+    fireEveryTicks: number;
+}
+
 
 export interface PrinterTaskZeroEncoder extends PrinterTask {
     readonly type: PrinterTaskType.ZeroEncoder;
@@ -70,6 +85,8 @@ export type PrinterTasks = PrinterTaskHome
     | PrintTrackTask
     | PrinterTaskZeroEncoder
     | PrinterTaskWait
+    | PrinterTaskPrintCustomTracksTask
+    | PrinterTaskHeadBed
     ;
 
 

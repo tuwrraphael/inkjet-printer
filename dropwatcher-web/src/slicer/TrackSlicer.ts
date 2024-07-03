@@ -154,7 +154,7 @@ export class PrintPlanner {
     }
 }
 
-export interface TrackRasterizationResult {
+export interface TrackRasterization {
     data: Uint32Array;
     linesToPrint: number;
     printFirstLineAfterEncoderTick: number;
@@ -172,11 +172,11 @@ export class TrackRasterizer {
         private layerNr: number) {
     }
 
-    rasterize(moveAxisPos: number): TrackRasterizationResult {
+    rasterize(moveAxisPos: number): TrackRasterization {
         let maxOffset = this.printingParams.fireEveryTicks - 1;
         let offset = Math.min(maxOffset, this.modelParamsDict[Object.keys(this.modelParamsDict)[0]].iterativeOffset || 0);
-        let offsetThisLayer = this.layerNr * offset % this.printingParams.fireEveryTicks;
-        console.log("layer, offsetThisLayer, offset, maxOffset",this.layerNr, offsetThisLayer, offset, maxOffset);
+        let offsetThisLayer = (this.layerNr * offset) % this.printingParams.fireEveryTicks;
+        console.log("layer, offsetThisLayer, offset, maxOffset", this.layerNr, offsetThisLayer, offset, maxOffset);
         let nozzleDistance = getNozzleDistance(this.printerParams);
         let data = new Uint32Array(this.printerParams.encoder.printAxis.ticks * this.printingParams.sequentialFires * 4);
         data.fill(0);
@@ -192,9 +192,9 @@ export class TrackRasterizer {
                     for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
 
                         let baseX = moveAxisPos;
-                            let baseY =  tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
-                            let nozzleX = baseX + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
-                            let nozzleY = baseY + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
+                        let baseY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
+                        let nozzleX = baseX + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
+                        let nozzleY = baseY + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                         if (this.insideLayer([nozzleX, nozzleY], nozzle)) {
                             if (printFirstLineAfterEncoderTick == 0) {
                                 // first line found
@@ -230,6 +230,14 @@ export class TrackRasterizer {
     private * eligibleForNozzle(nozzleId: number): Iterable<[string, SliceModelInfo]> {
         for (let [id, sliceModelInfo] of this.map) {
             let skipNozzles = (this.modelParamsDict[id].skipNozzles || 0) + 1;
+            if (skipNozzles == 2) {
+                if (this.layerNr % 2 == 0) {
+                    if (nozzleId % 2 == 1) {
+                        yield [id, sliceModelInfo];
+                    }
+                    continue;
+                }
+            }
             if (1 == skipNozzles || nozzleId % skipNozzles == 0) {
                 yield [id, sliceModelInfo];
             }

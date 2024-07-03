@@ -4,6 +4,8 @@ import "../Chart/Chart";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import { PressureControlAlgorithm, ChangePressureControlParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
 import { PrinterUSB } from "../../printer-usb";
+import { Store } from "../../state/Store";
+import { State, StateChanges } from "../../state/State";
 
 export class InkControl extends HTMLElement {
 
@@ -16,9 +18,12 @@ export class InkControl extends HTMLElement {
     private targetPressureGroup: HTMLFieldSetElement;
     private printerUSB: PrinterUSB;
     private btnStop: HTMLButtonElement;
+    private store: Store;
+    private targetPressure: HTMLInputElement;
     constructor() {
         super();
         this.printerUSB = PrinterUSB.getInstance();
+        this.store = Store.getInstance();
     }
 
     connectedCallback() {
@@ -32,6 +37,7 @@ export class InkControl extends HTMLElement {
             this.nozzlePrimingGroup = this.querySelector("#nozzle-priming-group");
             this.targetPressureGroup = this.querySelector("#target-pressure-group");
             this.btnStop = this.querySelector("#btn-stop");
+            this.targetPressure = this.querySelector("#target-pressure");
             abortableEventListener(this.action, "change", () => this.actionChanged(), this.abortController.signal);
             abortableEventListener(this.btnStart, "click", (ev) => {
                 ev.preventDefault();
@@ -43,7 +49,18 @@ export class InkControl extends HTMLElement {
             }, this.abortController.signal);
         }
         this.actionChanged();
+        this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
     }
+    private update(s: State, c: StateChanges): void {
+        if (!s) {
+            return;
+        }
+        if (!c || c.includes("printerSystemState")) {
+            this.targetPressure.value = s.printerSystemState.pressureControl?.parameters.targetPressure.toString();
+        }
+    }
+
+
     private actionChanged() {
         let action = this.action.value;
         let showNozzlePrimingGroup = ["fillflushtank", "priming"].includes(action);

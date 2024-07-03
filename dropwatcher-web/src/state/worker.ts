@@ -36,6 +36,7 @@ import { ModelParamsChanged } from "./actions/ModelParamsChanged";
 import { SetSlicerWorker } from "./actions/SetSlicerWorker";
 import { Slicer } from "../slicer/SlicerWorker";
 import { PrintingTrack } from "./actions/PrintingTrack";
+import { SetCustomTracks } from "./actions/SetCustomTracks";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -60,6 +61,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | ModelParamsChanged
     | SetSlicerWorker
     | PrintingTrack
+    | SetCustomTracks
     ;
 let state: State;
 let initialized = false;
@@ -308,7 +310,7 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             break;
-        case ActionType.PrinterSystemStateResponseReceived:            
+        case ActionType.PrinterSystemStateResponseReceived:
             updateState(oldState => {
                 let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
                 if (pressure.length > maxPressureHistory) {
@@ -515,6 +517,14 @@ async function handleMessage(msg: Actions) {
                         moveAxisPos: msg.moveAxisPos
                     },
                     viewLayer: msg.layer
+                }
+            }));
+            break;
+        case ActionType.SetCustomTracks:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    customTracks: msg.customTracks
                 }
             }));
             break;

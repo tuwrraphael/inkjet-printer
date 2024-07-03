@@ -5,7 +5,7 @@ import { PrinterUSB } from "../../printer-usb";
 import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
 import { ChangePrinterSystemStateRequest } from "../../proto/compiled";
 import { ChangeEncoderModeSettingsRequest, ChangeEncoderPositionRequest } from "../../proto/compiled";
-import { NewModel, Polygon, PolygonType, SlicingStatus, State, StateChanges } from "../../state/State";
+import { CustomTrack, NewModel, Polygon, PolygonType, SlicingStatus, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./Print.html";
@@ -27,6 +27,17 @@ import bwipjs from 'bwip-js';
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { getModelBoundingBox } from "../../utils/getModelBoundingBox";
 import { mirrorY } from "../../utils/mirrorY";
+import { TrackRasterization } from "../../slicer/TrackSlicer";
+import { SetCustomTracks } from "../../state/actions/SetCustomTracks";
+import { getPrintheadSwathe } from "../../slicer/getPrintheadSwathe";
+import { start } from "repl";
+import { setNozzleForRow } from "../../slicer/setNozzleDataView";
+
+let cameraOffset = {
+    x: 165.4 - 13.14,
+    y: 38.78 - 23.89,
+    z: 23.35
+};
 
 
 export class PrintComponent extends HTMLElement {
@@ -175,10 +186,44 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             await this.printerUsb.sendNozzlePrimingRequest();
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
+            ev.preventDefault();
+            let spacing = 16;
+            let tracks: CustomTrack[] = [];
+            let rows = 8;
+            let spacingRows = 8 * rows;
+            let startEncoderTick = 100;
+            let groups = 128 / (128 / spacing);
+            let linesToPrint = groups * (rows + spacingRows);
+            let r: TrackRasterization = {
+                data: new Uint32Array(linesToPrint * 4),
+                linesToPrint: linesToPrint,
+                printFirstLineAfterEncoderTick: startEncoderTick,
+                endPrintAxisPosition: 100,
+                startPrintAxisPosition: 0,
+                printLastLineAfterEncoderTick: this.store.state.printState.printingParams.fireEveryTicks * (linesToPrint - 1) + startEncoderTick,
+            };
+            r.data.fill(0)
+            let currentRow = 0;
+            for (let startNozzle = 0; startNozzle < spacing; startNozzle += 1) {
+                console.log(startNozzle);
+                for (let nozzle = startNozzle; nozzle < 128; nozzle += spacing) {
+
+                    for (let row = 0; row < rows; row++) {
+                        setNozzleForRow(nozzle, true, r.data, currentRow + row);
+                    }
+                }
+                currentRow += spacingRows + rows;
+            }
+            for (let i = 0; i < 8; i++) {
+                tracks.push({ layer: 0, track: r, moveAxisPos: i * 0.2 });
+            }
+            this.store.postAction(new SetCustomTracks(tracks));
+        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
             ev.preventDefault();
             let code: any = bwipjs.raw("qrcode", "Hello World!", {});
-            const dotsPerPixel = 9;
+            const dotsPerPixel = 25;
             const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams).x;
             const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
             let polygons: Polygon[] = [];
@@ -217,7 +262,7 @@ export class PrintComponent extends HTMLElement {
                     })
                 };
             });
-            let duplicateLayers = 10;
+            let duplicateLayers = 19;
             for (let i = 0; i < duplicateLayers; i++) {
                 model.layers = [...model.layers, model.layers[0]];
             }
@@ -229,61 +274,112 @@ export class PrintComponent extends HTMLElement {
     private generateEncoderProgramSteps() {
         let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
-            // {
-            //     type: PrinterTaskType.Home,
-            // },
+            {
+                type: PrinterTaskType.HeatBed,
+                temperature: 45
+            },
+            {
+                type: PrinterTaskType.Home,
+            },
             {
                 type: PrinterTaskType.Move,
-                x: 0,
-                y: 175,
-                z: height,
+                movement: {
+                    x: 0,
+                    y: this.store.state.printState.printerParams.buildPlate.height,
+                    z: height
+                },
                 feedRate: 10000
             },
-            // {
-            //     type: PrinterTaskType.PrimeNozzle
-            // },
+            {
+                type: PrinterTaskType.PrimeNozzle
+            },
             {
                 type: PrinterTaskType.Wait,
-                durationMs: 3000
+                durationMs: 5000
             },
             {
                 type: PrinterTaskType.Move,
-                x: 0,
-                y: 0,
-                z: height,
+                movement: {
+                    x: 0, y: 0, z: height
+                },
                 feedRate: 10000
             },
             {
                 type: PrinterTaskType.ZeroEncoder
             }
         ];
-        let maxLayers = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
-        let completePlan = this.store.state.printState.slicingState.completePlan;
-        for (let i = 0; i < completePlan.length; i++) {
+        let maxLayersModels = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
+        console.log(maxLayersModels);
+        let maxLayersCustomTracks = this.store.state.printState.customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
+        let maxLayers = Math.max(maxLayersModels, maxLayersCustomTracks);
+        let completePlan = this.store.state.printState.slicingState.completePlan || [];
+        console.log(completePlan);
+        for (let i = 0; i < maxLayers; i++) {
             let layerPlan = completePlan[i];
-            for (let j = 0; j < layerPlan.tracks.length; j++) {
+            if (null != layerPlan) {
+                for (let j = 0; j < layerPlan.tracks.length; j++) {
+                    steps.push({
+                        type: PrinterTaskType.PrintTrack,
+                        fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
+                        sequentialFires: this.store.state.printState.printingParams.sequentialFires,
+                        layer: i,
+                        moveAxisPos: layerPlan.tracks[j].startMoveAxisPosition
+                    });
+                }
+            }
+            let layerCustomTracks = this.store.state.printState.customTracks.filter(t => t.layer == i);
+            if (layerCustomTracks.length > 0) {
                 steps.push({
-                    type: PrinterTaskType.PrintTrack,
+                    type: PrinterTaskType.PrintCustomTracks,
+                    customTracks: layerCustomTracks,
                     fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
-                    sequentialFires: this.store.state.printState.printingParams.sequentialFires,
-                    layer: i,
-                    moveAxisPos: layerPlan.tracks[j].startMoveAxisPosition
+                    sequentialFires: this.store.state.printState.printingParams.sequentialFires
                 });
             }
             if (i < maxLayers - 1) {
                 steps.push({
+                    type: PrinterTaskType.Move,
+                    movement: { z: 15 },
+                    feedRate: 500
+                });
+                steps.push({
                     type: PrinterTaskType.Wait,
-                    durationMs: 10000
+                    durationMs: 30000
+                });
+                steps.push({
+                    type: PrinterTaskType.Move,
+                    movement: { z: height },
+                    feedRate: 500
+                });
+                steps.push({
+                    type: PrinterTaskType.Move,
+                    movement: {
+                        x: 0,
+                        y: this.store.state.printState.printerParams.buildPlate.height,
+                        z: height
+                    },
+                    feedRate: 10000
+                });
+                steps.push({
+                    type: PrinterTaskType.PrimeNozzle
+                });
+                steps.push({
+                    type: PrinterTaskType.Wait,
+                    durationMs: 5000
                 });
             }
         }
-        steps.push({
-            type: PrinterTaskType.Move,
-            x: 100,
-            y: 100,
-            z: height,
-            feedRate: 3000
-        });
+        if (completePlan.length > 0) {
+            steps.push({
+                type: PrinterTaskType.Move,
+                movement: {
+                    x: completePlan[0].tracks[0].startMoveAxisPosition + cameraOffset.x,
+                    y: completePlan[0].tracks[0].startPrintAxisPosition + cameraOffset.y,
+                    z: cameraOffset.z,
+                },
+                feedRate: 10000
+            });
+        }
         return steps;
 
     }

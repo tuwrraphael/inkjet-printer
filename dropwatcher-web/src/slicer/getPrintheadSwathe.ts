@@ -7,3 +7,4 @@ export function getPrintheadSwathe(printerParams: PrinterParams): { x: number, y
         y: printerParams.printheadSwathePerpendicular * Math.sin(printerParams.printheadAngleRads)
     };
 }
+

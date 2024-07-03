@@ -46,27 +46,27 @@ export const HomeProgram: PrinterProgram = {
     ]
 };
 
-export const MoveTestProgram: PrinterProgram = {
-    tasks: [
-        {
-            type: PrinterTaskType.Home,
-        },
-        {
-            type: PrinterTaskType.Move,
-            x: 100,
-            y: 100,
-            z: 0,
-            feedRate: 400
-        },
-        {
-            type: PrinterTaskType.Move,
-            x: 0,
-            y: 0,
-            z: 0,
-            feedRate: 400
-        }
-    ]
-};
+// export const MoveTestProgram: PrinterProgram = {
+//     tasks: [
+//         {
+//             type: PrinterTaskType.Home,
+//         },
+//         {
+//             type: PrinterTaskType.Move,
+//             x: 100,
+//             y: 100,
+//             z: 0,
+//             feedRate: 400
+//         },
+//         {
+//             type: PrinterTaskType.Move,
+//             x: 0,
+//             y: 0,
+//             z: 0,
+//             feedRate: 400
+//         }
+//     ]
+// };
 
 // export const HelloWorldProgram : PrinterProgram = {
 //     tasks: [
