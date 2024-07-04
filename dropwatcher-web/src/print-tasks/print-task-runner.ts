@@ -11,8 +11,9 @@ import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
 import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
 import { WaitTaskRunner } from "./runners/WaitTaskRunner";
 import { ZeroEncoderTaskRunner } from "./runners/ZeroEncoderTaskRunner";
-import { PrintTrackTaskRunner } from "./runners/PrintTrackTaskRunner";
+import { PrintCustomTracksTaskRunner, PrintTrackTaskRunner } from "./runners/PrintTrackTaskRunner";
 import { SlicerClient } from "../slicer/SlicerClient";
+import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -110,6 +111,14 @@ export class PrintTaskRunner {
             case PrinterTaskType.ZeroEncoder:
                 let zeroEncoderTaskRunner = new ZeroEncoderTaskRunner(task, this.printerUsb);
                 await zeroEncoderTaskRunner.run();
+                break;
+            case PrinterTaskType.PrintCustomTracks:
+                let printCustomTracksTaskRunner = new PrintCustomTracksTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
+                await printCustomTracksTaskRunner.run();
+                break;
+            case PrinterTaskType.HeatBed:
+                let heatBedTaskRunner = new HeatBedTaskRunner(task, this.movementStage);
+                await heatBedTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

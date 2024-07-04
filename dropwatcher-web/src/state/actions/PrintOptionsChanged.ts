@@ -1,4 +1,4 @@
-import { PrintingParams } from "../../slicer/TrackSlicer";
+import { PrintingParams } from "../../slicer/PrintingParams";
 import { Action } from "./Action";
 import { ActionType } from "./ActionType";
 

@@ -1,5 +1,9 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
-import { LayerPlan, PrinterParams, PrintingParams, TrackRasterizationResult } from "../slicer/TrackSlicer";
+import { LayerPlan } from "../slicer/LayerPlan";
+import { TrackRasterization } from "../slicer/TrackRasterization";
+import { PrintingParams } from "../slicer/PrintingParams";
+import { PrinterParams } from "../slicer/PrinterParams";
+import { CorrectionTrack } from "../slicer/TrackRasterizer";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -43,7 +47,7 @@ export interface PrintControlState {
     printedLines: number;
     nozzlePrimingActive: boolean;
     encoderMode: PrintControlEncoderMode;
-    lostLinesBySlowData : number;
+    lostLinesBySlowData: number;
 }
 
 export interface PrintControlEncoderModeSettings {
@@ -85,13 +89,19 @@ export interface Model {
 export interface ModelParams {
     position: Point;
     skipNozzles: number;
-    iterativeOffset : number | null;
+    iterativeOffset: number | null;
 }
 
 export enum SlicingStatus {
     None,
     InProgress,
     Done
+}
+
+export interface CustomTrack {
+    layer: number;
+    moveAxisPos: number;
+    track: TrackRasterization;
 }
 
 
@@ -145,13 +155,15 @@ export interface State {
         printingParams: PrintingParams,
         slicingState: {
             moveAxisPos: number;
-            track: TrackRasterizationResult;
+            track: TrackRasterization;
+            correctionTracks: CorrectionTrack[];
             currentLayerPlan: LayerPlan;
             completePlan: LayerPlan[];
             slicingStatus: SlicingStatus;
         }
         viewLayer: number,
-        modelParams: { [id: string]: ModelParams }
+        modelParams: { [id: string]: ModelParams },
+        customTracks: CustomTrack[]
     },
     models: Model[],
     currentFileState: {

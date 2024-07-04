@@ -21,5 +21,6 @@ export const enum ActionType {
     ModelSelected,
     ModelParamsChanged,
     SetSlicerWorker,
-    PrintingTrack
+    PrintingTrack,
+    SetCustomTracks
 }

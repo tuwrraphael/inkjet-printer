@@ -48,7 +48,8 @@ export const DefaultState: State =
             },
             numNozzles: 128,
             printheadSwathePerpendicular: 17.417,
-            printheadAngleRads: deg2Rad(30),
+            printheadAngleRads: deg2Rad(90 - 63.75),
+            blockedNozzles : [0,41,42,43,44,91,4,127,126,125]
         },
         printingParams: {
             fireEveryTicks: 4,
@@ -60,12 +61,14 @@ export const DefaultState: State =
         slicingState: {
             moveAxisPos: 0,
             track: null,
+            correctionTracks: [],
             currentLayerPlan: null,
             completePlan: null,
             slicingStatus: SlicingStatus.None
         },
         viewLayer: 0,
-        modelParams: {}
+        modelParams: {},
+        customTracks: []
     },
     models: [],
     currentFileState: null,

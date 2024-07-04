@@ -24,7 +24,8 @@ import { SaveToFile } from "./actions/SaveToFile";
 import { ModelAdded } from "./actions/ModelAdded";
 import { ViewLayerChanged } from "./actions/ViewLayerChanged";
 import { ModelPositionChanged } from "./actions/ModelPositionChanged";
-import { PrintPlanner, TrackRasterizer } from "../slicer/TrackSlicer";
+import { TrackRasterizer } from "../slicer/TrackRasterizer";
+import { PrintPlanner } from "../slicer/PrintPlanner";
 import { SlicePositionChanged } from "./actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
@@ -36,6 +37,7 @@ import { ModelParamsChanged } from "./actions/ModelParamsChanged";
 import { SetSlicerWorker } from "./actions/SetSlicerWorker";
 import { Slicer } from "../slicer/SlicerWorker";
 import { PrintingTrack } from "./actions/PrintingTrack";
+import { SetCustomTracks } from "./actions/SetCustomTracks";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -60,6 +62,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | ModelParamsChanged
     | SetSlicerWorker
     | PrintingTrack
+    | SetCustomTracks
     ;
 let state: State;
 let initialized = false;
@@ -156,6 +159,7 @@ async function updateSlicerParams() {
             slicingState: {
                 ...oldState.printState.slicingState,
                 track: null,
+                correctionTracks: null,
                 printPlan: null,
                 slicingStatus: SlicingStatus.None,
             }
@@ -182,13 +186,14 @@ async function updateSlicerParams() {
         }
     }));
     let moveAxisPos = state.printState.slicingState.moveAxisPos;
-    let track = await slicer.rasterizeTrack(state.printState.viewLayer, moveAxisPos);
+    let result = await slicer.rasterizeTrack(state.printState.viewLayer, moveAxisPos);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                track: track,
+                track: result.track,
+                correctionTracks: result.correctionTracks,
                 completePlan: completePlan,
                 slicingStatus: SlicingStatus.Done,
                 moveAxisPos: moveAxisPos
@@ -236,13 +241,14 @@ async function reslice() {
         }
     }));
     await slicer.setParams(state.printState.printerParams, state.printState.printingParams, state.models, state.printState.modelParams);
-    let track = await slicer.rasterizeTrack(state.printState.viewLayer, state.printState.slicingState.moveAxisPos);
+    let result = await slicer.rasterizeTrack(state.printState.viewLayer, state.printState.slicingState.moveAxisPos);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                track: track,
+                track: result.track,
+                correctionTracks: result.correctionTracks,
                 slicingStatus: SlicingStatus.Done
             }
         }
@@ -308,7 +314,7 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             break;
-        case ActionType.PrinterSystemStateResponseReceived:            
+        case ActionType.PrinterSystemStateResponseReceived:
             updateState(oldState => {
                 let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
                 if (pressure.length > maxPressureHistory) {
@@ -515,6 +521,14 @@ async function handleMessage(msg: Actions) {
                         moveAxisPos: msg.moveAxisPos
                     },
                     viewLayer: msg.layer
+                }
+            }));
+            break;
+        case ActionType.SetCustomTracks:
+            updateState(oldState => ({
+                printState: {
+                    ...oldState.printState,
+                    customTracks: msg.customTracks
                 }
             }));
             break;

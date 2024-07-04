@@ -20,8 +20,20 @@ export class GCodeRunner {
         await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} F${feedrate}`);
     }
 
+    async moveAbsoluteYAndWait(y: number, feedrate: number) {
+        await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 Y${y} F${feedrate}`);
+    }
+
+    async moveAbsoluteZAndWait(z: number, feedrate: number) {
+        await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 Z${z} F${feedrate}`);
+    }
+
     async moveAbsoluteXYAndWait(x: number, y: number, feedrate: number) {
         await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} Y${y} F${feedrate}`);
+    }
+
+    async heatBed(temperature: number) {
+        await this.movementStage.sendGcode(`M140 S${temperature}`);
     }
 
     async disableAxes() {
