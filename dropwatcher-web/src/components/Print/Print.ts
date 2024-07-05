@@ -39,6 +39,12 @@ let cameraOffset = {
     z: 23.35
 };
 
+let lowestZoomCameraOffset = {
+    x: 161.2 - 13.81,
+    y: 13.3 - 5.41,
+    z: 36
+};
+
 
 export class PrintComponent extends HTMLElement {
 
@@ -188,42 +194,57 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();
-            let spacing = 16;
+            let moveAxisPos = 10;
+            let blockSpacing = 20;
+            let spacing = 32;
             let tracks: CustomTrack[] = [];
-            let rows = 8;
-            let spacingRows = 3 * rows;
+            let boxHeightMM = 2;
+            let rows = Math.ceil(boxHeightMM * this.store.state.printState.printerParams.encoder.printAxis.dpi / (this.store.state.printState.printingParams.fireEveryTicks * 25.4));
+            let spacingMM = 4;
+            let spacingRows = Math.ceil(spacingMM * this.store.state.printState.printerParams.encoder.printAxis.dpi / (this.store.state.printState.printingParams.fireEveryTicks * 25.4));
             let startEncoderTick = 100;
-            let groups = 128 / (128 / spacing);
+            let blocks = 2;
+            let groups = 128 / (128 / spacing) / blocks;
             let linesToPrint = groups * (rows + spacingRows);
             let colSpacing = 0.1;
-            let numColumns = 8;
-            let r: TrackRasterization = {
-                data: new Uint32Array(linesToPrint * 4),
-                linesToPrint: linesToPrint,
-                printFirstLineAfterEncoderTick: startEncoderTick,
-                endPrintAxisPosition: 100,
-                startPrintAxisPosition: 0,
-                printLastLineAfterEncoderTick: this.store.state.printState.printingParams.fireEveryTicks * (linesToPrint - 1) + startEncoderTick,
-            };
-            r.data.fill(0)
-            let currentRow = 0;
-            for (let startNozzle = 0; startNozzle < spacing; startNozzle += 1) {
-                console.log(startNozzle);
-                for (let nozzle = startNozzle; nozzle < 128; nozzle += spacing) {
+            let numColumns = 16;
 
-                    for (let row = 0; row < rows; row++) {
-                        setNozzleForRow(nozzle, true, r.data, currentRow + row);
+
+            
+            for (let block = 0; block < blocks; block++) {
+                let blockOffset = spacing / blocks * block;
+
+                let currentRow = 0;
+                let r: TrackRasterization = {
+                    data: new Uint32Array(linesToPrint * 4),
+                    linesToPrint: linesToPrint,
+                    printFirstLineAfterEncoderTick: startEncoderTick,
+                    endPrintAxisPosition: 150,
+                    startPrintAxisPosition: 0,
+                    printLastLineAfterEncoderTick: this.store.state.printState.printingParams.fireEveryTicks * (linesToPrint - 1) + startEncoderTick,
+                };
+                r.data.fill(0)
+
+                for (let startNozzle = blockOffset; startNozzle < spacing; startNozzle += 1) {
+                    console.log(startNozzle);
+                    for (let nozzle = startNozzle; nozzle < 128; nozzle += spacing) {
+
+                        for (let row = 0; row < rows; row++) {
+                            setNozzleForRow(nozzle, true, r.data, currentRow + row);
+                        }
                     }
+                    currentRow += spacingRows + rows;
                 }
-                currentRow += spacingRows + rows;
+                for (let i = 0; i < numColumns; i++) {
+                    tracks.push({ layer: 0, track: r, moveAxisPos: moveAxisPos + i * colSpacing + block * blockSpacing });
+                }
+                
             }
-            for (let i = 0; i < numColumns; i++) {
-                tracks.push({ layer: 0, track: r, moveAxisPos: i * colSpacing });
-            }
+            console.log(tracks);
             this.store.postAction(new SetCustomTracks(tracks));
 
             // let startEncoderTick = 100;
-            let moveAxisPos = 0;
+            
             let nozzleDistance = getNozzleDistance(this.store.state.printState.printerParams);
 
             // let spacing = 16;
@@ -250,14 +271,18 @@ export class PrintComponent extends HTMLElement {
             }[] = [];
 
             for (let nozzle = 0; nozzle < this.store.state.printState.printerParams.numNozzles; nozzle++) {
+
+                let inBlock = Math.floor(((blocks * nozzle) / spacing)) % blocks;
+                
+
                 let nozzleX = moveAxisPos + ((this.store.state.printState.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
-                let nozzleYEncoderTick = startEncoderTick + nozzle % spacing * (rows + spacingRows) * this.store.state.printState.printingParams.fireEveryTicks;
+                let nozzleYEncoderTick = startEncoderTick + nozzle % (spacing / blocks) * (rows + spacingRows) * this.store.state.printState.printingParams.fireEveryTicks;
                 let nozzleYBase = nozzleYEncoderTick * 25.4 / this.store.state.printState.printerParams.encoder.printAxis.dpi;
                 let nozzleY = nozzleYBase + ((this.store.state.printState.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                 let pos = { x: nozzleX - boxPadding, y: nozzleY + boxHeight + boxPadding };
-                let textPos = { x: nozzleX - boxPadding, y: nozzleY - 1 };
+                let textPos = { x: nozzleX - boxPadding + inBlock * blockSpacing, y: nozzleY - 2.5 };
                 boxes.push({
-                    x: pos.x,
+                    x: pos.x + inBlock * blockSpacing,
                     y: pos.y,
                     width: boxWidth + 2 * boxPadding,
                     height: boxHeight + 2 * boxPadding,
@@ -281,9 +306,10 @@ export class PrintComponent extends HTMLElement {
             let svgHeight = maxY + 10;
 
             let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}mm" height="${svgHeight}mm" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
+            svg += `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="black"/>`;
             for (let box of boxes) {
-                svg += `<rect x="${box.x + svgPadding / 2}" y="${maxY - box.y + svgPadding / 2}" width="${box.width}" height="${box.height}" fill="black" stroke="black" stroke-width="0"/>`;
-                svg += `<text x="${box.textPos.x + svgPadding / 2}" y="${maxY - box.textPos.y + svgPadding / 2}" font-family="Arial" font-size="0.2mm" fill="black">${box.text}</text>`;
+                svg += `<rect x="${box.x + svgPadding / 2}" y="${maxY - box.y + svgPadding / 2}" width="${box.width}" height="${box.height}" fill="black" stroke="white" stroke-width="0.1"/>`;
+                svg += `<text x="${box.textPos.x + svgPadding / 2}" y="${maxY - box.textPos.y + svgPadding / 2}" font-family="Arial" font-size="2" fill="white">${box.text}</text>`;
             }
             svg += "</svg>";
             const svgBlob = new Blob([svg], { type: "image/svg+xml" });
@@ -297,7 +323,7 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
             ev.preventDefault();
             let code: any = bwipjs.raw("qrcode", "Hello World!", {});
-            const dotsPerPixel = 25;
+            const dotsPerPixel = 16;
             const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams).x;
             const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
             let polygons: Polygon[] = [];
@@ -336,7 +362,7 @@ export class PrintComponent extends HTMLElement {
                     })
                 };
             });
-            let duplicateLayers = 19;
+            let duplicateLayers = 2;
             for (let i = 0; i < duplicateLayers; i++) {
                 model.layers = [...model.layers, model.layers[0]];
             }
@@ -348,10 +374,10 @@ export class PrintComponent extends HTMLElement {
     private generateEncoderProgramSteps() {
         let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
-            {
-                type: PrinterTaskType.HeatBed,
-                temperature: 45
-            },
+            // {
+            //     type: PrinterTaskType.HeatBed,
+            //     temperature: 45
+            // },
             {
                 type: PrinterTaskType.Home,
             },
@@ -447,9 +473,9 @@ export class PrintComponent extends HTMLElement {
             steps.push({
                 type: PrinterTaskType.Move,
                 movement: {
-                    x: completePlan[0].tracks[0].startMoveAxisPosition + cameraOffset.x,
-                    y: completePlan[0].tracks[0].startPrintAxisPosition + cameraOffset.y,
-                    z: cameraOffset.z,
+                    x: completePlan[0].tracks[0].startMoveAxisPosition + lowestZoomCameraOffset.x,
+                    y: completePlan[0].tracks[0].startPrintAxisPosition + lowestZoomCameraOffset.y,
+                    z: lowestZoomCameraOffset.z,
                 },
                 feedRate: 10000
             });
@@ -464,7 +490,7 @@ export class PrintComponent extends HTMLElement {
             this.programRunnerState.textContent = JSON.stringify(s.programRunnerState, null, 2);
         }
         if (c.includes("currentProgram")) {
-            this.currentProgram.textContent = JSON.stringify(s.currentProgram, null, 2);
+            // this.currentProgram.textContent = JSON.stringify(s.currentProgram, null, 2);
         }
         if (c.includes("printState")) {
             this.slicingInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";

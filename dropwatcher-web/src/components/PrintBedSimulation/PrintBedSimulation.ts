@@ -483,7 +483,7 @@ export class PrintBedSimulation extends HTMLElement {
                 line++;
             }
         }
-        // this.drawTrackOutline(moveAxisPos, track, outlineColor);
+        this.drawTrackOutline(moveAxisPos, track, outlineColor);
     }
 
     private drawTrackOutline(moveAxisPos: number,
@@ -574,7 +574,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.fillBuildPlateWithBackgroundLines();
             this.drawBuildPlateOutline();
             this.drawEncoderTicks();
-            this.drawTestNozzlePattern();
+            // this.drawTestNozzlePattern();
             for (let model of this.models) {
                 let color = modelColors[this.models.indexOf(model) % modelColors.length];
                 this.drawModel(model, color, redrawModels);

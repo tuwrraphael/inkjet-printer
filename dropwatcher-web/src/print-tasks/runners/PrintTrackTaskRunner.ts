@@ -16,32 +16,35 @@ export class PrintTrackTaskRunner {
     async run() {
         await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.task.moveAxisPos, 10000);
         let track = await this.slicerClient.slicer.rasterizeTrack(this.task.layer, this.task.moveAxisPos);
-        if (track.track.linesToPrint == 0) {
-            return;
+        for (let t of [{ pos: this.task.moveAxisPos, track: track.track }, ...track.correctionTracks.map((t) => { return { pos: t.moveAxisPos, track: t.track } })]) {
+            let printTrack = t.track;
+            if (printTrack.linesToPrint == 0) {
+                return;
+            }
+            this.store.postAction(new PrintingTrack(this.task.layer, printTrack, t.pos));
+            let chunkSize = 8;
+            for (let i = 0; i < printTrack.data.length; i += chunkSize) {
+                let chunk = printTrack.data.slice(i, i + chunkSize);
+                var printMemoryRequest = new ChangePrintMemoryRequest();
+                printMemoryRequest.data = Array.from(chunk);
+                printMemoryRequest.offset = i;
+                await this.printerUSB.sendChangePrintMemoryRequest(printMemoryRequest);
+            }
+            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.startPrintAxisPosition, 10000);
+            let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
+            let encoderModeSettings = new PrintControlEncoderModeSettings();
+            encoderModeSettings.fireEveryTicks = this.task.fireEveryTicks;
+            encoderModeSettings.printFirstLineAfterEncoderTick = printTrack.printFirstLineAfterEncoderTick;
+            encoderModeSettings.linesToPrint = printTrack.linesToPrint;
+            encoderModeSettings.sequentialFires = this.task.sequentialFires;
+            encoderModeSettings.startPaused = false;
+            changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
+            await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
+            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.endPrintAxisPosition, 2000);
+            let changeEncoderModeRequest = new ChangeEncoderModeRequest();
+            changeEncoderModeRequest.paused = true;
+            await this.printerUSB.sendChangeEncoderModeRequest(changeEncoderModeRequest);
         }
-        this.store.postAction(new PrintingTrack(this.task.layer, track.track, this.task.moveAxisPos));
-        let chunkSize = 8;
-        for (let i = 0; i < track.track.data.length; i += chunkSize) {
-            let chunk = track.track.data.slice(i, i + chunkSize);
-            var printMemoryRequest = new ChangePrintMemoryRequest();
-            printMemoryRequest.data = Array.from(chunk);
-            printMemoryRequest.offset = i;
-            await this.printerUSB.sendChangePrintMemoryRequest(printMemoryRequest);
-        }
-        await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(this.task.moveAxisPos, track.track.startPrintAxisPosition, 10000);
-        let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
-        let encoderModeSettings = new PrintControlEncoderModeSettings();
-        encoderModeSettings.fireEveryTicks = this.task.fireEveryTicks;
-        encoderModeSettings.printFirstLineAfterEncoderTick = track.track.printFirstLineAfterEncoderTick;
-        encoderModeSettings.linesToPrint = track.track.linesToPrint;
-        encoderModeSettings.sequentialFires = this.task.sequentialFires;
-        encoderModeSettings.startPaused = false;
-        changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
-        await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
-        await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(this.task.moveAxisPos, track.track.endPrintAxisPosition, 1000);
-        let changeEncoderModeRequest = new ChangeEncoderModeRequest();
-        changeEncoderModeRequest.paused = true;
-        await this.printerUSB.sendChangeEncoderModeRequest(changeEncoderModeRequest);
     }
 }
 
@@ -80,7 +83,7 @@ export class PrintCustomTracksTaskRunner {
             encoderModeSettings.startPaused = false;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
-            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.endPrintAxisPosition, 500);
+            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.endPrintAxisPosition, 4000);
             let changeEncoderModeRequest = new ChangeEncoderModeRequest();
             changeEncoderModeRequest.paused = true;
             await this.printerUSB.sendChangeEncoderModeRequest(changeEncoderModeRequest);
