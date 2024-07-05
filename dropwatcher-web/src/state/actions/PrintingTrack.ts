@@ -1,4 +1,4 @@
-import { TrackRasterization } from "../../slicer/TrackSlicer";
+import { TrackRasterization } from "../../slicer/TrackRasterization";
 import { Action } from "./Action";
 import { ActionType } from "./ActionType";
 

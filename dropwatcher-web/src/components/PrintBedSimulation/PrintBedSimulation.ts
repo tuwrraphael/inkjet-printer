@@ -4,10 +4,14 @@ import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
 import "./PrintBedSimulation.scss";
 import { ViewLayerChanged } from "../../state/actions/ViewLayerChanged";
-import { LayerPlan, PrinterParams, PrintingParams, TrackRasterization } from "../../slicer/TrackSlicer";
+import { LayerPlan } from "../../slicer/LayerPlan";
+import { TrackRasterization } from "../../slicer/TrackRasterization";
+import { PrintingParams } from "../../slicer/PrintingParams";
+import { PrinterParams } from "../../slicer/PrinterParams";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
+import { CorrectionTrack } from "../../slicer/TrackRasterizer";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
@@ -59,6 +63,7 @@ export class PrintBedSimulation extends HTMLElement {
     private nextRenderNeedsModelRedraw = false;
     private modelMoving: Model = null;
     private customTracks: CustomTrack[];
+    private correctionTracks: CorrectionTrack[];
 
     constructor() {
         super();
@@ -254,6 +259,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.printingParams = s.printState.printingParams;
             this.moveAxisPos = s.printState.slicingState.moveAxisPos;
             this.customTracks = s.printState.customTracks;
+            this.correctionTracks = s.printState.slicingState.correctionTracks;
             if (layerChanged || c.includes("models")) {
                 this.nextRenderNeedsModelRedraw = true;
             }
@@ -440,7 +446,9 @@ export class PrintBedSimulation extends HTMLElement {
     private drawTrack(moveAxisPos: number,
         track: TrackRasterization,
         printerParams: PrinterParams,
-        printingParams: PrintingParams
+        printingParams: PrintingParams,
+        dotColor: string = "black",
+        outlineColor: string = "coral"
     ) {
         let nozzleDistance = getNozzleDistance(printerParams);
         let encoderMMperDot = 25.4 / printerParams.encoder.printAxis.dpi;
@@ -456,6 +464,7 @@ export class PrintBedSimulation extends HTMLElement {
             if (printNow) {
                 for (let fire = 0; fire < printingParams.sequentialFires; fire++) {
                     for (let nozzle = 0; nozzle < printerParams.numNozzles; nozzle++) {
+                        let nozzleBlocked = printerParams.blockedNozzles.includes(nozzle);
                         let patternid = Math.floor(nozzle / 32);
                         let bitid = nozzle % 32;
                         if (track.data[line * 4 + patternid] & (1 << bitid)) {
@@ -464,7 +473,7 @@ export class PrintBedSimulation extends HTMLElement {
                             let nozzleX = baseX + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                             let nozzleY = baseY + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
-                            this.ctx.fillStyle = "black";
+                            this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
                             this.ctx.beginPath();
                             this.ctx.arc(pos.x, pos.y, this.mmToDots(0.02), 0, 2 * Math.PI);
                             this.ctx.fill();
@@ -474,11 +483,11 @@ export class PrintBedSimulation extends HTMLElement {
                 line++;
             }
         }
-        this.drawTrackOutline(moveAxisPos, track);
+        this.drawTrackOutline(moveAxisPos, track, outlineColor);
     }
 
     private drawTrackOutline(moveAxisPos: number,
-        track: TrackRasterization) {
+        track: TrackRasterization, color = "coral") {
         let nozzleDistance = getNozzleDistance(this.printerParams);
 
         let firstNozzlePos = this.buildPlatePositionToCanvasPosition(
@@ -497,8 +506,8 @@ export class PrintBedSimulation extends HTMLElement {
             moveAxisPos,
             track.endPrintAxisPosition
         );
-        this.ctx.strokeStyle = "coral";
-        this.ctx.lineWidth = this.mmToDots(0.2);
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = this.mmToDots(0.1);
         this.ctx.setLineDash([this.mmToDots(0.5), this.mmToDots(0.5)]);
         this.ctx.beginPath();
         this.ctx.moveTo(firstNozzlePos.x, firstNozzlePos.y);
@@ -509,6 +518,47 @@ export class PrintBedSimulation extends HTMLElement {
         this.ctx.stroke();
 
         this.ctx.setLineDash([0, 0]);
+    }
+
+    private drawTestNozzlePattern() {
+
+        let startEncoderTick = 100;
+        let moveAxisPos = 0;
+        let nozzleDistance = getNozzleDistance(this.printerParams);
+
+        let spacing = 16;
+        let groups = this.printerParams.numNozzles / (this.printerParams.numNozzles / spacing);
+
+        let rows = 8;
+        let spacingRows = 3 * rows;
+
+        let colSpacing = 0.1;
+        let numColumns = 8;
+
+        let boxWidth = (numColumns - 1) * colSpacing;
+        let boxHeight = (rows - 1) * this.printingParams.fireEveryTicks * 25.4 / this.encoderPrintAxis.dpi;
+
+        let boxPadding = 0.2;
+
+        for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
+            let nozzleX = moveAxisPos + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
+            let nozzleYEncoderTick = startEncoderTick + nozzle % spacing * (rows + spacingRows) * this.printingParams.fireEveryTicks;
+            let nozzleYBase = nozzleYEncoderTick * 25.4 / this.encoderPrintAxis.dpi;
+            let nozzleY = nozzleYBase + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
+            let pos = this.buildPlatePositionToCanvasPosition(nozzleX -boxPadding, nozzleY + boxHeight + boxPadding);
+
+            let textPos = this.buildPlatePositionToCanvasPosition(nozzleX - boxPadding, nozzleY-1);
+
+            this.ctx.fillStyle = "fuchsia";
+            this.ctx.beginPath();
+            this.ctx.strokeRect(pos.x, pos.y, this.mmToDots(boxWidth + 2*boxPadding), this.mmToDots(boxHeight+2*boxPadding));
+            this.ctx.font = "12px Arial";
+            this.ctx.fillText(`${nozzle}`, textPos.x, textPos.y);
+        }
+    }
+
+    private getNozzleTestPatternSvg() {
+      
     }
 
     private render() {
@@ -524,6 +574,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.fillBuildPlateWithBackgroundLines();
             this.drawBuildPlateOutline();
             this.drawEncoderTicks();
+            // this.drawTestNozzlePattern();
             for (let model of this.models) {
                 let color = modelColors[this.models.indexOf(model) % modelColors.length];
                 this.drawModel(model, color, redrawModels);
@@ -535,6 +586,11 @@ export class PrintBedSimulation extends HTMLElement {
             }
             for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayer)) {
                 this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams);
+            }
+            if (this.correctionTracks) {
+                for (let { track, moveAxisPos } of this.correctionTracks) {
+                    this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams, "green", "green");
+                }
             }
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;

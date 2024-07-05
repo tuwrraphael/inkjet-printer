@@ -1,4 +1,4 @@
-import { PrinterParams } from "./TrackSlicer";
+import { PrinterParams } from "./PrinterParams";
 
 
 export function getPrintheadSwathe(printerParams: PrinterParams): { x: number, y: number } {

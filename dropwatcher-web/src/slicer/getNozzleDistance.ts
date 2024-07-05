@@ -1,4 +1,4 @@
-import { PrinterParams } from "./TrackSlicer";
+import { PrinterParams } from "./PrinterParams";
 import { getPrintheadSwathe } from "./getPrintheadSwathe";
 
 export function getNozzleDistance(printerParams: PrinterParams): { x: number, y: number } {

@@ -1,5 +1,9 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
-import { LayerPlan, PrinterParams, PrintingParams, TrackRasterization } from "../slicer/TrackSlicer";
+import { LayerPlan } from "../slicer/LayerPlan";
+import { TrackRasterization } from "../slicer/TrackRasterization";
+import { PrintingParams } from "../slicer/PrintingParams";
+import { PrinterParams } from "../slicer/PrinterParams";
+import { CorrectionTrack } from "../slicer/TrackRasterizer";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -152,6 +156,7 @@ export interface State {
         slicingState: {
             moveAxisPos: number;
             track: TrackRasterization;
+            correctionTracks: CorrectionTrack[];
             currentLayerPlan: LayerPlan;
             completePlan: LayerPlan[];
             slicingStatus: SlicingStatus;

@@ -24,7 +24,8 @@ import { SaveToFile } from "./actions/SaveToFile";
 import { ModelAdded } from "./actions/ModelAdded";
 import { ViewLayerChanged } from "./actions/ViewLayerChanged";
 import { ModelPositionChanged } from "./actions/ModelPositionChanged";
-import { PrintPlanner, TrackRasterizer } from "../slicer/TrackSlicer";
+import { TrackRasterizer } from "../slicer/TrackRasterizer";
+import { PrintPlanner } from "../slicer/PrintPlanner";
 import { SlicePositionChanged } from "./actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
@@ -158,6 +159,7 @@ async function updateSlicerParams() {
             slicingState: {
                 ...oldState.printState.slicingState,
                 track: null,
+                correctionTracks: null,
                 printPlan: null,
                 slicingStatus: SlicingStatus.None,
             }
@@ -184,13 +186,14 @@ async function updateSlicerParams() {
         }
     }));
     let moveAxisPos = state.printState.slicingState.moveAxisPos;
-    let track = await slicer.rasterizeTrack(state.printState.viewLayer, moveAxisPos);
+    let result = await slicer.rasterizeTrack(state.printState.viewLayer, moveAxisPos);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                track: track,
+                track: result.track,
+                correctionTracks: result.correctionTracks,
                 completePlan: completePlan,
                 slicingStatus: SlicingStatus.Done,
                 moveAxisPos: moveAxisPos
@@ -238,13 +241,14 @@ async function reslice() {
         }
     }));
     await slicer.setParams(state.printState.printerParams, state.printState.printingParams, state.models, state.printState.modelParams);
-    let track = await slicer.rasterizeTrack(state.printState.viewLayer, state.printState.slicingState.moveAxisPos);
+    let result = await slicer.rasterizeTrack(state.printState.viewLayer, state.printState.slicingState.moveAxisPos);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                track: track,
+                track: result.track,
+                correctionTracks: result.correctionTracks,
                 slicingStatus: SlicingStatus.Done
             }
         }
