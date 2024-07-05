@@ -20,6 +20,7 @@ export class InkControl extends HTMLElement {
     private btnStop: HTMLButtonElement;
     private store: Store;
     private targetPressure: HTMLInputElement;
+    private initialValueSet = false;
     constructor() {
         super();
         this.printerUSB = PrinterUSB.getInstance();
@@ -56,7 +57,10 @@ export class InkControl extends HTMLElement {
             return;
         }
         if (!c || c.includes("printerSystemState")) {
-            this.targetPressure.value = s.printerSystemState.pressureControl?.parameters.targetPressure.toString();
+            if (!this.initialValueSet) {
+                this.targetPressure.value = s.printerSystemState.pressureControl?.parameters.targetPressure.toString();
+                this.initialValueSet = true;
+            }
         }
     }
 
