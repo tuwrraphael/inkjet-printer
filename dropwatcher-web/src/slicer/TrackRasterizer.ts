@@ -5,6 +5,8 @@ import { PrinterParams } from "./PrinterParams";
 import { PrintingParams } from "./PrintingParams";
 import { TrackRasterization } from "./TrackRasterization";
 import { SliceModelInfo } from "./SliceModelInfo";
+import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
+import { get } from "http";
 
 type BlockedNozzleJets = Set<number>;
 
@@ -23,8 +25,16 @@ export class TrackRasterizer {
     constructor(private map: Map<string, SliceModelInfo>,
         private modelParamsDict: { [id: string]: ModelParams },
         private printerParams: PrinterParams,
-        private printingParams: PrintingParams,
+        private generalPrintingParams: PrintingParams,
+        private modelGroupParams: ModelGroupPrintingParams,
         private layerNr: number) {
+    }
+
+    private get printingParams(): PrintingParams {
+        return {
+            ...this.generalPrintingParams,
+            ...this.modelGroupParams
+        }
     }
 
     private findFirstTickInsideModel(moveAxisPos: number, nozzles: null | number[] = null) {
@@ -114,13 +124,11 @@ export class TrackRasterizer {
 
     rasterize(moveAxisPos: number): TrackRasterizationResult {
         let maxOffset = this.printingParams.fireEveryTicks - 1;
-        let offset = Math.min(maxOffset, this.modelParamsDict[Object.keys(this.modelParamsDict)[0]].iterativeOffset || 0);
-        let offsetThisLayer = (this.layerNr * offset) % this.printingParams.fireEveryTicks;
-        console.log("layer " + this.layerNr + " offset " + offset + " offsetThisLayer" + offsetThisLayer);
+        let offset = Math.min(maxOffset, this.printingParams.offsetLayers.printAxis.everyOtherLayerByTicks || 0);
+        let isOtherLayer = this.layerNr % 2 == 1;
+        let offsetThisLayer = isOtherLayer ? offset : 0;
 
-
-
-        let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(moveAxisPos);
+        let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(moveAxisPos) + offsetThisLayer;
 
         let res = this.rasterizeArea(moveAxisPos, null, printFirstLineAfterEncoderTick);
 

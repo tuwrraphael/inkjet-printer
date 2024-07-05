@@ -55,10 +55,20 @@ export const DefaultState: State =
         },
         printingParams: {
             fireEveryTicks: 4,
-            printFirstLineAfterEncoderTick: 1,
             sequentialFires: 1,
             firstLayerHeight: 1.5,
-            encoderMargin: 2
+            encoderMargin: 2,
+            bedTemperature: 0,
+            dryingTime: 0,
+            offsetLayers: {
+                printAxis: {
+                    everyOtherLayerByTicks: 2,
+                },
+                moveAxis: {
+                    randomizedStart: 5,
+                    everyOtherLayerByNozzleDistanceFactor: 0.5
+                }
+            }
         },
         slicingState: {
             moveAxisPos: 0,
@@ -70,6 +80,7 @@ export const DefaultState: State =
         },
         viewLayer: 0,
         modelParams: {},
+        modelGroupPrintingParams: {},
         customTracks: []
     },
     models: [],

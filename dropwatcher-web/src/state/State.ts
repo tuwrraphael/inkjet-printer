@@ -2,6 +2,7 @@ import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/
 import { LayerPlan } from "../slicer/LayerPlan";
 import { TrackRasterization } from "../slicer/TrackRasterization";
 import { PrintingParams } from "../slicer/PrintingParams";
+import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
 import { CorrectionTrack } from "../slicer/TrackRasterizer";
 
@@ -90,8 +91,7 @@ export interface Model {
 
 export interface ModelParams {
     position: Point;
-    skipNozzles: number;
-    iterativeOffset: number | null;
+    modelGroup: string;
 }
 
 export enum SlicingStatus {
@@ -175,6 +175,9 @@ export interface State {
         }
         viewLayer: number,
         modelParams: { [id: string]: ModelParams },
+        modelGroupPrintingParams: {
+            [id: string]: ModelGroupPrintingParams
+        },
         customTracks: CustomTrack[]
     },
     models: Model[],
