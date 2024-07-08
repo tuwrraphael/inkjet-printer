@@ -501,57 +501,66 @@ static int cmd_pressure_control_calibrate_zero_pressure(const struct shell *sh, 
 	return calibrate_zero_pressure();
 }
 
-float speed;
-motor_action_t action;
-
-static int cmd_test_pump(const struct shell *sh, size_t argc, char **argv, void *data)
+static int cmd_test_pump(const struct shell *sh, size_t argc, char **argv)
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	// if (argc != 3)
-	// {
-	// 	shell_print(sh, "Usage: pump_motor <cw|ccw|brk|stop> <pwm>");
-	// 	return EINVAL;
-	// }
-
+	if (argc != 4)
+	{
+		goto print_pump_usage;
+	}
 	const struct device *pump;
-	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
+	const char *pump_name_capping = "capping";
+	const char *pump_name_ink = "ink";
+	char *pump_name;
+	if (strcmp(argv[1], "ink") == 0)
+	{
+		pump = DEVICE_DT_GET(DT_NODELABEL(ink_pump));
+		pump_name = pump_name_ink;
+	}
+	else if (strcmp(argv[1], "capping") == 0)
+	{
+		pump = DEVICE_DT_GET(DT_NODELABEL(capping_pump));
+		pump_name = pump_name_capping;
+	}
+	else
+	{
+		goto print_pump_usage;
+	}
+	motor_action_t action;
+	if (strcmp(argv[2], "cw") == 0)
+	{
+		action = MOTOR_ACTION_CW;
+	}
+	else if (strcmp(argv[2], "ccw") == 0)
+	{
+		action = MOTOR_ACTION_CCW;
+	}
+	else if (strcmp(argv[2], "brake") == 0)
+	{
+		action = MOTOR_ACTION_SHORT_BRAKE;
+	}
+	else if (strcmp(argv[2], "stop") == 0)
+	{
+		action = MOTOR_ACTION_STOP;
+	}
+	else
+	{
+		goto print_pump_usage;
+	}
+	float speed = atof(argv[3]);
 	if (!device_is_ready(pump))
 	{
 		LOG_ERR("Pump not ready");
-		return 0;
+		return -ENODEV;
 	}
-	action = (motor_action_t)data;
-	shell_print(sh, "Setting pump motor to %d at %f", action, (double)speed);
+	shell_print(sh, "Setting pump %s to %d at %f", pump_name, action, (double)speed);
 	motor_set_action(pump, action, speed);
 	return 0;
+print_pump_usage:
+	shell_print(sh, "Usage: test_pump <ink|capping> <cw|ccw|brake|stop> <pwm>");
+	return -EINVAL;
 }
-
-static int cmd_test_pump_speed(const struct shell *sh, size_t argc, char **argv)
-{
-	ARG_UNUSED(argc);
-	ARG_UNUSED(argv);
-	if (argc != 2)
-	{
-		shell_print(sh, "Usage: pump_motor_speed <pwm>");
-		return EINVAL;
-	}
-	speed = atof(argv[1]);
-	shell_print(sh, "Setting pump motor to %d at %f", action, (double)speed);
-	const struct device *pump;
-	pump = DEVICE_DT_GET(DT_NODELABEL(pump_motor));
-	if (!device_is_ready(pump))
-	{
-		LOG_ERR("Pump not ready");
-		return 0;
-	}
-	motor_set_action(pump, action, speed);
-	return 0;
-}
-
-SHELL_SUBCMD_DICT_SET_CREATE(pump_motor_cmds, cmd_test_pump,
-							 (cw, MOTOR_ACTION_CW, "clockwise"), (ccw, MOTOR_ACTION_CCW, "counter clockwise"),
-							 (brk, MOTOR_ACTION_SHORT_BRAKE, "brake"), (stop, MOTOR_ACTION_STOP, "stop"));
 
 static int cmd_system_state(const struct shell *sh, size_t argc, char **argv, void *data)
 {
@@ -595,7 +604,8 @@ static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
-	if (gpio_pin_get_dt(&comm_enable) != 0) {
+	if (gpio_pin_get_dt(&comm_enable) != 0)
+	{
 		shell_print(sh, "COMM_ENABLE must be low");
 		return;
 	}
@@ -650,8 +660,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(encoder_print, &encoder_print_cmds, "Print encoder", NULL),
 							   SHELL_CMD(print_control_set_mode, &print_control_set_mode_cmds, "Set print control mode", NULL),
 							   SHELL_CMD(pressure_control_calibrate_zero_pressure, NULL, "Calibrate zero pressure", cmd_pressure_control_calibrate_zero_pressure),
-							   SHELL_CMD(pump_motor, &pump_motor_cmds, "Test pump motor", cmd_test_pump),
-							   SHELL_CMD(pump_motor_speed, NULL, "Set pump motor speed", cmd_test_pump_speed),
+							   SHELL_CMD(pump, NULL, "Test pump", cmd_test_pump),
 							   SHELL_CMD(system_state, &system_state_cmds, "Set system state", cmd_system_state),
 							   SHELL_CMD(fire, NULL, "Fire printhead", cmd_fire),
 							   SHELL_CMD(test_fire, NULL, "Test fire", cmd_test_fire),

@@ -3,12 +3,20 @@
 
 / {
 
-    pump_motor: pump_motor {
+    ink_pump: ink_pump {
 		status = "okay";
 		compatible = "toshiba,tb6612fng";
 		pwms = <&pwm_pump 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
 		in1-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
 		in2-gpios = <&gpiog 6 GPIO_ACTIVE_HIGH>;
+	};
+
+	capping_pump: capping_pump {
+		status = "okay";
+		compatible = "toshiba,tb6612fng";
+		pwms = <&pwm_pump 1 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
+		in1-gpios = <&gpiod 11 GPIO_ACTIVE_HIGH>;
+		in2-gpios = <&gpioe 2 GPIO_ACTIVE_HIGH>;
 	};
 
 	controlpins: controlpins {
@@ -101,7 +109,7 @@
 	pwm_pump: pwm {
 		status = "okay";
 		pinctrl-names = "default";
-		pinctrl-0 = <&tim2_ch3_pa2>;
+		pinctrl-0 = <&tim2_ch3_pa2 &tim2_ch1_pa0>;
 	};	
 };
 
