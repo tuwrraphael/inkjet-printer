@@ -6,6 +6,7 @@
 #include "printhead_routines.h"
 #include "pressure_control.h"
 #include "failure_handling.h"
+#include "print_control.h"
 
 LOG_MODULE_REGISTER(printer_system, CONFIG_APP_LOG_LEVEL);
 
@@ -18,6 +19,9 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_TIMEOUT (1 << 2)
 #define PRINTER_SYSTEM_REQUEST_FIRE (1 << 3)
 #define PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA (1 << 4)
+#define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS (1 << 5)
+#define PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES (1 << 6)
+#define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE (1 << 7)
 
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 
@@ -30,19 +34,24 @@ static void printer_system_error_entry(void *o);
 static void printer_system_error(void *o);
 static void printer_system_dropwatcher_entry(void *o);
 static void printer_system_dropwatcher_run(void *o);
+static void printer_system_print_entry(void *o);
+static void printer_system_print_run(void *o);
 static void event_post(uint32_t event);
 
 const struct smf_state printer_system_states[] = {
     [PRINTER_SYSTEM_IDLE] = SMF_CREATE_STATE(printer_system_idle_entry, printer_system_idle, NULL),
     [PRINTER_SYSTEM_STARTUP] = SMF_CREATE_STATE(NULL, printer_system_startup, NULL),
     [PRINTER_SYSTEM_ERROR] = SMF_CREATE_STATE(printer_system_error_entry, printer_system_error, NULL),
-    [PRINTER_SYSTEM_DROPWATCHER] = SMF_CREATE_STATE(printer_system_dropwatcher_entry, printer_system_dropwatcher_run, NULL)};
+    [PRINTER_SYSTEM_DROPWATCHER] = SMF_CREATE_STATE(printer_system_dropwatcher_entry, printer_system_dropwatcher_run, NULL),
+    [PRINTER_SYSTEM_PRINT] = SMF_CREATE_STATE(printer_system_print_entry, printer_system_print_run, NULL)};
 
 struct printer_system_state_object
 {
     struct smf_ctx ctx;
     int32_t events;
     uint32_t nozzle_data[4];
+    print_control_encoder_mode_settings_t encoder_mode_settings;
+    bool change_encoder_mode_to_paused;
 } printer_system_state_object;
 
 static void timeout_timer_handler(struct k_timer *dummy)
@@ -59,6 +68,7 @@ static void printer_system_idle_entry(void *o)
     LOG_INF("Entering idle state");
     (void)printhead_routine_smf(PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL);
     pressure_control_disable();
+    print_control_disable();
 }
 
 static void printer_system_idle(void *o)
@@ -129,6 +139,13 @@ static void printer_system_dropwatcher_entry(void *o)
         smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
         return;
     }
+    ret = print_control_start_manual_fire_mode();
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to start manual fire mode, going to idle state");
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+        return;
+    }
 }
 
 static void printer_system_dropwatcher_run(void *o)
@@ -146,14 +163,15 @@ static void printer_system_dropwatcher_run(void *o)
     {
         if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_FIRE)
         {
-            int ret = printer_request_fire(printhead);
+            int ret = print_control_request_fire();
             if (ret != 0)
             {
-                // TODO check if this is really the best way to inform the program to abort
                 failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
                 LOG_ERR("Failed to fire printhead %d", ret);
                 smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
-            } else {
+            }
+            else
+            {
                 LOG_INF("Firing printhead");
             }
         }
@@ -166,11 +184,89 @@ static void printer_system_dropwatcher_run(void *o)
                 failure_handling_set_error_state(ERROR_PRINTHEAD_COMMUNICATION);
                 LOG_ERR("Failed to set nozzle data %d", ret);
                 smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
-            } else {
+            }
+            else
+            {
                 LOG_INF("Setting nozzle data");
             }
         }
-        k_timer_start(&timout_timer, K_SECONDS(300), K_NO_WAIT);
+        k_timer_start(&timout_timer, K_MINUTES(30), K_NO_WAIT);
+    }
+}
+
+static void printer_system_print_entry(void *o)
+{
+    ARG_UNUSED(o);
+    int ret;
+    ret = printhead_routine_smf(PRINTHEAD_ROUTINE_ACTIVATE_INITIAL);
+    if (exit_on_error_after_wait())
+    {
+        return;
+    }
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to activate printhead, going to idle state");
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+        return;
+    }
+
+    ret = print_control_start_encoder_mode(&printer_system_state_object.encoder_mode_settings);
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to start encoder mode, going to idle state");
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+        return;
+    }
+}
+
+static void printer_system_print_run(void *o)
+{
+    ARG_UNUSED(o);
+    LOG_INF("Print state %d\n", printer_system_state_object.events);
+    if (printer_system_state_object.events & PRINTER_SYSTEM_TIMEOUT)
+    {
+        LOG_ERR("Timeout in print state, going to idle state");
+        smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+        return;
+    }
+    else
+    {
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS)
+        {
+            int ret = print_control_start_encoder_mode(&printer_system_state_object.encoder_mode_settings);
+            if (ret != 0)
+            {
+                LOG_ERR("Failed to restart encoder mode, going to idle state");
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+                return;
+            }
+        }
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES)
+        {
+            int ret = print_control_nozzle_priming();
+            if (ret != 0)
+            {
+                failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
+                LOG_ERR("Failed to prime nozzles %d", ret);
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_ERROR]);
+            }
+            else
+            {
+                LOG_INF("Priming nozzles");
+            }
+        }
+        if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE)
+        {
+            if (printer_system_state_object.change_encoder_mode_to_paused)
+            {
+                print_control_pause_encoder_mode();
+            }
+            else
+            {
+                print_control_resume_encoder_mode();
+            }
+        }
+        k_timer_start(&timout_timer, K_MINUTES(30), K_NO_WAIT);
     }
 }
 
@@ -197,18 +293,44 @@ void go_to_idle()
     event_post(PRINTER_SYSTEM_STATE_CHANGE);
 }
 
+void go_to_print()
+{
+    requested_state = PRINTER_SYSTEM_PRINT;
+    event_post(PRINTER_SYSTEM_STATE_CHANGE);
+}
+
 void request_printhead_fire()
 {
     event_post(PRINTER_SYSTEM_REQUEST_FIRE);
 }
 
-void request_set_nozzle_data(uint32_t *data) {
+void request_prime_nozzles()
+{
+    event_post(PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES);
+}
+
+void request_set_nozzle_data(uint32_t *data)
+{
     memcpy(printer_system_state_object.nozzle_data, data, sizeof(printer_system_state_object.nozzle_data));
     event_post(PRINTER_SYSTEM_REQUEST_SET_NOZZLE_DATA);
 }
 
+void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t *settings)
+{
+    memcpy(&printer_system_state_object.encoder_mode_settings, settings, sizeof(print_control_encoder_mode_settings_t));
+    event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS);
+}
+
+void request_change_encoder_mode(bool paused) {
+    printer_system_state_object.change_encoder_mode_to_paused = paused;
+    event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE);
+}
+
 int printer_system_smf()
 {
+    printer_system_state_object.encoder_mode_settings.fire_every_ticks = 1;
+    printer_system_state_object.encoder_mode_settings.sequential_fires = 1;
+    printer_system_state_object.encoder_mode_settings.print_first_line_after_encoder_tick = 100;
     smf_set_initial(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_STARTUP]);
     while (1)
     {
@@ -224,7 +346,10 @@ int printer_system_smf()
         }
         else if (printer_system_state_object.events & PRINTER_SYSTEM_STATE_CHANGE)
         {
-            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[requested_state]);
+            if (printer_system_smf_get_state() != requested_state)
+            {
+                smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[requested_state]);
+            }
         }
         int ret = smf_run_state(SMF_CTX(&printer_system_state_object));
         if (ret != 0)
@@ -244,7 +369,8 @@ int printer_system_smf_init()
     return 0;
 }
 
-enum printer_system_smf_state printer_system_smf_get_state() {
+enum printer_system_smf_state printer_system_smf_get_state()
+{
     return (enum printer_system_smf_state)(SMF_CTX(&printer_system_state_object)->current - printer_system_states);
 }
 

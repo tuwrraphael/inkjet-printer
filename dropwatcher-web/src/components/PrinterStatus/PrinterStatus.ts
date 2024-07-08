@@ -1,7 +1,7 @@
 
 import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
-import { State, StateChanges, PrinterSystemState, PressureControlAlgorithm, PressureControlDirection } from "../../state/State";
+import { State, StateChanges, PrinterSystemState, PressureControlAlgorithm, PressureControlDirection, PrintControlEncoderMode } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrinterStatus.html";
@@ -14,24 +14,35 @@ export class PrinterStatus extends HTMLElement {
     private rendered = false;
     private store: Store;
     private abortController: AbortController;
-    private usbConnected : HTMLTableCellElement;
-    private state : HTMLTableCellElement;
-    private errorFlags : HTMLTableCellElement;
-    private currentPressure : HTMLSpanElement;
-    private pressureControlEnabled : HTMLTableCellElement;
-    private pressureControlDone : HTMLTableCellElement;
-    private pressureControlTargetPressure : HTMLSpanElement;
-    private pressureControlDirection : HTMLTableCellElement;
-    private pressureControlFeedTime : HTMLSpanElement;
-    private pressureControlFeedPwm : HTMLSpanElement;
-    private pressureControlLimitPressure : HTMLSpanElement;
-    private pressureControlAlgorithm : HTMLTableCellElement;
-    private connectUsbButton : HTMLButtonElement;
-    private stageConnected : HTMLTableCellElement;
-    private stagePosition : HTMLTableCellElement;
-    private connectStageButton : HTMLButtonElement;
+    private usbConnected: HTMLTableCellElement;
+    private state: HTMLTableCellElement;
+    private errorFlags: HTMLTableCellElement;
+    private currentPressure: HTMLSpanElement;
+    private pressureControlEnabled: HTMLTableCellElement;
+    private pressureControlDone: HTMLTableCellElement;
+    private pressureControlTargetPressure: HTMLSpanElement;
+    private pressureControlDirection: HTMLTableCellElement;
+    private pressureControlFeedTime: HTMLSpanElement;
+    private pressureControlFeedPwm: HTMLSpanElement;
+    private pressureControlLimitPressure: HTMLSpanElement;
+    private pressureControlAlgorithm: HTMLTableCellElement;
+    private connectUsbButton: HTMLButtonElement;
+    private stageConnected: HTMLTableCellElement;
+    private stagePosition: HTMLTableCellElement;
+    private connectStageButton: HTMLButtonElement;
     private printerUSB: PrinterUSB;
     private movementStage: MovementStage;
+    private sequentialFires: HTMLTableCellElement;
+    private fireEveryTicks: HTMLTableCellElement;
+    private printFirstLineAfterEncoderTick: HTMLTableCellElement;
+    private encoderValue: HTMLTableCellElement;
+    private expectedEncoderValue: HTMLTableCellElement;
+    private lastPrintedLine: HTMLTableCellElement;
+    private lostLinesCount: HTMLTableCellElement;
+    private printedLines: HTMLTableCellElement;
+    private nozzlePrimingActive: HTMLTableCellElement;
+    private encoderMode: HTMLTableCellElement;
+    private lostLinesBySlowData : HTMLTableCellElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -59,6 +70,17 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure = document.querySelector("#pressure-control-limit-pressure");
             this.pressureControlAlgorithm = document.querySelector("#pressure-control-algorithm");
             this.connectUsbButton = document.querySelector("#connect-usb");
+            this.sequentialFires = document.querySelector("#sequential-fires");
+            this.fireEveryTicks = document.querySelector("#fire-every-ticks");
+            this.printFirstLineAfterEncoderTick = document.querySelector("#print-first-line-after-encoder-tick");
+            this.encoderValue = document.querySelector("#encoder-value");
+            this.expectedEncoderValue = document.querySelector("#expected-encoder-value");
+            this.lastPrintedLine = document.querySelector("#last-printed-line");
+            this.lostLinesCount = document.querySelector("#lost-lines-count");
+            this.printedLines = document.querySelector("#printed-lines");
+            this.nozzlePrimingActive = document.querySelector("#nozzle-priming-active");
+            this.encoderMode = document.querySelector("#encoder-mode");
+            this.lostLinesBySlowData = document.querySelector("#lost-lines-by-slow-data");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -83,11 +105,11 @@ export class PrinterStatus extends HTMLElement {
         this.movementStage.connectNew();
     }
 
-    formatStagePosition(s:State) {
+    formatStagePosition(s: State) {
         return `X: ${this.formatNumber(s.movementStageState.pos?.x)} Y: ${this.formatNumber(s.movementStageState.pos?.y)} Z: ${this.formatNumber(s.movementStageState.pos?.z)} E: ${this.formatNumber(s.movementStageState.e)}`;
     }
 
-    formatState(state : PrinterSystemState) {
+    formatState(state: PrinterSystemState) {
         switch (state) {
             case PrinterSystemState.Idle:
                 return "Idle";
@@ -97,21 +119,23 @@ export class PrinterStatus extends HTMLElement {
                 return "Startup";
             case PrinterSystemState.Dropwatcher:
                 return "Dropwatcher";
+            case PrinterSystemState.Print:
+                return "Print";
             default:
                 return "Unspecified";
         }
     }
 
-    formatErrorFlags(s:State) {
-        let flags : number = s.printerSystemState.errors.flags;
-        let map : {
-            [flag:string] : string
+    formatErrorFlags(s: State) {
+        let flags: number = s.printerSystemState.errors.flags;
+        let map: {
+            [flag: string]: string
         } = {
-            "1" : "Printhead Reset",
-            "2" : "User Abort",
-            "0" : "Pressure Control",
-            "3" : "Printhead Communication",
-            "4" : "Printhead Fire Request",
+            "1": "Printhead Reset",
+            "2": "User Abort",
+            "0": "Pressure Control",
+            "3": "Printhead Communication",
+            "4": "Printhead Fire Request",
         }
 
         let errors = [];
@@ -119,11 +143,11 @@ export class PrinterStatus extends HTMLElement {
             if (flags & (1 << i)) {
                 errors.push(map[i.toString()] || `Unknown flag ${i}`);
             }
-        }        
+        }
         return errors.join(", ") || "None";
     }
 
-    formatPressureControlDirection(direction : PressureControlDirection) {
+    formatPressureControlDirection(direction: PressureControlDirection) {
         switch (direction) {
             case PressureControlDirection.Pressure:
                 return "Pressure";
@@ -134,7 +158,7 @@ export class PrinterStatus extends HTMLElement {
         }
     }
 
-    formatPressureControlAlgorithm(algorithm : PressureControlAlgorithm) {
+    formatPressureControlAlgorithm(algorithm: PressureControlAlgorithm) {
         switch (algorithm) {
             case PressureControlAlgorithm.FeedwithLimit:
                 return "Feed with Limit";
@@ -145,7 +169,22 @@ export class PrinterStatus extends HTMLElement {
         }
     }
 
-    formatNumber(n : number) {
+    formatEncoderMode(encoderMode: PrintControlEncoderMode) {
+        switch (encoderMode) {
+            case PrintControlEncoderMode.Unspecified:
+                return "Unspecified";
+            case PrintControlEncoderMode.Off:
+                return "Off";
+            case PrintControlEncoderMode.On:
+                return "On";
+            case PrintControlEncoderMode.Paused:
+                return "Paused";
+            default:
+                return "Unspecified";
+        }
+    }
+
+    formatNumber(n: number) {
         if (isNaN(n) || n == undefined) return "-";
         return numberFormat.format(n);
     }
@@ -166,6 +205,17 @@ export class PrinterStatus extends HTMLElement {
             this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
             this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
             this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
+            this.sequentialFires.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.sequentialFires);
+            this.fireEveryTicks.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.fireEveryTicks);
+            this.printFirstLineAfterEncoderTick.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.printFirstLineAfterEncoderTick);
+            this.encoderValue.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderValue);
+            this.expectedEncoderValue.innerText = this.formatNumber(s.printerSystemState.printControl?.expectedEncoderValue);
+            this.lastPrintedLine.innerText = this.formatNumber(s.printerSystemState.printControl?.lastPrintedLine);
+            this.lostLinesCount.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesCount);
+            this.printedLines.innerText = this.formatNumber(s.printerSystemState.printControl?.printedLines);
+            this.nozzlePrimingActive.innerText = s.printerSystemState.printControl?.nozzlePrimingActive ? "Active" : "Inactive";
+            this.encoderMode.innerText = this.formatEncoderMode(s.printerSystemState.printControl?.encoderMode);
+            this.lostLinesBySlowData.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesBySlowData);
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);

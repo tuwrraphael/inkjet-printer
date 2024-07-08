@@ -84,9 +84,24 @@ export class WebSerialWrapper<T> extends EventTarget {
         }
         navigator.serial.addEventListener("connect", async (e) => {
             console.log("Serial port connected");
-            port = await this.findPort();
-            if (port) {
-                await this.connectPort(port);
+            const tries = 3;
+            for (let i = 0; i < tries; i++) {
+                try {
+                    port = await this.findPort();
+                    if (port) {
+                        await this.connectPort(port);
+                        break;
+                    } else {
+                        throw new Error("Port not found");
+                    }
+                } catch (e) {
+                    if (i == tries - 1) {
+                        throw e;
+                    } else {
+                        console.error(e);
+                        await new Promise((resolve) => setTimeout(resolve, 2000));
+                    }
+                }
             }
         });
     }

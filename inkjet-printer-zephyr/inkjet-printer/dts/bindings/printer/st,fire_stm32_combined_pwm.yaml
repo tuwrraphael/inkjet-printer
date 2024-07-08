@@ -21,6 +21,22 @@ properties:
   min_mask_period:
     type: int
     required: true
+  encoder_timer:
+    type: phandle
+    required: true
+  clock_timer:
+    type: phandle
+    required: true
+  encoder_timer_trigger:
+    type: int
+    required: true
+    description:
+      "TIM_TS_ITR3: Internal trigger 3"
+  clock_timer_trigger:
+    type: int
+    required: true
+    description:
+      "TIM_TS_ITR0: Internal trigger 0"
   "#printer-fire-cells":
     const: 0
     type: int

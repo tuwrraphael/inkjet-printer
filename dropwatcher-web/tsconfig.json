@@ -22,7 +22,8 @@
       "@types/w3c-image-capture",
       "@types/w3c-web-usb",
       "@types/w3c-web-serial",
-      "@types/dom-mediacapture-transform"
+      "@types/dom-mediacapture-transform",
+      "@types/wicg-file-system-access"
     ],
     "allowSyntheticDefaultImports": true
   },

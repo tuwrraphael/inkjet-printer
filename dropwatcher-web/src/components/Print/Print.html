@@ -1,10 +1,46 @@
 <h1>Print</h1>
-<button id="start-print">Start Print</button>
-<h2>
-    Runner
-</h2>
-<pre id="program-runner-state"></pre>
-<h2>
-    Program
-</h2>
-<pre id="current-program"></pre>
+<div class="print-container">
+    <div class="app-print__buttons">
+        <button id="start-print">Start Print</button>
+        <button id="cancel-print">Cancel Print</button>
+        <button id="zero-encoder">Zero Encoder</button>
+        <button id="reset-encoder">Reset Encoder</button>
+        <button id="enter-print">Enter Print</button>
+        <button id="enter-idle">Enter Idle</button>
+        <button id="home">Home</button>
+        <button id="go-start">Go Y175</button>
+        <button id="go-end">Go Y0</button>
+        <button id="nozzle-priming">Nozzle Priming</button>
+        <button id="test-code">Test Code</button>
+        <button id="test-nozzle-pattern">Test Nozzle Pattern</button>
+    </div>
+    <h2>Print Options</h2>
+    <div>
+        <print-options></print-options>
+    </div>
+    <h2>Slice Control</h2>
+    <div>
+        <label for="move-axis-pos">X-Axis</label>
+        <input type="number" id="move-axis-pos" value="0">
+        <span id="slicing-in-progress" style="display: none;">Slicing in progress...</span>
+        <button id="slice-first-track">First</button>
+        <button id="slice-next-track">Next</button>
+        <button id="move-stage-to">Move Stage To</button>
+        <button id="sync-from-stage">Sync From Stage</button>
+        <button id="write-data">Write Data</button>
+    </div>
+    <h2>Printbed</h2>
+    <div class="printbed-container">
+        <print-bed-simulation></print-bed-simulation>
+        <model-list></model-list>
+        <model-params></model-params>
+    </div>
+    <h2>
+        Runner
+    </h2>
+    <pre id="program-runner-state"></pre>
+    <h2>
+        Program
+    </h2>
+    <pre id="current-program"></pre>
+</div>

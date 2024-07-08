@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+message PrintControlEncoderModeSettings {
+  uint32 sequential_fires = 1;
+  uint32 fire_every_ticks= 2;
+  uint32 print_first_line_after_encoder_tick = 3;
+  optional bool start_paused = 4;
+  uint32 lines_to_print = 5;
+}
+
+enum EncoderMode {
+  EncoderMode_UNSPECIFIED = 0;
+  EncoderMode_OFF = 1;
+  EncoderMode_ON = 2;
+  EncoderMode_PAUSED = 3; 
+}
+
+message PrintControlState {
+  PrintControlEncoderModeSettings encoder_mode_settings = 1;
+  int32 encoder_value = 2;
+  int32 expected_encoder_value = 3;
+  int32 last_printed_line = 4;
+  uint32 lost_lines_count = 5;
+  uint32 printed_lines = 6;
+  bool nozzle_priming_active = 7;
+  EncoderMode encoder_mode = 8;
+  uint32 lost_lines_by_slow_data = 9;
+}

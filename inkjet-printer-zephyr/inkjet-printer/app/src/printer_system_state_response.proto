@@ -2,9 +2,11 @@ syntax = "proto3";
 
 import "printer_system_state.proto";
 import "pressure_control.proto";
+import "print_control.proto";
 
 message PrinterSystemStateResponse {
   PrinterSystemState state = 1;
   uint32 error_flags = 2;
   PressureControlSystemState pressure_control = 3;
+  PrintControlState print_control = 4;
 }

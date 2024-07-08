@@ -1,5 +1,5 @@
-import { HelloWorldProgamSteps } from "./HelloWorldProgram";
-import { PrinterProgram, PrinterTaskHome, PrinterTaskPrimeNozzle, PrinterTaskSetTargetPressure, PrinterTaskType } from "./printer-program";
+// import { HelloWorldProgamSteps } from "./HelloWorldProgram";
+import { PrinterProgram, PrinterTask, PrinterTaskHome, PrinterTaskPrimeNozzle, PrinterTaskSetTargetPressure, PrinterTaskType, PrinterTasks } from "./printer-program";
 
 export const HomeProgram: PrinterProgram = {
     tasks: [
@@ -8,9 +8,6 @@ export const HomeProgram: PrinterProgram = {
         // },
         {
             type: PrinterTaskType.PrimeNozzle,
-            feedLimitPressure: 20,
-            feedLimitPwm: 1,
-            feedTime: 10
         },
         {
             type: PrinterTaskType.SetTargetPressure,
@@ -49,33 +46,33 @@ export const HomeProgram: PrinterProgram = {
     ]
 };
 
-export const MoveTestProgram: PrinterProgram = {
-    tasks: [
-        {
-            type: PrinterTaskType.Home,
-        },
-        {
-            type: PrinterTaskType.Move,
-            x: 100,
-            y: 100,
-            z: 0,
-            feedRate: 400
-        },
-        {
-            type: PrinterTaskType.Move,
-            x: 0,
-            y: 0,
-            z: 0,
-            feedRate: 400
-        }
-    ]
-};
+// export const MoveTestProgram: PrinterProgram = {
+//     tasks: [
+//         {
+//             type: PrinterTaskType.Home,
+//         },
+//         {
+//             type: PrinterTaskType.Move,
+//             x: 100,
+//             y: 100,
+//             z: 0,
+//             feedRate: 400
+//         },
+//         {
+//             type: PrinterTaskType.Move,
+//             x: 0,
+//             y: 0,
+//             z: 0,
+//             feedRate: 400
+//         }
+//     ]
+// };
 
-export const HelloWorldProgram : PrinterProgram = {
-    tasks: [
-        { type:PrinterTaskType.Home},
-        ...HelloWorldProgamSteps
-    ]
-};
+// export const HelloWorldProgram : PrinterProgram = {
+//     tasks: [
+//         { type:PrinterTaskType.Home},
+//         ...HelloWorldProgamSteps
+//     ]
+// };
 
 // let pressureTestProgram 

@@ -31,6 +31,7 @@ LOG_MODULE_REGISTER(webusb, CONFIG_APP_LOG_LEVEL);
 #include "printer_system_smf.h"
 #include "failure_handling.h"
 #include "pressure_control.h"
+#include "print_control.h"
 
 /* Max packet size for Bulk endpoints */
 #if defined(CONFIG_USB_DC_HAS_HS_SUPPORT)
@@ -204,6 +205,8 @@ static PrinterSystemState map_system_state_to_proto(enum printer_system_smf_stat
 		return PrinterSystemState_PrinterSystemState_ERROR;
 	case PRINTER_SYSTEM_DROPWATCHER:
 		return PrinterSystemState_PrinterSystemState_DROPWATCHER;
+	case PRINTER_SYSTEM_PRINT:
+		return PrinterSystemState_PrinterSystemState_PRINT;
 	default:
 		return PrinterSystemState_PrinterSystemState_UNSPECIFIED;
 	}
@@ -261,6 +264,20 @@ static pressure_control_algorithm_t map_proto_to_pressure_control_algorithm(Pres
 	}
 }
 
+static EncoderMode map_encoder_mode_to_proto(encoder_mode_t encoder_mode) {
+	switch (encoder_mode)
+	{
+	case ENCODER_MODE_OFF:
+		return EncoderMode_EncoderMode_OFF;
+	case ENCODER_MODE_ON:
+		return EncoderMode_EncoderMode_ON;
+	case ENCODER_MODE_PAUSED:
+		return EncoderMode_EncoderMode_PAUSED;
+	default:
+		return EncoderMode_EncoderMode_UNSPECIFIED;
+	}
+}
+
 static void webusb_read_cb(uint8_t ep, int size, void *priv)
 {
 	struct usb_cfg_data *cfg = priv;
@@ -301,12 +318,31 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			response.pressure_control.parameters.feed_time = pressure_info.algorithm.feed_time;
 			response.pressure_control.done = pressure_info.done;
 			response.pressure_control.enabled = pressure_info.enabled;
+
+			print_control_info_t print_control_info;
+			print_control_get_info(&print_control_info);
+			response.has_print_control = true;
+			response.print_control.has_encoder_mode_settings = true;
+			response.print_control.encoder_mode_settings.fire_every_ticks = print_control_info.encoder_mode_settings.fire_every_ticks;
+			response.print_control.encoder_mode_settings.print_first_line_after_encoder_tick = print_control_info.encoder_mode_settings.print_first_line_after_encoder_tick;
+			response.print_control.encoder_mode_settings.sequential_fires = print_control_info.encoder_mode_settings.sequential_fires;
+			response.print_control.encoder_value = print_control_info.encoder_value;
+			response.print_control.expected_encoder_value = print_control_info.expected_encoder_value;
+			response.print_control.last_printed_line = print_control_info.last_printed_line;
+			response.print_control.lost_lines_count = print_control_info.lost_lines_count;
+			response.print_control.lost_lines_by_slow_data = print_control_info.lost_lines_by_slow_data;
+			response.print_control.printed_lines = print_control_info.printed_lines;
+			response.print_control.nozzle_priming_active = print_control_info.nozzle_priming_active;
+			response.print_control.encoder_mode = map_encoder_mode_to_proto(print_control_info.encoder_mode);
 			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
-			if (status) {
+			if (status)
+			{
 				// LOG_INF("PrinterSystemStateResponse: length %d", tx_stream.bytes_written);
 				usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, tx_stream.bytes_written,
-					USB_TRANS_WRITE, webusb_write_cb, cfg);
-			} else {
+							 USB_TRANS_WRITE, webusb_write_cb, cfg);
+			}
+			else
+			{
 				LOG_ERR("Failed to encode PrinterSystemStateResponse");
 			}
 		}
@@ -332,6 +368,10 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			else if (request.state == PrinterSystemState_PrinterSystemState_ERROR)
 			{
 				printer_system_smf_go_to_safe_state();
+			}
+			else if (request.state == PrinterSystemState_PrinterSystemState_PRINT)
+			{
+				go_to_print();
 			}
 			else
 			{
@@ -385,7 +425,8 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			LOG_ERR("Failed to decode SetNozzleDataRequest");
 		}
 	}
-	else if (type == ChangePressureControlParametersRequest_fields) {
+	else if (type == ChangePressureControlParametersRequest_fields)
+	{
 		ChangePressureControlParametersRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangePressureControlParametersRequest_fields, &request);
 		if (status)
@@ -396,8 +437,7 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 				.target_pressure = request.parameters.target_pressure,
 				.limit_pressure = request.parameters.limit_pressure,
 				.feed_pwm = request.parameters.feed_pwm,
-				.feed_time = request.parameters.feed_time
-			};
+				.feed_time = request.parameters.feed_time};
 			pressure_control_update_parameters(&init);
 			if (request.parameters.enable)
 			{
@@ -411,6 +451,82 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		else
 		{
 			LOG_ERR("Failed to decode PressureControlChangeParametersRequest");
+		}
+	}
+	else if (type == ChangeEncoderPositionRequest_fields)
+	{
+		ChangeEncoderPositionRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeEncoderPositionRequest_fields, &request);
+		if (status)
+		{
+			print_control_set_encoder_position(request.position);
+			LOG_INF("SetEncoderPositionRequest: position %d", request.position);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode SetEncoderPositionRequest");
+		}
+	}
+	else if (type == ChangeEncoderModeSettingsRequest_fields)
+	{
+		ChangeEncoderModeSettingsRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeEncoderModeSettingsRequest_fields, &request);
+		if (status)
+		{
+			print_control_encoder_mode_settings_t settings;
+			settings.fire_every_ticks = request.encoder_mode_settings.fire_every_ticks;
+			settings.print_first_line_after_encoder_tick = request.encoder_mode_settings.print_first_line_after_encoder_tick;
+			settings.sequential_fires = request.encoder_mode_settings.sequential_fires;
+			settings.start_paused = request.encoder_mode_settings.start_paused;
+			settings.lines_to_print = request.encoder_mode_settings.lines_to_print;
+			request_change_encoder_mode_settings(&settings);
+			LOG_INF("ChangeEncoderModeSettingsRequest: fire_every_ticks %d, print_first_line_after_encoder_tick %d, sequential_fires %d",
+					request.encoder_mode_settings.fire_every_ticks, request.encoder_mode_settings.print_first_line_after_encoder_tick, request.encoder_mode_settings.sequential_fires);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangeEncoderModeSettingsRequest");
+		}
+	}
+	else if (type == ChangePrintMemoryRequest_fields)
+	{
+		ChangePrintMemoryRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangePrintMemoryRequest_fields, &request);
+		if (status)
+		{
+			print_control_set_print_memory(request.offset, request.data, request.data_count);
+			LOG_INF("ChangePrintMemoryRequest: offset %d, data_count %d", request.offset, request.data_count);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangePrintMemoryRequest");
+		}
+	}
+	else if (type == NozzlePrimingRequest_fields)
+	{
+		NozzlePrimingRequest request = {};
+		status = decode_unionmessage_contents(&stream, NozzlePrimingRequest_fields, &request);
+		if (status)
+		{
+			request_prime_nozzles();
+			LOG_INF("NozzlePrimingRequest");
+		}
+		else
+		{
+			LOG_ERR("Failed to decode NozzlePrimingRequest");
+		}
+	}
+	else if (type == ChangeEncoderModeRequest_fields) {
+		ChangeEncoderModeRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeEncoderModeRequest_fields, &request);
+		if (status)
+		{
+			request_change_encoder_mode(request.paused);
+			LOG_INF("ChangeEncoderModeRequest: paused %d", request.paused);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangeEncoderModeRequest");
 		}
 	}
 	else

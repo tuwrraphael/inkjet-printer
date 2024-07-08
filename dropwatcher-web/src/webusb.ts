@@ -110,6 +110,10 @@ export class WebUSBWrapper extends EventTarget {
     }
 
     async send(data: BufferSource) {
+        const mtu = 64;
+        if (data.byteLength > mtu) {
+            throw new Error(`Data exceeds MTU ${mtu} bytes`);
+        }
         await this._device.transferOut(this._endpointOut, data);
     }
 

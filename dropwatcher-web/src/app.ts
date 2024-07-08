@@ -5,6 +5,7 @@ import { Store } from "./state/Store";
 import { MovementStage } from "./movement-stage";
 import { TaskRunnerSynchronization } from "./print-tasks/TaskRunnerSynchronization";
 import { CameraAccess } from "./camera-access";
+import { SlicerClient } from "./slicer/SlicerClient";
 
 // if ("serviceWorker" in navigator) {
 //     window.addEventListener("load", async () => {
@@ -70,6 +71,10 @@ let movementStage = MovementStage.getInstance();
 movementStage.start().catch(console.error);
 
 let store = Store.getInstance();
+
+let slicerClient = SlicerClient.getInstance();
+slicerClient.sendToStore().catch(console.error);
+
 TaskRunnerSynchronization.getInstance();
 CameraAccess.getInstance();
 

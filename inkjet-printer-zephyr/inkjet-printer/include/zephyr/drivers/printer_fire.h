@@ -16,13 +16,33 @@ extern "C"
 {
 #endif
 
+    typedef enum
+    {
+        PRINTER_FIRE_TRIGGER_CLOCK,
+        PRINTER_FIRE_TRIGGER_ENCODER
+    } printer_fire_trigger_t;
+
     typedef int (*printer_fire_request_fire_t)(const struct device *dev);
     typedef int (*printer_fire_set_light_timing_t)(const struct device *dev, uint32_t delay, uint32_t duration);
+    typedef int (*printer_fire_set_trigger_t)(const struct device *dev, printer_fire_trigger_t trigger);
+    typedef int (*printer_fire_set_fire_issued_callback_t)(const struct device *dev, void (*callback)(void));
+    typedef int (*printer_fire_set_fire_cycle_completed_callback_t)(const struct device *dev, void (*callback)(void));
+    typedef int (*printer_fire_set_trigger_callback_t)(const struct device *dev, void (*callback)(void));
+    typedef int (*printer_fire_abort_t)(const struct device *dev);
+    typedef int (*printer_fire_set_trigger_reset_t)(const struct device *dev, bool reset);
+    typedef int (*printer_fire_set_timing_t)(const struct device *dev, uint32_t light_delay, uint32_t light_duration, uint32_t fire_delay, uint32_t fire_duration);
 
     __subsystem struct printer_fire_api
     {
         printer_fire_request_fire_t request_fire;
         printer_fire_set_light_timing_t set_light_timing;
+        printer_fire_set_trigger_t set_trigger;
+        printer_fire_set_fire_issued_callback_t set_fire_issued_callback;
+        printer_fire_set_fire_cycle_completed_callback_t set_fire_cycle_completed_callback;
+        printer_fire_set_trigger_callback_t set_trigger_callback;
+        printer_fire_abort_t abort;
+        printer_fire_set_trigger_reset_t set_trigger_reset;
+        printer_fire_set_timing_t set_timing;
     };
 
     __syscall int printer_fire_request_fire(const struct device *dev)
@@ -39,6 +59,62 @@ extern "C"
             (const struct printer_fire_api *)dev->api;
 
         return api->set_light_timing(dev, delay, duration);
+    }
+
+    __syscall int printer_fire_set_trigger(const struct device *dev, printer_fire_trigger_t trigger)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_trigger(dev, trigger);
+    }
+
+    __syscall int printer_fire_set_fire_issued_callback(const struct device *dev, void (*callback)(void))
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_fire_issued_callback(dev, callback);
+    }
+
+    __syscall int printer_fire_set_fire_cycle_completed_callback(const struct device *dev, void (*callback)(void))
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_fire_cycle_completed_callback(dev, callback);
+    }
+
+    __syscall int printer_fire_set_trigger_callback(const struct device *dev, void (*callback)(void))
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_trigger_callback(dev, callback);
+    }
+
+    __syscall int printer_fire_abort(const struct device *dev)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->abort(dev);
+    }
+
+    __syscall int printer_fire_set_trigger_reset(const struct device *dev, bool reset)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_trigger_reset(dev, reset);
+    }
+
+    __syscall int printer_fire_set_timing(const struct device *dev, uint32_t light_delay, uint32_t light_duration, uint32_t fire_delay, uint32_t fire_duration)
+    {
+        const struct printer_fire_api *api =
+            (const struct printer_fire_api *)dev->api;
+
+        return api->set_timing(dev, light_delay, light_duration, fire_delay, fire_duration);
     }
 
 #ifdef __cplusplus

@@ -4,12 +4,16 @@ import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
 import { MoveTaskRunner } from "./runners/MoveTaskRunner";
-import { PrinterProgram, PrinterProgramState, PrinterTask, PrinterTaskHome, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
-import { TaskRunnerSynchronization } from "./TaskRunnerSynchronization";
+import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "./printer-program";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
 import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
 import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
+import { WaitTaskRunner } from "./runners/WaitTaskRunner";
+import { ZeroEncoderTaskRunner } from "./runners/ZeroEncoderTaskRunner";
+import { PrintCustomTracksTaskRunner, PrintTrackTaskRunner } from "./runners/PrintTrackTaskRunner";
+import { SlicerClient } from "../slicer/SlicerClient";
+import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -17,11 +21,13 @@ export class PrintTaskRunner {
     private store: Store;
     private programRunnerState: any;
     private canceled = false;
+    private slicerClient: SlicerClient;
 
     constructor(public program: PrinterProgram) {
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
         this.store = Store.getInstance();
+        this.slicerClient = SlicerClient.getInstance();
     }
 
     async isRunning() {
@@ -93,6 +99,26 @@ export class PrintTaskRunner {
             case PrinterTaskType.Move:
                 let moveTaskRunner = new MoveTaskRunner(task, this.movementStage);
                 await moveTaskRunner.run();
+                break;
+            case PrinterTaskType.PrintTrack:
+                let moveAndSliceNextTaskRunner = new PrintTrackTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
+                await moveAndSliceNextTaskRunner.run();
+                break;
+            case PrinterTaskType.Wait:
+                let waitTaskRunner = new WaitTaskRunner(task);
+                await waitTaskRunner.run();
+                break;
+            case PrinterTaskType.ZeroEncoder:
+                let zeroEncoderTaskRunner = new ZeroEncoderTaskRunner(task, this.printerUsb);
+                await zeroEncoderTaskRunner.run();
+                break;
+            case PrinterTaskType.PrintCustomTracks:
+                let printCustomTracksTaskRunner = new PrintCustomTracksTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
+                await printCustomTracksTaskRunner.run();
+                break;
+            case PrinterTaskType.HeatBed:
+                let heatBedTaskRunner = new HeatBedTaskRunner(task, this.movementStage);
+                await heatBedTaskRunner.run();
                 break;
             default:
                 throw new Error("Unknown task type");

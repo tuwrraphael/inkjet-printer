@@ -1,9 +1,25 @@
 .app-container {
     display: grid;
-    grid-template-columns: 8fr 4fr;
+    grid-template-columns: auto max-content;
+    grid-template-rows: min-content auto;
+    grid-template-areas:
+        "header filestatus"
+        "content status";
     height: 100vh;
 }
 
 .content {
     padding: 0.5em;
+    grid-area: content;
+}
+
+.app-header {
+    grid-area: header;
+    padding: 0.5em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.app-status {
+    grid-area: status;
 }

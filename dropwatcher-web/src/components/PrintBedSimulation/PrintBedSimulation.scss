@@ -1,0 +1,24 @@
+#canvas-container {
+    height: 75vh;
+    width: 100%;
+    border: 1px solid black;
+    display: flex;
+    box-sizing: border-box;
+}
+
+#print-canvas {
+    flex-grow: 1;
+}
+
+print-bed-simulation {
+    overflow: hidden;
+}
+
+.print-bed-simulation {
+    &__controls {
+        display: flex;
+        input[type="range"] {
+            flex-grow: 1;
+        }
+    }
+}

@@ -1,3 +1,4 @@
+import { ChangeEncoderModeRequest, NozzlePrimingRequest } from "./proto/compiled";
 import {
     CameraFrameRequest,
     ChangeDropwatcherParametersRequest,
@@ -6,7 +7,10 @@ import {
     PrinterRequest,
     PrinterSystemStateResponse,
     ChangeNozzleDataRequest,
-    ChangePrinterSystemStateRequest
+    ChangePrinterSystemStateRequest,
+    ChangeEncoderModeSettingsRequest,
+    ChangeEncoderPositionRequest,
+    ChangePrintMemoryRequest
 } from "./proto/compiled";
 import { Store } from "./state/Store";
 import { NozzleDataChanged } from "./state/actions/NozzleDataSet";
@@ -104,4 +108,36 @@ export class PrinterUSB {
         printerRequest.changePrinterSystemStateRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
+
+    async sendChangeEncoderModeSettingsRequest(request: ChangeEncoderModeSettingsRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeEncoderModeSettingsRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeEncoderPositionRequest(request: ChangeEncoderPositionRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeEncoderPositionRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangePrintMemoryRequest(request: ChangePrintMemoryRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changePrintMemoryRequest = request;
+        let encoded = PrinterRequest.encode(printerRequest).finish();
+        await this.webUsbWrapper.send(encoded);
+    }
+
+    async sendNozzlePrimingRequest() {
+        let printerRequest = new PrinterRequest();
+        printerRequest.nozzlePrimingRequest = new NozzlePrimingRequest();
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeEncoderModeRequest(request : ChangeEncoderModeRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeEncoderModeRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
 }

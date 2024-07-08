@@ -8,5 +8,19 @@ export const enum ActionType {
     NozzleDataChanged,
     DropwatcherParametersChanged,
     CameraStateChanged,
-    DropwatcherNozzlePosChanged
+    DropwatcherNozzlePosChanged,
+    ModelAdded,
+    ViewLayerChanged,
+    ModelPositionChanged,
+    SlicePositionChanged,
+    SlicePositionIncrement,
+    PrintingParamsChanged,
+    SaveToFile,
+    OpenFile,
+    SaveToCurrentFile,
+    ModelSelected,
+    ModelParamsChanged,
+    SetSlicerWorker,
+    PrintingTrack,
+    SetCustomTracks
 }

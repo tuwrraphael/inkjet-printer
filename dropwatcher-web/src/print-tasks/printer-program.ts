@@ -1,10 +1,17 @@
+import { CustomTrack } from "../state/State";
+
 export const enum PrinterTaskType {
     Home,
     PrimeNozzle,
     SetTargetPressure,
     SetNozzleData,
     RequestFire,
-    Move
+    Move,
+    ZeroEncoder,
+    Wait,
+    PrintTrack,
+    PrintCustomTracks,
+    HeatBed
 }
 
 export interface PrinterTask {
@@ -17,9 +24,6 @@ export interface PrinterTaskHome extends PrinterTask {
 
 export interface PrinterTaskPrimeNozzle extends PrinterTask {
     readonly type: PrinterTaskType.PrimeNozzle;
-    feedTime: number;
-    feedLimitPressure: number;
-    feedLimitPwm: number;
 }
 
 export interface PrinterTaskSetTargetPressure extends PrinterTask {
@@ -37,10 +41,38 @@ export interface PrinterTaskRequestFire extends PrinterTask {
 
 export interface PrinterTaskMove extends PrinterTask {
     readonly type: PrinterTaskType.Move;
-    x: number;
-    y: number;
-    z: number;
+    movement: { x: number, y: number } | { z: number } | { x: number, y: number, z: number };
     feedRate: number;
+}
+
+export interface PrinterTaskHeadBed extends PrinterTask {
+    readonly type: PrinterTaskType.HeatBed;
+    temperature: number;
+}
+
+export interface PrintTrackTask extends PrinterTask {
+    readonly type: PrinterTaskType.PrintTrack;
+    moveAxisPos: number;
+    layer: number;
+    sequentialFires: number;
+    fireEveryTicks: number;
+}
+
+export interface PrinterTaskPrintCustomTracksTask extends PrinterTask {
+    readonly type: PrinterTaskType.PrintCustomTracks;
+    customTracks: CustomTrack[];
+    sequentialFires: number;
+    fireEveryTicks: number;
+}
+
+
+export interface PrinterTaskZeroEncoder extends PrinterTask {
+    readonly type: PrinterTaskType.ZeroEncoder;
+}
+
+export interface PrinterTaskWait extends PrinterTask {
+    readonly type: PrinterTaskType.Wait;
+    durationMs: number;
 }
 
 export type PrinterTasks = PrinterTaskHome
@@ -50,6 +82,11 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskRequestFire
     | PrinterTaskMove
     | PrinterTaskHome
+    | PrintTrackTask
+    | PrinterTaskZeroEncoder
+    | PrinterTaskWait
+    | PrinterTaskPrintCustomTracksTask
+    | PrinterTaskHeadBed
     ;
 
 

@@ -7,3 +7,4 @@ export class InitializeWorker implements Action {
     constructor(public state: State) { }
     readonly type = ActionType.InitializeWorker;
 }
+

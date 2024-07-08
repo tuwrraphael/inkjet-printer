@@ -9,6 +9,10 @@
         "stm32h7xx_ll_rcc.h": "c",
         "stm32h7xx_hal_tim.h": "c",
         "printer_fire.h": "c",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "print_control.h": "c",
+        "failure_handling.h": "c",
+        "stdint.h": "c",
+        "test_pattern.h": "c"
     }
 }
