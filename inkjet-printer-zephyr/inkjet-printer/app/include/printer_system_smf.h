@@ -9,7 +9,8 @@ enum printer_system_smf_state
     PRINTER_SYSTEM_IDLE,
     PRINTER_SYSTEM_ERROR,
     PRINTER_SYSTEM_DROPWATCHER,
-    PRINTER_SYSTEM_PRINT
+    PRINTER_SYSTEM_PRINT,
+    PRINTER_SYSTEM_KEEP_ALIVE
 };
 
 int printer_system_smf();
@@ -18,6 +19,7 @@ void printer_system_smf_go_to_safe_state();
 void go_to_dropwatcher();
 void go_to_idle();
 void go_to_print();
+void go_to_keep_alive();
 
 void request_printhead_fire();
 

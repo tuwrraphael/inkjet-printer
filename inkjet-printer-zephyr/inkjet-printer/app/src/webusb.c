@@ -207,6 +207,8 @@ static PrinterSystemState map_system_state_to_proto(enum printer_system_smf_stat
 		return PrinterSystemState_PrinterSystemState_DROPWATCHER;
 	case PRINTER_SYSTEM_PRINT:
 		return PrinterSystemState_PrinterSystemState_PRINT;
+	case PRINTER_SYSTEM_KEEP_ALIVE:
+		return PrinterSystemState_PrinterSystemState_KEEP_ALIVE;
 	default:
 		return PrinterSystemState_PrinterSystemState_UNSPECIFIED;
 	}
@@ -220,6 +222,8 @@ static PressureControlAlgorithm map_pressure_control_algorithm_to_proto(pressure
 		return PressureControlAlgorithm_PressureControlAlgorithm_TARGET_PRESSURE;
 	case PRESSURE_CONTROL_ALGORITHM_FEED_WITH_LIMIT:
 		return PressureControlAlgorithm_PressureControlAlgorithm_FEED_WITH_LIMIT;
+	case PRESSURE_CONTROL_ALGORITHM_NONE:
+		return PressureControlAlgorithm_PressureControlAlgorithm_NONE;
 	default:
 		return PressureControlAlgorithm_PressureControlAlgorithm_UNSPECIFIED;
 	}
@@ -264,7 +268,8 @@ static pressure_control_algorithm_t map_proto_to_pressure_control_algorithm(Pres
 	}
 }
 
-static EncoderMode map_encoder_mode_to_proto(encoder_mode_t encoder_mode) {
+static EncoderMode map_encoder_mode_to_proto(encoder_mode_t encoder_mode)
+{
 	switch (encoder_mode)
 	{
 	case ENCODER_MODE_OFF:
@@ -276,6 +281,17 @@ static EncoderMode map_encoder_mode_to_proto(encoder_mode_t encoder_mode) {
 	default:
 		return EncoderMode_EncoderMode_UNSPECIFIED;
 	}
+}
+
+static void map_pump_parameters_to_proto(pressure_control_algorithm_init_t *in, PressureControlPumpParameters *out)
+{
+	out->algorithm = map_pressure_control_algorithm_to_proto(in->algorithm);
+	out->direction = map_pressure_control_direction_to_proto(in->direction);
+	out->target_pressure = in->target_pressure;
+	out->max_pressure_limit = in->max_pressure_limit;
+	out->min_pressure_limit = in->min_pressure_limit;
+	out->feed_pwm = in->feed_pwm;
+	out->feed_time = in->feed_time;
 }
 
 static void webusb_read_cb(uint8_t ep, int size, void *priv)
@@ -308,14 +324,15 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			pressure_control_info_t pressure_info;
 			pressure_control_get_info(&pressure_info);
 			response.has_pressure_control = true;
-			response.pressure_control.pressure = pressure_info.pressure;
 			response.pressure_control.has_parameters = true;
-			response.pressure_control.parameters.algorithm = map_pressure_control_algorithm_to_proto(pressure_info.algorithm.algorithm);
-			response.pressure_control.parameters.direction = map_pressure_control_direction_to_proto(pressure_info.algorithm.direction);
-			response.pressure_control.parameters.target_pressure = pressure_info.algorithm.target_pressure;
-			response.pressure_control.parameters.limit_pressure = pressure_info.algorithm.limit_pressure;
-			response.pressure_control.parameters.feed_pwm = pressure_info.algorithm.feed_pwm;
-			response.pressure_control.parameters.feed_time = pressure_info.algorithm.feed_time;
+
+			// response.pressure_control.parameters.has_ink_pump = true;
+			// map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_INK_PUMP_IDX], &response.pressure_control.parameters.ink_pump);
+
+			// response.pressure_control.parameters.has_capping_pump = true;
+			// map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_CAPPING_PUMP_IDX], &response.pressure_control.parameters.capping_pump);
+
+			response.pressure_control.pressure = pressure_info.pressure;
 			response.pressure_control.done = pressure_info.done;
 			response.pressure_control.enabled = pressure_info.enabled;
 
@@ -372,6 +389,10 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			else if (request.state == PrinterSystemState_PrinterSystemState_PRINT)
 			{
 				go_to_print();
+			}
+			else if (request.state == PrinterSystemState_PrinterSystemState_KEEP_ALIVE)
+			{
+				go_to_keep_alive();
 			}
 			else
 			{
@@ -431,14 +452,33 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		status = decode_unionmessage_contents(&stream, ChangePressureControlParametersRequest_fields, &request);
 		if (status)
 		{
-			pressure_control_algorithm_init_t init = {
-				.algorithm = map_proto_to_pressure_control_algorithm(request.parameters.algorithm),
-				.direction = map_proto_to_pressure_control_direction(request.parameters.direction),
-				.target_pressure = request.parameters.target_pressure,
-				.limit_pressure = request.parameters.limit_pressure,
-				.feed_pwm = request.parameters.feed_pwm,
-				.feed_time = request.parameters.feed_time};
-			pressure_control_update_parameters(&init);
+
+			if (request.parameters.has_ink_pump)
+			{
+				pressure_control_algorithm_init_t ink_pump_init;
+				ink_pump_init.algorithm = map_proto_to_pressure_control_algorithm(request.parameters.ink_pump.algorithm);
+				ink_pump_init.direction = map_proto_to_pressure_control_direction(request.parameters.ink_pump.direction);
+				ink_pump_init.target_pressure = request.parameters.ink_pump.target_pressure;
+				ink_pump_init.max_pressure_limit = request.parameters.ink_pump.max_pressure_limit;
+				ink_pump_init.min_pressure_limit = request.parameters.ink_pump.min_pressure_limit;
+				ink_pump_init.feed_pwm = request.parameters.ink_pump.feed_pwm;
+				ink_pump_init.feed_time = request.parameters.ink_pump.feed_time;
+				pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_init);
+			}
+
+			if (request.parameters.has_capping_pump)
+			{
+				pressure_control_algorithm_init_t capping_pump_init;
+				capping_pump_init.algorithm = map_proto_to_pressure_control_algorithm(request.parameters.capping_pump.algorithm);
+				capping_pump_init.direction = map_proto_to_pressure_control_direction(request.parameters.capping_pump.direction);
+				capping_pump_init.target_pressure = request.parameters.capping_pump.target_pressure;
+				capping_pump_init.max_pressure_limit = request.parameters.capping_pump.max_pressure_limit;
+				capping_pump_init.min_pressure_limit = request.parameters.capping_pump.min_pressure_limit;
+				capping_pump_init.feed_pwm = request.parameters.capping_pump.feed_pwm;
+				capping_pump_init.feed_time = request.parameters.capping_pump.feed_time;
+				pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_init);
+			}
+
 			if (request.parameters.enable)
 			{
 				pressure_control_enable();
@@ -516,7 +556,8 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			LOG_ERR("Failed to decode NozzlePrimingRequest");
 		}
 	}
-	else if (type == ChangeEncoderModeRequest_fields) {
+	else if (type == ChangeEncoderModeRequest_fields)
+	{
 		ChangeEncoderModeRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangeEncoderModeRequest_fields, &request);
 		if (status)

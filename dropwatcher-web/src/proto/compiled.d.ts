@@ -4,7 +4,8 @@ import Long = require("long");
 export enum PressureControlAlgorithm {
     PressureControlAlgorithm_UNSPECIFIED = 0,
     PressureControlAlgorithm_TARGET_PRESSURE = 1,
-    PressureControlAlgorithm_FEED_WITH_LIMIT = 2
+    PressureControlAlgorithm_FEED_WITH_LIMIT = 2,
+    PressureControlAlgorithm_NONE = 3
 }
 
 /** PressureControlDirection enum. */
@@ -12,6 +13,114 @@ export enum PressureControlDirection {
     PressureControlDirection_UNSPECIFIED = 0,
     PressureControlDirection_VACUUM = 1,
     PressureControlDirection_PRESSURE = 2
+}
+
+/** Represents a PressureControlPumpParameters. */
+export class PressureControlPumpParameters implements IPressureControlPumpParameters {
+
+    /**
+     * Constructs a new PressureControlPumpParameters.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPressureControlPumpParameters);
+
+    /** PressureControlPumpParameters algorithm. */
+    public algorithm: PressureControlAlgorithm;
+
+    /** PressureControlPumpParameters targetPressure. */
+    public targetPressure: number;
+
+    /** PressureControlPumpParameters direction. */
+    public direction: PressureControlDirection;
+
+    /** PressureControlPumpParameters maxPressureLimit. */
+    public maxPressureLimit: number;
+
+    /** PressureControlPumpParameters minPressureLimit. */
+    public minPressureLimit: number;
+
+    /** PressureControlPumpParameters feedPwm. */
+    public feedPwm: number;
+
+    /** PressureControlPumpParameters feedTime. */
+    public feedTime: number;
+
+    /**
+     * Creates a new PressureControlPumpParameters instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PressureControlPumpParameters instance
+     */
+    public static create(properties?: IPressureControlPumpParameters): PressureControlPumpParameters;
+
+    /**
+     * Encodes the specified PressureControlPumpParameters message. Does not implicitly {@link PressureControlPumpParameters.verify|verify} messages.
+     * @param message PressureControlPumpParameters message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPressureControlPumpParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PressureControlPumpParameters message, length delimited. Does not implicitly {@link PressureControlPumpParameters.verify|verify} messages.
+     * @param message PressureControlPumpParameters message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPressureControlPumpParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PressureControlPumpParameters message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PressureControlPumpParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PressureControlPumpParameters;
+
+    /**
+     * Decodes a PressureControlPumpParameters message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PressureControlPumpParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PressureControlPumpParameters;
+
+    /**
+     * Verifies a PressureControlPumpParameters message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PressureControlPumpParameters message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PressureControlPumpParameters
+     */
+    public static fromObject(object: { [k: string]: any }): PressureControlPumpParameters;
+
+    /**
+     * Creates a plain object from a PressureControlPumpParameters message. Also converts values to other types if specified.
+     * @param message PressureControlPumpParameters
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PressureControlPumpParameters, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PressureControlPumpParameters to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for PressureControlPumpParameters
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
 /** Represents a PressureControlParameters. */
@@ -26,23 +135,17 @@ export class PressureControlParameters implements IPressureControlParameters {
     /** PressureControlParameters enable. */
     public enable: boolean;
 
-    /** PressureControlParameters algorithm. */
-    public algorithm: PressureControlAlgorithm;
+    /** PressureControlParameters inkPump. */
+    public inkPump?: (IPressureControlPumpParameters|null);
 
-    /** PressureControlParameters targetPressure. */
-    public targetPressure: number;
+    /** PressureControlParameters cappingPump. */
+    public cappingPump?: (IPressureControlPumpParameters|null);
 
-    /** PressureControlParameters direction. */
-    public direction: PressureControlDirection;
+    /** PressureControlParameters _inkPump. */
+    public _inkPump?: "inkPump";
 
-    /** PressureControlParameters limitPressure. */
-    public limitPressure: number;
-
-    /** PressureControlParameters feedPwm. */
-    public feedPwm: number;
-
-    /** PressureControlParameters feedTime. */
-    public feedTime: number;
+    /** PressureControlParameters _cappingPump. */
+    public _cappingPump?: "cappingPump";
 
     /**
      * Creates a new PressureControlParameters instance using the specified properties.
@@ -1595,7 +1698,8 @@ export enum PrinterSystemState {
     PrinterSystemState_IDLE = 2,
     PrinterSystemState_ERROR = 3,
     PrinterSystemState_DROPWATCHER = 4,
-    PrinterSystemState_PRINT = 5
+    PrinterSystemState_PRINT = 5,
+    PrinterSystemState_KEEP_ALIVE = 6
 }
 
 /** Represents a PrinterSystemStateResponse. */

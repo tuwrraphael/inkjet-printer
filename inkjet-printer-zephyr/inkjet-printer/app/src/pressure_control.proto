@@ -4,6 +4,7 @@ enum PressureControlAlgorithm {
   PressureControlAlgorithm_UNSPECIFIED = 0;
   PressureControlAlgorithm_TARGET_PRESSURE = 1;
   PressureControlAlgorithm_FEED_WITH_LIMIT = 2;
+  PressureControlAlgorithm_NONE = 3;
 }
 
 enum PressureControlDirection {
@@ -12,14 +13,20 @@ enum PressureControlDirection {
   PressureControlDirection_PRESSURE = 2;
 }
 
-message PressureControlParameters {
-  bool enable = 1;
+message PressureControlPumpParameters {
   PressureControlAlgorithm algorithm = 2;
   float target_pressure = 3;
   PressureControlDirection direction = 4;
-  float limit_pressure = 5;
-  float feed_pwm = 6;
-  float feed_time = 7;
+  float max_pressure_limit = 5;
+  float min_pressure_limit = 6;
+  float feed_pwm = 7;
+  float feed_time = 8;
+}
+
+message PressureControlParameters {
+  bool enable = 1;
+  optional PressureControlPumpParameters ink_pump = 2;
+  optional PressureControlPumpParameters capping_pump = 3;
 }
 
 message PressureControlSystemState {

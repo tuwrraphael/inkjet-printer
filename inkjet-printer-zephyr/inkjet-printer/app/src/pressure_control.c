@@ -90,7 +90,10 @@ int pressure_control_initialize(pressure_control_init_t *init)
 	{
 		LOG_ERR("Pressure sensor not ready");
 	}
-	params.init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+	for (int i = 0; i < NUM_PUMPS; i++)
+	{
+		params.algorithm[i].algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+	}
 	k_timer_start(&control_pressure_timer, K_MSEC(MEASURE_MSEC), K_MSEC(MEASURE_MSEC));
 	return 0;
 }
@@ -146,7 +149,7 @@ static void control_pressure_handler(struct k_work *work)
 	float pressure_kpa = pressure.val1 + (pressure.val2 / (1000.0 * 1000.0));
 	params.current_pressure = pressure_kpa * 10 - zero_pressure;
 
-	pressure_control_algorithm_result_t result;
+	pressure_control_result_t result;
 	params.initial_run = k_sem_take(&initial_run, K_NO_WAIT) == 0;
 	params.parameter_change = k_sem_take(&parameter_change, K_NO_WAIT) == 0;
 	pressure_control_algorithm(&params, &result);
@@ -164,13 +167,14 @@ static void control_pressure_handler(struct k_work *work)
 	}
 	else
 	{
-		motor_set_action_safe(ink_pump_device, result.action, result.pwm);
+		motor_set_action_safe(ink_pump_device, result.motor_result[PRESSURE_CONTROL_INK_PUMP_IDX].action, result.motor_result[PRESSURE_CONTROL_INK_PUMP_IDX].pwm);
+		motor_set_action_safe(capping_pump_device, result.motor_result[PRESSURE_CONTROL_CAPPING_PUMP_IDX].action, result.motor_result[PRESSURE_CONTROL_CAPPING_PUMP_IDX].pwm);
 	}
 }
 
-int pressure_control_wait_for_done()
+int pressure_control_wait_for_done(k_timeout_t timeout)
 {
-	int events = k_event_wait(&pressure_control_event, 0xFFFFFFFF, false, K_FOREVER);
+	int events = k_event_wait(&pressure_control_event, 0xFFFFFFFF, false, timeout);
 	if (events == EVENT_ALGORITHM_DONE)
 	{
 		return 0;
@@ -239,15 +243,20 @@ void pressure_control_enable()
 	}
 }
 
-void pressure_control_update_parameters(pressure_control_algorithm_init_t *init)
+void pressure_control_update_parameters(int pump_idx, pressure_control_algorithm_init_t *init)
 {
 	k_event_clear(&pressure_control_event, EVENT_ALGORITHM_DONE);
-	if (init->algorithm != params.init.algorithm)
+	bool is_initial_run = false;
+	if (init->algorithm != params.algorithm[pump_idx].algorithm)
+	{
+		is_initial_run = true;
+	}
+	if (is_initial_run)
 	{
 		k_sem_give(&initial_run);
 	}
 	k_sem_give(&parameter_change);
-	memcpy(&params.init, init, sizeof(pressure_control_algorithm_init_t));
+	memcpy(&params.algorithm[pump_idx], init, sizeof(pressure_control_algorithm_init_t));
 }
 
 void pressure_control_disable()
@@ -261,7 +270,7 @@ void pressure_control_disable()
 void pressure_control_get_info(pressure_control_info_t *info)
 {
 	info->pressure = pressure_control_get_pressure();
-	memcpy(&info->algorithm, &params.init, sizeof(pressure_control_algorithm_init_t));
+	memcpy(&info->algorithm, &params.algorithm, NUM_PUMPS * sizeof(pressure_control_algorithm_init_t));
 	info->done = k_event_test(&pressure_control_event, EVENT_ALGORITHM_DONE);
 	info->enabled = pressure_control_enabled;
 }

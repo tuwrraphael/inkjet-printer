@@ -1,7 +1,7 @@
 import * as Comlink from "comlink";
 
 import { ActionType } from "./actions/ActionType";
-import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, PolygonType, Model, Polygon, Point, NewModel, SlicingStatus, PrintControlEncoderMode } from "./State";
+import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, Model, SlicingStatus, PrintControlEncoderMode, PressureControlPumpParameters } from "./State";
 
 import { PrinterUSBConnectionStateChanged } from "./actions/PrinterUSBConnectionStateChanged";
 import { PrinterSystemStateResponseReceived } from "./actions/PrinterSystemStateResponseReceived";
@@ -10,6 +10,7 @@ import {
     PrinterSystemState as ProtoPrinterSystemState,
     PressureControlDirection as ProtoPressureControlDirection,
     PressureControlAlgorithm as ProtoPressureControlAlgorithm,
+    PressureControlPumpParameters as ProtoPressureControlPumpParameters,
     EncoderMode as ProtoEncoderMode
 } from "../proto/compiled";
 import { MovementStageConnectionChanged } from "./actions/MovementStageConnectionChanged";
@@ -24,10 +25,8 @@ import { SaveToFile } from "./actions/SaveToFile";
 import { ModelAdded } from "./actions/ModelAdded";
 import { ViewLayerChanged } from "./actions/ViewLayerChanged";
 import { ModelPositionChanged } from "./actions/ModelPositionChanged";
-import { PrintPlanner, TrackRasterizer } from "../slicer/TrackSlicer";
 import { SlicePositionChanged } from "./actions/SlicePositionChanged";
 import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
-import { getPrintheadSwathe } from "../slicer/getPrintheadSwathe";
 import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 import { getModelBoundingBox } from "../utils/getModelBoundingBox";
 import { SaveToCurrentFile } from "./actions/SaveToCurrentFile";
@@ -125,6 +124,18 @@ function mapPressureControlAlgorithm(a: ProtoPressureControlAlgorithm): Pressure
         default:
             return PressureControlAlgorithm.Unspecified;
     }
+}
+
+function mapPressureControlParameters(p: ProtoPressureControlPumpParameters): PressureControlPumpParameters {
+    return {
+        algorithm: p.algorithm ? mapPressureControlAlgorithm(p.algorithm) : PressureControlAlgorithm.Unspecified,
+        direction: p.direction ? mapPressureControlDirection(p.direction) : PressureControlDirection.Unspecified,
+        feedPwm: p.feedPwm || 0,
+        feedTime: p.feedTime || 0,
+        maxPressureLimit: p.maxPressureLimit || 0,
+        minPressureLimit: p.minPressureLimit || 0,
+        targetPressure: p.targetPressure || 0
+    };
 }
 
 function mapEncoderMode(a: ProtoEncoderMode): PrintControlEncoderMode {
@@ -327,15 +338,8 @@ async function handleMessage(msg: Actions) {
                             pressure: pressure,
                             done: msg.response.pressureControl ? Boolean(msg.response.pressureControl.done) : undefined,
                             enabled: msg.response.pressureControl ? Boolean(msg.response.pressureControl.enabled) : undefined,
-                            parameters: msg.response.pressureControl?.parameters ? {
-                                targetPressure: msg.response.pressureControl.parameters.targetPressure,
-                                direction: msg.response.pressureControl.parameters.direction ? mapPressureControlDirection(msg.response.pressureControl.parameters.direction) : PressureControlDirection.Unspecified,
-                                feedTime: msg.response.pressureControl.parameters.feedTime,
-                                feedPwm: msg.response.pressureControl.parameters.feedPwm,
-                                limitPressure: msg.response.pressureControl.parameters.limitPressure,
-                                algorithm: msg.response.pressureControl.parameters.algorithm ? mapPressureControlAlgorithm(msg.response.pressureControl.parameters.algorithm) : PressureControlAlgorithm.Unspecified,
-                                enabled: msg.response.pressureControl.parameters.enabled,
-                            } : null
+                            inkPump: msg.response.pressureControl?.parameters?.inkPump ? mapPressureControlParameters(msg.response.pressureControl.parameters.inkPump) : null,
+                            cappingPump: msg.response.pressureControl?.parameters?.cappingPump ? mapPressureControlParameters(msg.response.pressureControl.parameters.cappingPump) : null
                         } : null,
                         printControl: msg.response.printControl ? {
                             encoderModeSettings: {

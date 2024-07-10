@@ -2,7 +2,7 @@
 <app-chart class="ink-control__chart"></app-chart>
 <div>
     <form id="ink-control-form">
-        <label for="action">Action</label>
+        <!-- <label for="action">Action</label>
         <div class="input-group">
             <select id="action" name="action">
                 <option value=""></option>
@@ -10,33 +10,94 @@
                 <option value="fillflushtank">Fill Flush Tank</option>
                 <option value="targetpressure">Control Pressure</option>
             </select>
-        </div>
-        <fieldset id="nozzle-priming-group">
-            <label for="feed-time">Feed Time</label>
+        </div> -->
+        <label for="ink-pump">Ink</label>
+        <fieldset id="ink-pump-ink-pump">
+            <label for="ink-pump-pump-action">Type</label>
             <div class="input-group">
-                <input type="number" name="feed-time" required="required" id="feed-time" value="5" step="0.1" min="0">
+                <select id="ink-pump-pump-action" name="ink-pump-pump-action">
+                    <option value="none">None</option>
+                    <option value="targetpressure">Target Pressure</option>
+                    <option value="feed">Feed</option>
+                    <option value="vacuum">Vacuum</option>
+                </select>
+            </div>
+            <label for="ink-pump-feed-time">Feed Time</label>
+            <div class="input-group">
+                <input type="number" name="ink-pump-feed-time" required="required" id="ink-pump-feed-time" value="5"
+                    step="0.1" min="0">
                 <span>s</span>
             </div>
 
-            <label for="feed-limit-pressure">Feed Limit Pressure</label>
+            <label for="ink-pump-feed-max-pressure">Feed Max Pressure</label>
             <div class="input-group">
-                <input type="number" name="feed-limit-pressure" required="required" id="feed-limit-pressure" value="20"
-                    step="0.1">
+                <input type="number" name="ink-pump-feed-max-pressure" required="required"
+                    id="ink-pump-feed-max-pressure" value="20" step="0.1">
                 <span>mbar</span>
             </div>
 
-            <label for="feed-limit-pwm">Feed Limit PWM</label>
+            <label for="ink-pump-feed-min-pressure">Feed Min Pressure</label>
             <div class="input-group">
-                <input type="number" name="feed-limit-pwm" required="required" id="feed-limit-pwm" value="0.8"
-                    step="0.1" min="0" max="1">
+                <input type="number" name="ink-pump-feed-min-pressure" required="required"
+                    id="ink-pump-feed-min-pressure" value="-20" step="0.1">
+                <span>mbar</span>
+            </div>
+
+            <label for="ink-pump-feed-limit-pwm">Feed Limit PWM</label>
+            <div class="input-group">
+                <input type="number" name="ink-pump-feed-limit-pwm" required="required" id="ink-pump-feed-limit-pwm"
+                    value="0.8" step="0.1" min="0" max="1">
+            </div>
+
+            <label for="ink-pump-target-pressure">Setpoint</label>
+            <div class="input-group">
+                <input type="number" name="ink-pump-target-pressure" required="required" id="ink-pump-target-pressure"
+                    value="0" step="0.1">
+                <span>mbar</span>
             </div>
         </fieldset>
-        <fieldset id="target-pressure-group">
-
-            <label for="target-pressure">Setpoint</label>
+        <label for="capping-pump">Capping</label>
+        <fieldset id="capping-pump-ink-pump">
+            <label for="capping-pump-pump-action">Type</label>
             <div class="input-group">
-                <input type="number" name="target-pressure" required="required" id="target-pressure" value="0"
-                    step="0.1">
+                <select id="capping-pump-pump-action" name="capping-pump-pump-action">
+                    <option value="none">None</option>
+                    <option value="targetpressure">Target Pressure</option>
+                    <option value="feed">Feed</option>
+                    <option value="vacuum">Vacuum</option>
+                </select>
+            </div>
+            <label for="capping-pump-feed-time">Feed Time</label>
+            <div class="input-group">
+                <input type="number" name="capping-pump-feed-time" required="required" id="capping-pump-feed-time"
+                    value="5" step="0.1" min="0">
+                <span>s</span>
+            </div>
+
+            <label for="capping-pump-feed-max-pressure">Feed Max Pressure</label>
+            <div class="input-group">
+                <input type="number" name="capping-pump-feed-max-pressure" required="required"
+                    id="capping-pump-feed-max-pressure" value="20" step="0.1">
+                <span>mbar</span>
+            </div>
+
+            <label for="capping-pump-feed-min-pressure">Feed Min Pressure</label>
+            <div class="input-group">
+                <input type="number" name="capping-pump-feed-min-pressure" required="required"
+                    id="capping-pump-feed-min-pressure" value="-20" step="0.1">
+                <span>mbar</span>
+            </div>
+
+            <label for="capping-pump-feed-limit-pwm">Feed Limit PWM</label>
+            <div class="input-group">
+                <input type="number" name="capping-pump-feed-limit-pwm" required="required"
+                    id="capping-pump-feed-limit-pwm" value="0.8" step="0.1" min="0" max="1">
+            </div>
+
+            <label for="capping-pump-target-pressure">Setpoint</label>
+            <div class="input-group">
+                <input type="number" name="capping-pump-target-pressure" required="required"
+                    id="capping-pump-target-pressure" value="0" step="0.1">
                 <span>mbar</span>
             </div>
         </fieldset>

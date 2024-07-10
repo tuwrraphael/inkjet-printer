@@ -7,6 +7,7 @@ extern "C"
 #endif
 
 #include <stdbool.h>
+#include <zephyr/kernel.h>
 #include "pressure_control_algorithm.h"
 
     typedef void (*pressure_control_error_callback_t)(void);
@@ -21,7 +22,7 @@ extern "C"
         float pressure;
         bool enabled;
         bool done;
-        pressure_control_algorithm_init_t algorithm;
+        pressure_control_algorithm_init_t algorithm[NUM_PUMPS];
     } pressure_control_info_t;
 
     int pressure_control_initialize(pressure_control_init_t *init);
@@ -30,7 +31,7 @@ extern "C"
 
     void pressure_control_enable();
 
-    void pressure_control_update_parameters(pressure_control_algorithm_init_t *init);
+    void pressure_control_update_parameters(int pump_idx, pressure_control_algorithm_init_t *init);
 
     void pressure_control_disable();
 
@@ -38,7 +39,7 @@ extern "C"
 
     void pressure_control_get_info(pressure_control_info_t *info);
 
-    int pressure_control_wait_for_done();
+    int pressure_control_wait_for_done(k_timeout_t timeout);
 
     void pressure_control_go_to_safe_state();
 

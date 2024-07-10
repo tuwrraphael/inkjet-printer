@@ -6,4 +6,5 @@ enum PrinterSystemState {
   PrinterSystemState_ERROR = 3;
   PrinterSystemState_DROPWATCHER = 4;
   PrinterSystemState_PRINT = 5;
+  PrinterSystemState_KEEP_ALIVE = 6;
 }
