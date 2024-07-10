@@ -18,7 +18,8 @@ export enum PressureControlDirection {
 export enum PressureControlAlgorithm {
     Unspecified = 0,
     TargetPressure = 1,
-    FeedwithLimit = 2
+    FeedwithLimit = 2,
+    None = 3
 }
 
 export interface StagePos {
@@ -100,6 +101,15 @@ export interface CustomTrack {
     track: TrackRasterization;
 }
 
+export interface PressureControlPumpParameters {
+    targetPressure: number;
+    direction: PressureControlDirection
+    feedTime: number;
+    feedPwm: number;
+    maxPressureLimit: number;
+    minPressureLimit: number;
+    algorithm: PressureControlAlgorithm;
+}
 
 export interface State {
     printerSystemState: {
@@ -112,14 +122,8 @@ export interface State {
             pressure: { mbar: number, timestamp: Date }[];
             enabled: boolean;
             done: boolean;
-            parameters: {
-                targetPressure: number;
-                direction: PressureControlDirection
-                feedTime: number;
-                feedPwm: number;
-                limitPressure: number;
-                algorithm: PressureControlAlgorithm;
-            }
+            inkPump: PressureControlPumpParameters;
+            cappingPump: PressureControlPumpParameters;
         },
         printControl: PrintControlState
     },

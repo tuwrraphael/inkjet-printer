@@ -441,20 +441,6 @@ static int cmd_pressure_control_enable(const struct shell *sh, size_t argc, char
 SHELL_SUBCMD_DICT_SET_CREATE(pressure_control_enable_cmds, cmd_pressure_control_enable,
 							 (enable, true, "enable"), (disable, false, "disable"));
 
-static int cmd_pressure_contol_set_target_pressure(const struct shell *sh, size_t argc, char **argv)
-{
-	if (argc != 2)
-	{
-		shell_print(sh, "Usage: pressure_control_set_target_pressure <pressure>");
-		return EINVAL;
-	}
-	float pressure = atof(argv[1]);
-	pressure_control_algorithm_init_t init = {
-		.target_pressure = pressure,
-		.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE};
-	pressure_control_update_parameters(&init);
-	return 0;
-}
 
 static int cmd_pressure_control_print_pressure(const struct shell *sh, size_t argc, char **argv, void *data)
 {
@@ -510,8 +496,8 @@ static int cmd_test_pump(const struct shell *sh, size_t argc, char **argv)
 		goto print_pump_usage;
 	}
 	const struct device *pump;
-	const char *pump_name_capping = "capping";
-	const char *pump_name_ink = "ink";
+	char *pump_name_capping = "capping";
+	char *pump_name_ink = "ink";
 	char *pump_name;
 	if (strcmp(argv[1], "ink") == 0)
 	{
@@ -573,6 +559,8 @@ static int cmd_system_state(const struct shell *sh, size_t argc, char **argv, vo
 	case 1:
 		go_to_dropwatcher();
 		break;
+	case 2:
+		go_to_keep_alive();
 	default:
 		break;
 	}
@@ -580,7 +568,7 @@ static int cmd_system_state(const struct shell *sh, size_t argc, char **argv, vo
 }
 
 SHELL_SUBCMD_DICT_SET_CREATE(system_state_cmds, cmd_system_state,
-							 (idle, 0, "idle"), (dropwatcher, 1, "dropwatcher"));
+							 (idle, 0, "idle"), (dropwatcher, 1, "dropwatcher"), (keepalive, 2, "keepalive"));
 
 static int cmd_fire(const struct shell *sh, size_t argc, char **argv)
 {
@@ -655,7 +643,6 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(set_pixels, NULL, "Set pixels", cmd_set_pixels),
 							   SHELL_CMD(comm_enable, NULL, "Set COMM_ENABLE", cmd_comm_enable),
 							   SHELL_CMD(pressure_control_enable, &pressure_control_enable_cmds, "Enable/disable pressure control", NULL),
-							   SHELL_CMD(pressure_control_set_target_pressure, NULL, "Set target pressure", cmd_pressure_contol_set_target_pressure),
 							   SHELL_CMD(pressure_control_print_pressure, &pressure_control_print_pressure_cmds, "Print pressure", NULL),
 							   SHELL_CMD(encoder_print, &encoder_print_cmds, "Print encoder", NULL),
 							   SHELL_CMD(print_control_set_mode, &print_control_set_mode_cmds, "Set print control mode", NULL),
