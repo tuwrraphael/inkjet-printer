@@ -289,28 +289,52 @@ static void printer_system_keep_alive_run(void *o)
     LOG_INF("Keep alive state %d\n", printer_system_state_object.events);
     if (printer_system_state_object.events & PRINTER_SYSTEM_TIMEOUT)
     {
-        LOG_ERR("Timeout in keep alive state: execute maintainance program");
-    }
-    else
-    {
+        LOG_INF("Timeout in keep alive state: execute maintainance program");
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
+        pressure_control_algorithm_init_t capping_pump_algorithm_init;
+        memset(&capping_pump_algorithm_init, 0, sizeof(capping_pump_algorithm_init));
         pressure_control_algorithm_init_t ink_pump_algorithm_init;
         memset(&ink_pump_algorithm_init, 0, sizeof(ink_pump_algorithm_init));
+
+        capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
         ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
         ink_pump_algorithm_init.target_pressure = 0;
         pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
+        pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
+        pressure_control_enable();
+        LOG_INF("Target pressure before");
+        int ret = pressure_control_wait_for_done(K_SECONDS(10));
+        LOG_INF("Pressure control done");
+        k_sleep(K_SECONDS(1));
+        if (exit_on_error_after_wait())
+        {
+            return;
+        }
+         if (ret != 0)
+        {
+            LOG_ERR("Pressure control failed");
+            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+            return;
+        }
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
 
-        pressure_control_algorithm_init_t capping_pump_algorithm_init;
-        memset(&capping_pump_algorithm_init, 0, sizeof(capping_pump_algorithm_init));
+        ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
         capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_FEED_WITH_LIMIT;
         capping_pump_algorithm_init.direction = PRESSURE_DIRECTION_VACUUM;
         capping_pump_algorithm_init.feed_pwm = 0.8f;
-        capping_pump_algorithm_init.feed_time = 10;
-        capping_pump_algorithm_init.max_pressure_limit = 20;
-        capping_pump_algorithm_init.min_pressure_limit = -20;
+        capping_pump_algorithm_init.feed_time = 5;
+        capping_pump_algorithm_init.max_pressure_limit = 40;
+        capping_pump_algorithm_init.min_pressure_limit = -40;
+        pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
         pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
 
         pressure_control_enable();
-        int ret = pressure_control_wait_for_done(K_SECONDS(capping_pump_algorithm_init.feed_time + 3));
+        LOG_INF("Feed with limit");
+        ret = pressure_control_wait_for_done(K_SECONDS(capping_pump_algorithm_init.feed_time + 3));
+        LOG_INF("Pressure control done");
+        k_sleep(K_SECONDS(1));
         if (exit_on_error_after_wait())
         {
             return;
@@ -321,8 +345,29 @@ static void printer_system_keep_alive_run(void *o)
             smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
             return;
         }
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
+        ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+        capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+        pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
+        pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
+        pressure_control_enable();
+        LOG_INF("Target pressure after");
+        ret = pressure_control_wait_for_done(K_SECONDS(capping_pump_algorithm_init.feed_time + 3));
+        LOG_INF("Pressure control done");
+        if (exit_on_error_after_wait())
+        {
+            return;
+        }
+        if (ret != 0)
+        {
+            LOG_ERR("Pressure control failed");
+            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+            return;
+        }
+        pressure_control_disable();
     }
-    k_timer_start(&timout_timer, K_MINUTES(30), K_NO_WAIT);
+    k_timer_start(&timout_timer, K_MINUTES(75), K_NO_WAIT);
 }
 
 static void event_post(uint32_t event)
