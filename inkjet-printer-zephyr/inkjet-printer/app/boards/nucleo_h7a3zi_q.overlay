@@ -2,6 +2,9 @@
 #define MAX_FIRE_FREQUENCY PWM_HZ(4250)
 
 / {
+	zephyr,user {
+		io-channels =  <&hv_adc 0>;
+	};
 
     ink_pump: ink_pump {
 		status = "okay";
@@ -67,6 +70,13 @@
 			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+    printhead_voltage: printhead_voltage {
+    	compatible = "voltage-divider";
+    	io-channels = <&hv_adc 0>;
+    	output-ohms = <12000>;
+    	full-ohms = <(100000 + 12000)>;
+    };
 };
 
 
@@ -201,4 +211,43 @@
 &exti {
 	interrupts = <6 1>, <7 1>, <8 1>, <9 1>,
 				     <10 1>, <23 1>, <40 1>;
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_sda_pb9 &i2c1_scl_pb8>;
+	hv_adc: adc@4d {
+		status = "okay";
+		compatible = "mcp,mcp3021";
+
+		#io-channel-cells = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		
+		
+		reg = <0x4d>;
+
+		ref-internal-mv = <5000>;
+
+		channel@0 {
+			reg = <0>;
+			zephyr,gain = "ADC_GAIN_1";
+			zephyr,reference = "ADC_REF_INTERNAL";
+			zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+			zephyr,resolution = <10>;
+		};
+	};
+
+	hv_dac: dac@60 {
+		status = "okay";
+		compatible = "microchip,mcp4725";
+		
+		#io-channel-cells = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		reg = <0x60>;
+
+	};
 };

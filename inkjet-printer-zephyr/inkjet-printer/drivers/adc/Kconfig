@@ -1,0 +1,3 @@
+if ADC
+rsource "mcp3021/Kconfig"
+endif # ADC

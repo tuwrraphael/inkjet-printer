@@ -20,6 +20,7 @@
 #include "printer_system_smf.h"
 #include "failure_handling.h"
 #include "print_control.h"
+#include "regulator.h"
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -633,6 +634,31 @@ static int cmd_print_control_set_mode(const struct shell *sh, size_t argc, char 
 	return 0;
 }
 
+static int cmd_regulator_get_voltage(const struct shell *sh, size_t argc, char **argv)
+{
+	ARG_UNUSED(argc);
+	ARG_UNUSED(argv);
+	float voltage = regulator_get_voltage();
+	shell_print(sh, "Voltage: %f", voltage);
+	return 0;
+}
+
+static int cmd_regulator_set_voltage(const struct shell *sh, size_t argc, char **argv)
+{
+	if (argc != 2)
+	{
+		shell_print(sh, "Usage: regulator_set_voltage <voltage>");
+		return EINVAL;
+	}
+	double voltage = atof(argv[1]);
+	int ret = set_regulator_voltage(voltage);
+	if (ret != 0)
+	{
+		shell_print(sh, "Failed to set voltage");
+	}
+	return ret;
+}
+
 SHELL_SUBCMD_DICT_SET_CREATE(print_control_set_mode_cmds, cmd_print_control_set_mode,
 							 (manual, 1, "manual"), (encoder, 2, "encoder"));
 
@@ -652,6 +678,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_test,
 							   SHELL_CMD(fire, NULL, "Fire printhead", cmd_fire),
 							   SHELL_CMD(test_fire, NULL, "Test fire", cmd_test_fire),
 							   SHELL_CMD(enable_printhead_clock, NULL, "Enable printhead clock", cmd_enable_printhead_clock),
+							   SHELL_CMD(regulator_get_voltage, NULL, "Get regulator voltage", cmd_regulator_get_voltage),
+							   SHELL_CMD(regulator_set_voltage, NULL, "Set regulator voltage", cmd_regulator_set_voltage),
 							   SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(test, &sub_test, "Test commands", NULL);
 
@@ -741,6 +769,13 @@ int main(void)
 	if (ret != 0)
 	{
 		LOG_ERR("Printhead routines initialization failed with error %d", ret);
+		return ret;
+	}
+
+	ret = regulator_initialize();
+	if (ret != 0)
+	{
+		LOG_ERR("Regulator initialization failed with error %d", ret);
 		return ret;
 	}
 

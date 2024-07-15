@@ -1,0 +1,1 @@
+add_subdirectory_ifdef(CONFIG_ADC_MCP3021 mcp3021)
