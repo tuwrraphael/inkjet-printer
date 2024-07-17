@@ -14,12 +14,14 @@ const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
  * @property {number} PressureControlAlgorithm_UNSPECIFIED=0 PressureControlAlgorithm_UNSPECIFIED value
  * @property {number} PressureControlAlgorithm_TARGET_PRESSURE=1 PressureControlAlgorithm_TARGET_PRESSURE value
  * @property {number} PressureControlAlgorithm_FEED_WITH_LIMIT=2 PressureControlAlgorithm_FEED_WITH_LIMIT value
+ * @property {number} PressureControlAlgorithm_NONE=3 PressureControlAlgorithm_NONE value
  */
 export const PressureControlAlgorithm = $root.PressureControlAlgorithm = (() => {
     const valuesById = {}, values = Object.create(valuesById);
     values[valuesById[0] = "PressureControlAlgorithm_UNSPECIFIED"] = 0;
     values[valuesById[1] = "PressureControlAlgorithm_TARGET_PRESSURE"] = 1;
     values[valuesById[2] = "PressureControlAlgorithm_FEED_WITH_LIMIT"] = 2;
+    values[valuesById[3] = "PressureControlAlgorithm_NONE"] = 3;
     return values;
 })();
 
@@ -39,6 +41,401 @@ export const PressureControlDirection = $root.PressureControlDirection = (() => 
     return values;
 })();
 
+export const PressureControlPumpParameters = $root.PressureControlPumpParameters = (() => {
+
+    /**
+     * Properties of a PressureControlPumpParameters.
+     * @exports IPressureControlPumpParameters
+     * @interface IPressureControlPumpParameters
+     * @property {PressureControlAlgorithm|null} [algorithm] PressureControlPumpParameters algorithm
+     * @property {number|null} [targetPressure] PressureControlPumpParameters targetPressure
+     * @property {PressureControlDirection|null} [direction] PressureControlPumpParameters direction
+     * @property {number|null} [maxPressureLimit] PressureControlPumpParameters maxPressureLimit
+     * @property {number|null} [minPressureLimit] PressureControlPumpParameters minPressureLimit
+     * @property {number|null} [feedPwm] PressureControlPumpParameters feedPwm
+     * @property {number|null} [feedTime] PressureControlPumpParameters feedTime
+     */
+
+    /**
+     * Constructs a new PressureControlPumpParameters.
+     * @exports PressureControlPumpParameters
+     * @classdesc Represents a PressureControlPumpParameters.
+     * @implements IPressureControlPumpParameters
+     * @constructor
+     * @param {IPressureControlPumpParameters=} [properties] Properties to set
+     */
+    function PressureControlPumpParameters(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * PressureControlPumpParameters algorithm.
+     * @member {PressureControlAlgorithm} algorithm
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.algorithm = 0;
+
+    /**
+     * PressureControlPumpParameters targetPressure.
+     * @member {number} targetPressure
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.targetPressure = 0;
+
+    /**
+     * PressureControlPumpParameters direction.
+     * @member {PressureControlDirection} direction
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.direction = 0;
+
+    /**
+     * PressureControlPumpParameters maxPressureLimit.
+     * @member {number} maxPressureLimit
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.maxPressureLimit = 0;
+
+    /**
+     * PressureControlPumpParameters minPressureLimit.
+     * @member {number} minPressureLimit
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.minPressureLimit = 0;
+
+    /**
+     * PressureControlPumpParameters feedPwm.
+     * @member {number} feedPwm
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.feedPwm = 0;
+
+    /**
+     * PressureControlPumpParameters feedTime.
+     * @member {number} feedTime
+     * @memberof PressureControlPumpParameters
+     * @instance
+     */
+    PressureControlPumpParameters.prototype.feedTime = 0;
+
+    /**
+     * Creates a new PressureControlPumpParameters instance using the specified properties.
+     * @function create
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {IPressureControlPumpParameters=} [properties] Properties to set
+     * @returns {PressureControlPumpParameters} PressureControlPumpParameters instance
+     */
+    PressureControlPumpParameters.create = function create(properties) {
+        return new PressureControlPumpParameters(properties);
+    };
+
+    /**
+     * Encodes the specified PressureControlPumpParameters message. Does not implicitly {@link PressureControlPumpParameters.verify|verify} messages.
+     * @function encode
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {IPressureControlPumpParameters} message PressureControlPumpParameters message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PressureControlPumpParameters.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.algorithm != null && Object.hasOwnProperty.call(message, "algorithm"))
+            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.algorithm);
+        if (message.targetPressure != null && Object.hasOwnProperty.call(message, "targetPressure"))
+            writer.uint32(/* id 3, wireType 5 =*/29).float(message.targetPressure);
+        if (message.direction != null && Object.hasOwnProperty.call(message, "direction"))
+            writer.uint32(/* id 4, wireType 0 =*/32).int32(message.direction);
+        if (message.maxPressureLimit != null && Object.hasOwnProperty.call(message, "maxPressureLimit"))
+            writer.uint32(/* id 5, wireType 5 =*/45).float(message.maxPressureLimit);
+        if (message.minPressureLimit != null && Object.hasOwnProperty.call(message, "minPressureLimit"))
+            writer.uint32(/* id 6, wireType 5 =*/53).float(message.minPressureLimit);
+        if (message.feedPwm != null && Object.hasOwnProperty.call(message, "feedPwm"))
+            writer.uint32(/* id 7, wireType 5 =*/61).float(message.feedPwm);
+        if (message.feedTime != null && Object.hasOwnProperty.call(message, "feedTime"))
+            writer.uint32(/* id 8, wireType 5 =*/69).float(message.feedTime);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified PressureControlPumpParameters message, length delimited. Does not implicitly {@link PressureControlPumpParameters.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {IPressureControlPumpParameters} message PressureControlPumpParameters message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PressureControlPumpParameters.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a PressureControlPumpParameters message from the specified reader or buffer.
+     * @function decode
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {PressureControlPumpParameters} PressureControlPumpParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PressureControlPumpParameters.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.PressureControlPumpParameters();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 2: {
+                    message.algorithm = reader.int32();
+                    break;
+                }
+            case 3: {
+                    message.targetPressure = reader.float();
+                    break;
+                }
+            case 4: {
+                    message.direction = reader.int32();
+                    break;
+                }
+            case 5: {
+                    message.maxPressureLimit = reader.float();
+                    break;
+                }
+            case 6: {
+                    message.minPressureLimit = reader.float();
+                    break;
+                }
+            case 7: {
+                    message.feedPwm = reader.float();
+                    break;
+                }
+            case 8: {
+                    message.feedTime = reader.float();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a PressureControlPumpParameters message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {PressureControlPumpParameters} PressureControlPumpParameters
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PressureControlPumpParameters.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a PressureControlPumpParameters message.
+     * @function verify
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    PressureControlPumpParameters.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.algorithm != null && message.hasOwnProperty("algorithm"))
+            switch (message.algorithm) {
+            default:
+                return "algorithm: enum value expected";
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                break;
+            }
+        if (message.targetPressure != null && message.hasOwnProperty("targetPressure"))
+            if (typeof message.targetPressure !== "number")
+                return "targetPressure: number expected";
+        if (message.direction != null && message.hasOwnProperty("direction"))
+            switch (message.direction) {
+            default:
+                return "direction: enum value expected";
+            case 0:
+            case 1:
+            case 2:
+                break;
+            }
+        if (message.maxPressureLimit != null && message.hasOwnProperty("maxPressureLimit"))
+            if (typeof message.maxPressureLimit !== "number")
+                return "maxPressureLimit: number expected";
+        if (message.minPressureLimit != null && message.hasOwnProperty("minPressureLimit"))
+            if (typeof message.minPressureLimit !== "number")
+                return "minPressureLimit: number expected";
+        if (message.feedPwm != null && message.hasOwnProperty("feedPwm"))
+            if (typeof message.feedPwm !== "number")
+                return "feedPwm: number expected";
+        if (message.feedTime != null && message.hasOwnProperty("feedTime"))
+            if (typeof message.feedTime !== "number")
+                return "feedTime: number expected";
+        return null;
+    };
+
+    /**
+     * Creates a PressureControlPumpParameters message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {PressureControlPumpParameters} PressureControlPumpParameters
+     */
+    PressureControlPumpParameters.fromObject = function fromObject(object) {
+        if (object instanceof $root.PressureControlPumpParameters)
+            return object;
+        let message = new $root.PressureControlPumpParameters();
+        switch (object.algorithm) {
+        default:
+            if (typeof object.algorithm === "number") {
+                message.algorithm = object.algorithm;
+                break;
+            }
+            break;
+        case "PressureControlAlgorithm_UNSPECIFIED":
+        case 0:
+            message.algorithm = 0;
+            break;
+        case "PressureControlAlgorithm_TARGET_PRESSURE":
+        case 1:
+            message.algorithm = 1;
+            break;
+        case "PressureControlAlgorithm_FEED_WITH_LIMIT":
+        case 2:
+            message.algorithm = 2;
+            break;
+        case "PressureControlAlgorithm_NONE":
+        case 3:
+            message.algorithm = 3;
+            break;
+        }
+        if (object.targetPressure != null)
+            message.targetPressure = Number(object.targetPressure);
+        switch (object.direction) {
+        default:
+            if (typeof object.direction === "number") {
+                message.direction = object.direction;
+                break;
+            }
+            break;
+        case "PressureControlDirection_UNSPECIFIED":
+        case 0:
+            message.direction = 0;
+            break;
+        case "PressureControlDirection_VACUUM":
+        case 1:
+            message.direction = 1;
+            break;
+        case "PressureControlDirection_PRESSURE":
+        case 2:
+            message.direction = 2;
+            break;
+        }
+        if (object.maxPressureLimit != null)
+            message.maxPressureLimit = Number(object.maxPressureLimit);
+        if (object.minPressureLimit != null)
+            message.minPressureLimit = Number(object.minPressureLimit);
+        if (object.feedPwm != null)
+            message.feedPwm = Number(object.feedPwm);
+        if (object.feedTime != null)
+            message.feedTime = Number(object.feedTime);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a PressureControlPumpParameters message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {PressureControlPumpParameters} message PressureControlPumpParameters
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    PressureControlPumpParameters.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.algorithm = options.enums === String ? "PressureControlAlgorithm_UNSPECIFIED" : 0;
+            object.targetPressure = 0;
+            object.direction = options.enums === String ? "PressureControlDirection_UNSPECIFIED" : 0;
+            object.maxPressureLimit = 0;
+            object.minPressureLimit = 0;
+            object.feedPwm = 0;
+            object.feedTime = 0;
+        }
+        if (message.algorithm != null && message.hasOwnProperty("algorithm"))
+            object.algorithm = options.enums === String ? $root.PressureControlAlgorithm[message.algorithm] === undefined ? message.algorithm : $root.PressureControlAlgorithm[message.algorithm] : message.algorithm;
+        if (message.targetPressure != null && message.hasOwnProperty("targetPressure"))
+            object.targetPressure = options.json && !isFinite(message.targetPressure) ? String(message.targetPressure) : message.targetPressure;
+        if (message.direction != null && message.hasOwnProperty("direction"))
+            object.direction = options.enums === String ? $root.PressureControlDirection[message.direction] === undefined ? message.direction : $root.PressureControlDirection[message.direction] : message.direction;
+        if (message.maxPressureLimit != null && message.hasOwnProperty("maxPressureLimit"))
+            object.maxPressureLimit = options.json && !isFinite(message.maxPressureLimit) ? String(message.maxPressureLimit) : message.maxPressureLimit;
+        if (message.minPressureLimit != null && message.hasOwnProperty("minPressureLimit"))
+            object.minPressureLimit = options.json && !isFinite(message.minPressureLimit) ? String(message.minPressureLimit) : message.minPressureLimit;
+        if (message.feedPwm != null && message.hasOwnProperty("feedPwm"))
+            object.feedPwm = options.json && !isFinite(message.feedPwm) ? String(message.feedPwm) : message.feedPwm;
+        if (message.feedTime != null && message.hasOwnProperty("feedTime"))
+            object.feedTime = options.json && !isFinite(message.feedTime) ? String(message.feedTime) : message.feedTime;
+        return object;
+    };
+
+    /**
+     * Converts this PressureControlPumpParameters to JSON.
+     * @function toJSON
+     * @memberof PressureControlPumpParameters
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    PressureControlPumpParameters.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for PressureControlPumpParameters
+     * @function getTypeUrl
+     * @memberof PressureControlPumpParameters
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    PressureControlPumpParameters.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/PressureControlPumpParameters";
+    };
+
+    return PressureControlPumpParameters;
+})();
+
 export const PressureControlParameters = $root.PressureControlParameters = (() => {
 
     /**
@@ -46,12 +443,8 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
      * @exports IPressureControlParameters
      * @interface IPressureControlParameters
      * @property {boolean|null} [enable] PressureControlParameters enable
-     * @property {PressureControlAlgorithm|null} [algorithm] PressureControlParameters algorithm
-     * @property {number|null} [targetPressure] PressureControlParameters targetPressure
-     * @property {PressureControlDirection|null} [direction] PressureControlParameters direction
-     * @property {number|null} [limitPressure] PressureControlParameters limitPressure
-     * @property {number|null} [feedPwm] PressureControlParameters feedPwm
-     * @property {number|null} [feedTime] PressureControlParameters feedTime
+     * @property {IPressureControlPumpParameters|null} [inkPump] PressureControlParameters inkPump
+     * @property {IPressureControlPumpParameters|null} [cappingPump] PressureControlParameters cappingPump
      */
 
     /**
@@ -78,52 +471,45 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
     PressureControlParameters.prototype.enable = false;
 
     /**
-     * PressureControlParameters algorithm.
-     * @member {PressureControlAlgorithm} algorithm
+     * PressureControlParameters inkPump.
+     * @member {IPressureControlPumpParameters|null|undefined} inkPump
      * @memberof PressureControlParameters
      * @instance
      */
-    PressureControlParameters.prototype.algorithm = 0;
+    PressureControlParameters.prototype.inkPump = null;
 
     /**
-     * PressureControlParameters targetPressure.
-     * @member {number} targetPressure
+     * PressureControlParameters cappingPump.
+     * @member {IPressureControlPumpParameters|null|undefined} cappingPump
      * @memberof PressureControlParameters
      * @instance
      */
-    PressureControlParameters.prototype.targetPressure = 0;
+    PressureControlParameters.prototype.cappingPump = null;
+
+    // OneOf field names bound to virtual getters and setters
+    let $oneOfFields;
 
     /**
-     * PressureControlParameters direction.
-     * @member {PressureControlDirection} direction
+     * PressureControlParameters _inkPump.
+     * @member {"inkPump"|undefined} _inkPump
      * @memberof PressureControlParameters
      * @instance
      */
-    PressureControlParameters.prototype.direction = 0;
+    Object.defineProperty(PressureControlParameters.prototype, "_inkPump", {
+        get: $util.oneOfGetter($oneOfFields = ["inkPump"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
 
     /**
-     * PressureControlParameters limitPressure.
-     * @member {number} limitPressure
+     * PressureControlParameters _cappingPump.
+     * @member {"cappingPump"|undefined} _cappingPump
      * @memberof PressureControlParameters
      * @instance
      */
-    PressureControlParameters.prototype.limitPressure = 0;
-
-    /**
-     * PressureControlParameters feedPwm.
-     * @member {number} feedPwm
-     * @memberof PressureControlParameters
-     * @instance
-     */
-    PressureControlParameters.prototype.feedPwm = 0;
-
-    /**
-     * PressureControlParameters feedTime.
-     * @member {number} feedTime
-     * @memberof PressureControlParameters
-     * @instance
-     */
-    PressureControlParameters.prototype.feedTime = 0;
+    Object.defineProperty(PressureControlParameters.prototype, "_cappingPump", {
+        get: $util.oneOfGetter($oneOfFields = ["cappingPump"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
 
     /**
      * Creates a new PressureControlParameters instance using the specified properties.
@@ -151,18 +537,10 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
             writer = $Writer.create();
         if (message.enable != null && Object.hasOwnProperty.call(message, "enable"))
             writer.uint32(/* id 1, wireType 0 =*/8).bool(message.enable);
-        if (message.algorithm != null && Object.hasOwnProperty.call(message, "algorithm"))
-            writer.uint32(/* id 2, wireType 0 =*/16).int32(message.algorithm);
-        if (message.targetPressure != null && Object.hasOwnProperty.call(message, "targetPressure"))
-            writer.uint32(/* id 3, wireType 5 =*/29).float(message.targetPressure);
-        if (message.direction != null && Object.hasOwnProperty.call(message, "direction"))
-            writer.uint32(/* id 4, wireType 0 =*/32).int32(message.direction);
-        if (message.limitPressure != null && Object.hasOwnProperty.call(message, "limitPressure"))
-            writer.uint32(/* id 5, wireType 5 =*/45).float(message.limitPressure);
-        if (message.feedPwm != null && Object.hasOwnProperty.call(message, "feedPwm"))
-            writer.uint32(/* id 6, wireType 5 =*/53).float(message.feedPwm);
-        if (message.feedTime != null && Object.hasOwnProperty.call(message, "feedTime"))
-            writer.uint32(/* id 7, wireType 5 =*/61).float(message.feedTime);
+        if (message.inkPump != null && Object.hasOwnProperty.call(message, "inkPump"))
+            $root.PressureControlPumpParameters.encode(message.inkPump, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        if (message.cappingPump != null && Object.hasOwnProperty.call(message, "cappingPump"))
+            $root.PressureControlPumpParameters.encode(message.cappingPump, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         return writer;
     };
 
@@ -202,27 +580,11 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
                     break;
                 }
             case 2: {
-                    message.algorithm = reader.int32();
+                    message.inkPump = $root.PressureControlPumpParameters.decode(reader, reader.uint32());
                     break;
                 }
             case 3: {
-                    message.targetPressure = reader.float();
-                    break;
-                }
-            case 4: {
-                    message.direction = reader.int32();
-                    break;
-                }
-            case 5: {
-                    message.limitPressure = reader.float();
-                    break;
-                }
-            case 6: {
-                    message.feedPwm = reader.float();
-                    break;
-                }
-            case 7: {
-                    message.feedTime = reader.float();
+                    message.cappingPump = $root.PressureControlPumpParameters.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -260,39 +622,26 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
     PressureControlParameters.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        let properties = {};
         if (message.enable != null && message.hasOwnProperty("enable"))
             if (typeof message.enable !== "boolean")
                 return "enable: boolean expected";
-        if (message.algorithm != null && message.hasOwnProperty("algorithm"))
-            switch (message.algorithm) {
-            default:
-                return "algorithm: enum value expected";
-            case 0:
-            case 1:
-            case 2:
-                break;
+        if (message.inkPump != null && message.hasOwnProperty("inkPump")) {
+            properties._inkPump = 1;
+            {
+                let error = $root.PressureControlPumpParameters.verify(message.inkPump);
+                if (error)
+                    return "inkPump." + error;
             }
-        if (message.targetPressure != null && message.hasOwnProperty("targetPressure"))
-            if (typeof message.targetPressure !== "number")
-                return "targetPressure: number expected";
-        if (message.direction != null && message.hasOwnProperty("direction"))
-            switch (message.direction) {
-            default:
-                return "direction: enum value expected";
-            case 0:
-            case 1:
-            case 2:
-                break;
+        }
+        if (message.cappingPump != null && message.hasOwnProperty("cappingPump")) {
+            properties._cappingPump = 1;
+            {
+                let error = $root.PressureControlPumpParameters.verify(message.cappingPump);
+                if (error)
+                    return "cappingPump." + error;
             }
-        if (message.limitPressure != null && message.hasOwnProperty("limitPressure"))
-            if (typeof message.limitPressure !== "number")
-                return "limitPressure: number expected";
-        if (message.feedPwm != null && message.hasOwnProperty("feedPwm"))
-            if (typeof message.feedPwm !== "number")
-                return "feedPwm: number expected";
-        if (message.feedTime != null && message.hasOwnProperty("feedTime"))
-            if (typeof message.feedTime !== "number")
-                return "feedTime: number expected";
+        }
         return null;
     };
 
@@ -310,54 +659,16 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
         let message = new $root.PressureControlParameters();
         if (object.enable != null)
             message.enable = Boolean(object.enable);
-        switch (object.algorithm) {
-        default:
-            if (typeof object.algorithm === "number") {
-                message.algorithm = object.algorithm;
-                break;
-            }
-            break;
-        case "PressureControlAlgorithm_UNSPECIFIED":
-        case 0:
-            message.algorithm = 0;
-            break;
-        case "PressureControlAlgorithm_TARGET_PRESSURE":
-        case 1:
-            message.algorithm = 1;
-            break;
-        case "PressureControlAlgorithm_FEED_WITH_LIMIT":
-        case 2:
-            message.algorithm = 2;
-            break;
+        if (object.inkPump != null) {
+            if (typeof object.inkPump !== "object")
+                throw TypeError(".PressureControlParameters.inkPump: object expected");
+            message.inkPump = $root.PressureControlPumpParameters.fromObject(object.inkPump);
         }
-        if (object.targetPressure != null)
-            message.targetPressure = Number(object.targetPressure);
-        switch (object.direction) {
-        default:
-            if (typeof object.direction === "number") {
-                message.direction = object.direction;
-                break;
-            }
-            break;
-        case "PressureControlDirection_UNSPECIFIED":
-        case 0:
-            message.direction = 0;
-            break;
-        case "PressureControlDirection_VACUUM":
-        case 1:
-            message.direction = 1;
-            break;
-        case "PressureControlDirection_PRESSURE":
-        case 2:
-            message.direction = 2;
-            break;
+        if (object.cappingPump != null) {
+            if (typeof object.cappingPump !== "object")
+                throw TypeError(".PressureControlParameters.cappingPump: object expected");
+            message.cappingPump = $root.PressureControlPumpParameters.fromObject(object.cappingPump);
         }
-        if (object.limitPressure != null)
-            message.limitPressure = Number(object.limitPressure);
-        if (object.feedPwm != null)
-            message.feedPwm = Number(object.feedPwm);
-        if (object.feedTime != null)
-            message.feedTime = Number(object.feedTime);
         return message;
     };
 
@@ -374,29 +685,20 @@ export const PressureControlParameters = $root.PressureControlParameters = (() =
         if (!options)
             options = {};
         let object = {};
-        if (options.defaults) {
+        if (options.defaults)
             object.enable = false;
-            object.algorithm = options.enums === String ? "PressureControlAlgorithm_UNSPECIFIED" : 0;
-            object.targetPressure = 0;
-            object.direction = options.enums === String ? "PressureControlDirection_UNSPECIFIED" : 0;
-            object.limitPressure = 0;
-            object.feedPwm = 0;
-            object.feedTime = 0;
-        }
         if (message.enable != null && message.hasOwnProperty("enable"))
             object.enable = message.enable;
-        if (message.algorithm != null && message.hasOwnProperty("algorithm"))
-            object.algorithm = options.enums === String ? $root.PressureControlAlgorithm[message.algorithm] === undefined ? message.algorithm : $root.PressureControlAlgorithm[message.algorithm] : message.algorithm;
-        if (message.targetPressure != null && message.hasOwnProperty("targetPressure"))
-            object.targetPressure = options.json && !isFinite(message.targetPressure) ? String(message.targetPressure) : message.targetPressure;
-        if (message.direction != null && message.hasOwnProperty("direction"))
-            object.direction = options.enums === String ? $root.PressureControlDirection[message.direction] === undefined ? message.direction : $root.PressureControlDirection[message.direction] : message.direction;
-        if (message.limitPressure != null && message.hasOwnProperty("limitPressure"))
-            object.limitPressure = options.json && !isFinite(message.limitPressure) ? String(message.limitPressure) : message.limitPressure;
-        if (message.feedPwm != null && message.hasOwnProperty("feedPwm"))
-            object.feedPwm = options.json && !isFinite(message.feedPwm) ? String(message.feedPwm) : message.feedPwm;
-        if (message.feedTime != null && message.hasOwnProperty("feedTime"))
-            object.feedTime = options.json && !isFinite(message.feedTime) ? String(message.feedTime) : message.feedTime;
+        if (message.inkPump != null && message.hasOwnProperty("inkPump")) {
+            object.inkPump = $root.PressureControlPumpParameters.toObject(message.inkPump, options);
+            if (options.oneofs)
+                object._inkPump = "inkPump";
+        }
+        if (message.cappingPump != null && message.hasOwnProperty("cappingPump")) {
+            object.cappingPump = $root.PressureControlPumpParameters.toObject(message.cappingPump, options);
+            if (options.oneofs)
+                object._cappingPump = "cappingPump";
+        }
         return object;
     };
 
@@ -1778,6 +2080,7 @@ export const ChangePrinterSystemStateRequest = $root.ChangePrinterSystemStateReq
             case 3:
             case 4:
             case 5:
+            case 6:
                 break;
             }
         return null;
@@ -1825,6 +2128,10 @@ export const ChangePrinterSystemStateRequest = $root.ChangePrinterSystemStateReq
         case "PrinterSystemState_PRINT":
         case 5:
             message.state = 5;
+            break;
+        case "PrinterSystemState_KEEP_ALIVE":
+        case 6:
+            message.state = 6;
             break;
         }
         return message;
@@ -4433,6 +4740,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
  * @property {number} PrinterSystemState_ERROR=3 PrinterSystemState_ERROR value
  * @property {number} PrinterSystemState_DROPWATCHER=4 PrinterSystemState_DROPWATCHER value
  * @property {number} PrinterSystemState_PRINT=5 PrinterSystemState_PRINT value
+ * @property {number} PrinterSystemState_KEEP_ALIVE=6 PrinterSystemState_KEEP_ALIVE value
  */
 export const PrinterSystemState = $root.PrinterSystemState = (() => {
     const valuesById = {}, values = Object.create(valuesById);
@@ -4442,6 +4750,7 @@ export const PrinterSystemState = $root.PrinterSystemState = (() => {
     values[valuesById[3] = "PrinterSystemState_ERROR"] = 3;
     values[valuesById[4] = "PrinterSystemState_DROPWATCHER"] = 4;
     values[valuesById[5] = "PrinterSystemState_PRINT"] = 5;
+    values[valuesById[6] = "PrinterSystemState_KEEP_ALIVE"] = 6;
     return values;
 })();
 
@@ -4503,6 +4812,31 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      * @instance
      */
     PrinterSystemStateResponse.prototype.printControl = null;
+
+    // OneOf field names bound to virtual getters and setters
+    let $oneOfFields;
+
+    /**
+     * PrinterSystemStateResponse _pressureControl.
+     * @member {"pressureControl"|undefined} _pressureControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    Object.defineProperty(PrinterSystemStateResponse.prototype, "_pressureControl", {
+        get: $util.oneOfGetter($oneOfFields = ["pressureControl"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
+     * PrinterSystemStateResponse _printControl.
+     * @member {"printControl"|undefined} _printControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    Object.defineProperty(PrinterSystemStateResponse.prototype, "_printControl", {
+        get: $util.oneOfGetter($oneOfFields = ["printControl"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
 
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.
@@ -4621,6 +4955,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
     PrinterSystemStateResponse.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        let properties = {};
         if (message.state != null && message.hasOwnProperty("state"))
             switch (message.state) {
             default:
@@ -4631,20 +4966,27 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             case 3:
             case 4:
             case 5:
+            case 6:
                 break;
             }
         if (message.errorFlags != null && message.hasOwnProperty("errorFlags"))
             if (!$util.isInteger(message.errorFlags))
                 return "errorFlags: integer expected";
         if (message.pressureControl != null && message.hasOwnProperty("pressureControl")) {
-            let error = $root.PressureControlSystemState.verify(message.pressureControl);
-            if (error)
-                return "pressureControl." + error;
+            properties._pressureControl = 1;
+            {
+                let error = $root.PressureControlSystemState.verify(message.pressureControl);
+                if (error)
+                    return "pressureControl." + error;
+            }
         }
         if (message.printControl != null && message.hasOwnProperty("printControl")) {
-            let error = $root.PrintControlState.verify(message.printControl);
-            if (error)
-                return "printControl." + error;
+            properties._printControl = 1;
+            {
+                let error = $root.PrintControlState.verify(message.printControl);
+                if (error)
+                    return "printControl." + error;
+            }
         }
         return null;
     };
@@ -4692,6 +5034,10 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
         case 5:
             message.state = 5;
             break;
+        case "PrinterSystemState_KEEP_ALIVE":
+        case 6:
+            message.state = 6;
+            break;
         }
         if (object.errorFlags != null)
             message.errorFlags = object.errorFlags >>> 0;
@@ -4724,17 +5070,21 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
         if (options.defaults) {
             object.state = options.enums === String ? "PrinterSystemState_UNSPECIFIED" : 0;
             object.errorFlags = 0;
-            object.pressureControl = null;
-            object.printControl = null;
         }
         if (message.state != null && message.hasOwnProperty("state"))
             object.state = options.enums === String ? $root.PrinterSystemState[message.state] === undefined ? message.state : $root.PrinterSystemState[message.state] : message.state;
         if (message.errorFlags != null && message.hasOwnProperty("errorFlags"))
             object.errorFlags = message.errorFlags;
-        if (message.pressureControl != null && message.hasOwnProperty("pressureControl"))
+        if (message.pressureControl != null && message.hasOwnProperty("pressureControl")) {
             object.pressureControl = $root.PressureControlSystemState.toObject(message.pressureControl, options);
-        if (message.printControl != null && message.hasOwnProperty("printControl"))
+            if (options.oneofs)
+                object._pressureControl = "pressureControl";
+        }
+        if (message.printControl != null && message.hasOwnProperty("printControl")) {
             object.printControl = $root.PrintControlState.toObject(message.printControl, options);
+            if (options.oneofs)
+                object._printControl = "printControl";
+        }
         return object;
     };
 

@@ -7,6 +7,6 @@ import "print_control.proto";
 message PrinterSystemStateResponse {
   PrinterSystemState state = 1;
   uint32 error_flags = 2;
-  PressureControlSystemState pressure_control = 3;
-  PrintControlState print_control = 4;
+  optional PressureControlSystemState pressure_control = 3;
+  optional PrintControlState print_control = 4;
 }

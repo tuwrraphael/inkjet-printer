@@ -36,6 +36,9 @@ static void printer_system_dropwatcher_entry(void *o);
 static void printer_system_dropwatcher_run(void *o);
 static void printer_system_print_entry(void *o);
 static void printer_system_print_run(void *o);
+static void printer_system_keep_alive_entry(void *o);
+static void printer_system_keep_alive_run(void *o);
+
 static void event_post(uint32_t event);
 
 const struct smf_state printer_system_states[] = {
@@ -43,7 +46,8 @@ const struct smf_state printer_system_states[] = {
     [PRINTER_SYSTEM_STARTUP] = SMF_CREATE_STATE(NULL, printer_system_startup, NULL),
     [PRINTER_SYSTEM_ERROR] = SMF_CREATE_STATE(printer_system_error_entry, printer_system_error, NULL),
     [PRINTER_SYSTEM_DROPWATCHER] = SMF_CREATE_STATE(printer_system_dropwatcher_entry, printer_system_dropwatcher_run, NULL),
-    [PRINTER_SYSTEM_PRINT] = SMF_CREATE_STATE(printer_system_print_entry, printer_system_print_run, NULL)};
+    [PRINTER_SYSTEM_PRINT] = SMF_CREATE_STATE(printer_system_print_entry, printer_system_print_run, NULL),
+    [PRINTER_SYSTEM_KEEP_ALIVE] = SMF_CREATE_STATE(printer_system_keep_alive_entry, printer_system_keep_alive_run, NULL)};
 
 struct printer_system_state_object
 {
@@ -270,6 +274,102 @@ static void printer_system_print_run(void *o)
     }
 }
 
+static void printer_system_keep_alive_entry(void *o)
+{
+    ARG_UNUSED(o);
+    LOG_INF("Entering keep alive state");
+    (void)printhead_routine_smf(PRINTHEAD_ROUTINE_SHUTDOWN_INITIAL);
+    pressure_control_disable();
+    print_control_disable();
+}
+
+static void printer_system_keep_alive_run(void *o)
+{
+    ARG_UNUSED(o);
+    LOG_INF("Keep alive state %d\n", printer_system_state_object.events);
+    if (printer_system_state_object.events & PRINTER_SYSTEM_TIMEOUT)
+    {
+        LOG_INF("Timeout in keep alive state: execute maintainance program");
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
+        pressure_control_algorithm_init_t capping_pump_algorithm_init;
+        memset(&capping_pump_algorithm_init, 0, sizeof(capping_pump_algorithm_init));
+        pressure_control_algorithm_init_t ink_pump_algorithm_init;
+        memset(&ink_pump_algorithm_init, 0, sizeof(ink_pump_algorithm_init));
+
+        capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+        ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+        ink_pump_algorithm_init.target_pressure = 0;
+        pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
+        pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
+        pressure_control_enable();
+        LOG_INF("Target pressure before");
+        int ret = pressure_control_wait_for_done(K_SECONDS(10));
+        LOG_INF("Pressure control done");
+        k_sleep(K_SECONDS(1));
+        if (exit_on_error_after_wait())
+        {
+            return;
+        }
+         if (ret != 0)
+        {
+            LOG_ERR("Pressure control failed");
+            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+            return;
+        }
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
+
+        ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+        capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_FEED_WITH_LIMIT;
+        capping_pump_algorithm_init.direction = PRESSURE_DIRECTION_VACUUM;
+        capping_pump_algorithm_init.feed_pwm = 0.8f;
+        capping_pump_algorithm_init.feed_time = 5;
+        capping_pump_algorithm_init.max_pressure_limit = 40;
+        capping_pump_algorithm_init.min_pressure_limit = -40;
+        pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
+        pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
+
+        pressure_control_enable();
+        LOG_INF("Feed with limit");
+        ret = pressure_control_wait_for_done(K_SECONDS(capping_pump_algorithm_init.feed_time + 3));
+        LOG_INF("Pressure control done");
+        k_sleep(K_SECONDS(1));
+        if (exit_on_error_after_wait())
+        {
+            return;
+        }
+        if (ret != 0)
+        {
+            LOG_ERR("Pressure control failed");
+            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+            return;
+        }
+        pressure_control_disable();
+        k_sleep(K_SECONDS(1));
+        ink_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_TARGET_PRESSURE;
+        capping_pump_algorithm_init.algorithm = PRESSURE_CONTROL_ALGORITHM_NONE;
+        pressure_control_update_parameters(PRESSURE_CONTROL_INK_PUMP_IDX, &ink_pump_algorithm_init);
+        pressure_control_update_parameters(PRESSURE_CONTROL_CAPPING_PUMP_IDX, &capping_pump_algorithm_init);
+        pressure_control_enable();
+        LOG_INF("Target pressure after");
+        ret = pressure_control_wait_for_done(K_SECONDS(capping_pump_algorithm_init.feed_time + 3));
+        LOG_INF("Pressure control done");
+        if (exit_on_error_after_wait())
+        {
+            return;
+        }
+        if (ret != 0)
+        {
+            LOG_ERR("Pressure control failed");
+            smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
+            return;
+        }
+        pressure_control_disable();
+    }
+    k_timer_start(&timout_timer, K_MINUTES(75), K_NO_WAIT);
+}
+
 static void event_post(uint32_t event)
 {
     k_event_post(&printer_system_smf_event, event);
@@ -299,6 +399,12 @@ void go_to_print()
     event_post(PRINTER_SYSTEM_STATE_CHANGE);
 }
 
+void go_to_keep_alive()
+{
+    requested_state = PRINTER_SYSTEM_KEEP_ALIVE;
+    event_post(PRINTER_SYSTEM_STATE_CHANGE);
+}
+
 void request_printhead_fire()
 {
     event_post(PRINTER_SYSTEM_REQUEST_FIRE);
@@ -321,7 +427,8 @@ void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t 
     event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS);
 }
 
-void request_change_encoder_mode(bool paused) {
+void request_change_encoder_mode(bool paused)
+{
     printer_system_state_object.change_encoder_mode_to_paused = paused;
     event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE);
 }

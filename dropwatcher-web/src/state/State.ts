@@ -12,6 +12,7 @@ export enum PrinterSystemState {
     Error = 3,
     Dropwatcher = 4,
     Print = 5,
+    KeepAlive,
 }
 export enum PressureControlDirection {
     Unspecified = 0,
@@ -22,7 +23,8 @@ export enum PressureControlDirection {
 export enum PressureControlAlgorithm {
     Unspecified = 0,
     TargetPressure = 1,
-    FeedwithLimit = 2
+    FeedwithLimit = 2,
+    None = 3
 }
 
 export interface StagePos {
@@ -104,6 +106,23 @@ export interface CustomTrack {
     track: TrackRasterization;
 }
 
+export interface PressureControlPumpParameters {
+    targetPressure: number;
+    direction: PressureControlDirection
+    feedTime: number;
+    feedPwm: number;
+    maxPressureLimit: number;
+    minPressureLimit: number;
+    algorithm: PressureControlAlgorithm;
+}
+
+export interface PressureControlState {
+    pressure: { mbar: number, timestamp: Date }[];
+    enabled: boolean;
+    done: boolean;
+    inkPump: PressureControlPumpParameters;
+    cappingPump: PressureControlPumpParameters;
+}
 
 export interface State {
     printerSystemState: {
@@ -112,20 +131,8 @@ export interface State {
         errors: {
             flags: number;
         }
-        pressureControl?: {
-            pressure: { mbar: number, timestamp: Date }[];
-            enabled: boolean;
-            done: boolean;
-            parameters: {
-                targetPressure: number;
-                direction: PressureControlDirection
-                feedTime: number;
-                feedPwm: number;
-                limitPressure: number;
-                algorithm: PressureControlAlgorithm;
-            }
-        },
-        printControl: PrintControlState
+        pressureControl?: PressureControlState;
+        printControl: PrintControlState;
     },
     movementStageState: {
         connected: boolean;
