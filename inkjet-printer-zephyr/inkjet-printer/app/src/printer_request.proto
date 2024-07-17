@@ -3,6 +3,7 @@ syntax = "proto3";
 import "printer_system_state.proto";
 import "pressure_control.proto";
 import "print_control.proto";
+import "waveform_control.proto";
 
 message GetPrinterSystemStateRequest {
 
@@ -48,6 +49,10 @@ message ChangeEncoderModeRequest {
     bool paused = 1;
 }
 
+message ChangeWaveformControlSettingsRequest {
+    WavefromControlSettings settings = 1;
+}
+
 message PrinterRequest
 {
     optional GetPrinterSystemStateRequest get_printer_system_state_request = 1;
@@ -61,4 +66,5 @@ message PrinterRequest
     optional ChangePrintMemoryRequest change_print_memory_request = 9;
     optional NozzlePrimingRequest nozzle_priming_request = 10;
     optional ChangeEncoderModeRequest change_encoder_mode_request = 11;
+    optional ChangeWaveformControlSettingsRequest change_waveform_control_settings_request = 12;
 }

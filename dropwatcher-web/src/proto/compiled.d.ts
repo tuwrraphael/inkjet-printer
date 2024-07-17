@@ -1538,6 +1538,96 @@ export class ChangeEncoderModeRequest implements IChangeEncoderModeRequest {
     public static getTypeUrl(typeUrlPrefix?: string): string;
 }
 
+/** Represents a ChangeWaveformControlSettingsRequest. */
+export class ChangeWaveformControlSettingsRequest implements IChangeWaveformControlSettingsRequest {
+
+    /**
+     * Constructs a new ChangeWaveformControlSettingsRequest.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IChangeWaveformControlSettingsRequest);
+
+    /** ChangeWaveformControlSettingsRequest settings. */
+    public settings?: (IWavefromControlSettings|null);
+
+    /**
+     * Creates a new ChangeWaveformControlSettingsRequest instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns ChangeWaveformControlSettingsRequest instance
+     */
+    public static create(properties?: IChangeWaveformControlSettingsRequest): ChangeWaveformControlSettingsRequest;
+
+    /**
+     * Encodes the specified ChangeWaveformControlSettingsRequest message. Does not implicitly {@link ChangeWaveformControlSettingsRequest.verify|verify} messages.
+     * @param message ChangeWaveformControlSettingsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IChangeWaveformControlSettingsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified ChangeWaveformControlSettingsRequest message, length delimited. Does not implicitly {@link ChangeWaveformControlSettingsRequest.verify|verify} messages.
+     * @param message ChangeWaveformControlSettingsRequest message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IChangeWaveformControlSettingsRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a ChangeWaveformControlSettingsRequest message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns ChangeWaveformControlSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ChangeWaveformControlSettingsRequest;
+
+    /**
+     * Decodes a ChangeWaveformControlSettingsRequest message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns ChangeWaveformControlSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ChangeWaveformControlSettingsRequest;
+
+    /**
+     * Verifies a ChangeWaveformControlSettingsRequest message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a ChangeWaveformControlSettingsRequest message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns ChangeWaveformControlSettingsRequest
+     */
+    public static fromObject(object: { [k: string]: any }): ChangeWaveformControlSettingsRequest;
+
+    /**
+     * Creates a plain object from a ChangeWaveformControlSettingsRequest message. Also converts values to other types if specified.
+     * @param message ChangeWaveformControlSettingsRequest
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: ChangeWaveformControlSettingsRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this ChangeWaveformControlSettingsRequest to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for ChangeWaveformControlSettingsRequest
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterRequest. */
 export class PrinterRequest implements IPrinterRequest {
 
@@ -1580,6 +1670,9 @@ export class PrinterRequest implements IPrinterRequest {
     /** PrinterRequest changeEncoderModeRequest. */
     public changeEncoderModeRequest?: (IChangeEncoderModeRequest|null);
 
+    /** PrinterRequest changeWaveformControlSettingsRequest. */
+    public changeWaveformControlSettingsRequest?: (IChangeWaveformControlSettingsRequest|null);
+
     /** PrinterRequest _getPrinterSystemStateRequest. */
     public _getPrinterSystemStateRequest?: "getPrinterSystemStateRequest";
 
@@ -1612,6 +1705,9 @@ export class PrinterRequest implements IPrinterRequest {
 
     /** PrinterRequest _changeEncoderModeRequest. */
     public _changeEncoderModeRequest?: "changeEncoderModeRequest";
+
+    /** PrinterRequest _changeWaveformControlSettingsRequest. */
+    public _changeWaveformControlSettingsRequest?: "changeWaveformControlSettingsRequest";
 
     /**
      * Creates a new PrinterRequest instance using the specified properties.
@@ -1702,6 +1798,189 @@ export enum PrinterSystemState {
     PrinterSystemState_KEEP_ALIVE = 6
 }
 
+/** Represents a WavefromControlSettings. */
+export class WavefromControlSettings implements IWavefromControlSettings {
+
+    /**
+     * Constructs a new WavefromControlSettings.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWavefromControlSettings);
+
+    /** WavefromControlSettings voltage. */
+    public voltage: number;
+
+    /**
+     * Creates a new WavefromControlSettings instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns WavefromControlSettings instance
+     */
+    public static create(properties?: IWavefromControlSettings): WavefromControlSettings;
+
+    /**
+     * Encodes the specified WavefromControlSettings message. Does not implicitly {@link WavefromControlSettings.verify|verify} messages.
+     * @param message WavefromControlSettings message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IWavefromControlSettings, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WavefromControlSettings message, length delimited. Does not implicitly {@link WavefromControlSettings.verify|verify} messages.
+     * @param message WavefromControlSettings message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IWavefromControlSettings, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WavefromControlSettings message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WavefromControlSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WavefromControlSettings;
+
+    /**
+     * Decodes a WavefromControlSettings message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WavefromControlSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WavefromControlSettings;
+
+    /**
+     * Verifies a WavefromControlSettings message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a WavefromControlSettings message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns WavefromControlSettings
+     */
+    public static fromObject(object: { [k: string]: any }): WavefromControlSettings;
+
+    /**
+     * Creates a plain object from a WavefromControlSettings message. Also converts values to other types if specified.
+     * @param message WavefromControlSettings
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: WavefromControlSettings, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this WavefromControlSettings to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for WavefromControlSettings
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
+/** Represents a WaveformControlState. */
+export class WaveformControlState implements IWaveformControlState {
+
+    /**
+     * Constructs a new WaveformControlState.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IWaveformControlState);
+
+    /** WaveformControlState voltage. */
+    public voltage?: (number|null);
+
+    /** WaveformControlState _voltage. */
+    public _voltage?: "voltage";
+
+    /**
+     * Creates a new WaveformControlState instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns WaveformControlState instance
+     */
+    public static create(properties?: IWaveformControlState): WaveformControlState;
+
+    /**
+     * Encodes the specified WaveformControlState message. Does not implicitly {@link WaveformControlState.verify|verify} messages.
+     * @param message WaveformControlState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IWaveformControlState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified WaveformControlState message, length delimited. Does not implicitly {@link WaveformControlState.verify|verify} messages.
+     * @param message WaveformControlState message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IWaveformControlState, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a WaveformControlState message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns WaveformControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): WaveformControlState;
+
+    /**
+     * Decodes a WaveformControlState message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns WaveformControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): WaveformControlState;
+
+    /**
+     * Verifies a WaveformControlState message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a WaveformControlState message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns WaveformControlState
+     */
+    public static fromObject(object: { [k: string]: any }): WaveformControlState;
+
+    /**
+     * Creates a plain object from a WaveformControlState message. Also converts values to other types if specified.
+     * @param message WaveformControlState
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: WaveformControlState, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this WaveformControlState to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+
+    /**
+     * Gets the default type url for WaveformControlState
+     * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns The default type url
+     */
+    public static getTypeUrl(typeUrlPrefix?: string): string;
+}
+
 /** Represents a PrinterSystemStateResponse. */
 export class PrinterSystemStateResponse implements IPrinterSystemStateResponse {
 
@@ -1723,11 +2002,17 @@ export class PrinterSystemStateResponse implements IPrinterSystemStateResponse {
     /** PrinterSystemStateResponse printControl. */
     public printControl?: (IPrintControlState|null);
 
+    /** PrinterSystemStateResponse waveformControl. */
+    public waveformControl?: (IWaveformControlState|null);
+
     /** PrinterSystemStateResponse _pressureControl. */
     public _pressureControl?: "pressureControl";
 
     /** PrinterSystemStateResponse _printControl. */
     public _printControl?: "printControl";
+
+    /** PrinterSystemStateResponse _waveformControl. */
+    public _waveformControl?: "waveformControl";
 
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.

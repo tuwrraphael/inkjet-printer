@@ -549,6 +549,12 @@ function mergeSystemStateResponse(msg: PrinterSystemStateResponseReceived) {
                 lostLinesBySlowData: msg.response.printControl.lostLinesBySlowData || 0,
             };
         }
+        let waveformControlState = oldState.printerSystemState.waveformControl;
+        if (msg.response.waveformControl) {
+            waveformControlState = {
+                voltageMv: msg.response.waveformControl.voltage == 0 ? null : msg.response.waveformControl.voltage
+            };
+        }
         return {
             printerSystemState: {
                 ...oldState.printerSystemState,
@@ -557,7 +563,8 @@ function mergeSystemStateResponse(msg: PrinterSystemStateResponseReceived) {
                     flags: Number(msg.response.errorFlags || 0)
                 },
                 pressureControl: pressureControlState,
-                printControl: printControlState
+                printControl: printControlState,
+                waveformControl: waveformControlState
             }
         };
     });

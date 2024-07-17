@@ -172,6 +172,7 @@ static int mcp3021_read(const struct device *dev, const struct adc_sequence *seq
 	{
 		rc = mcp3021_adc_perform_read(dev);
 	}
+	k_sem_reset(&data->ctx.sync); // the rc != short circuits and the sem is not reset
 
 	adc_context_release(&data->ctx, rc);
 	return rc;

@@ -32,6 +32,8 @@ import { SetCustomTracks } from "../../state/actions/SetCustomTracks";
 import { getPrintheadSwathe } from "../../slicer/getPrintheadSwathe";
 import { start } from "repl";
 import { setNozzleForRow } from "../../slicer/setNozzleDataView";
+import { ChangeWaveformControlSettingsRequest } from "../../proto/compiled";
+import { WavefromControlSettings } from "../../proto/compiled";
 
 let cameraOffset = {
     x: 165.4 - 13.14,
@@ -169,6 +171,14 @@ export class PrintComponent extends HTMLElement {
                 return;
             }
             this.store.postAction(new SlicePositionChanged(this.store.state.movementStageState.pos.x));
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#test-set-voltage"), "click", async (ev) => {
+            ev.preventDefault();
+            let request = new ChangeWaveformControlSettingsRequest();
+            let settings = new WavefromControlSettings();
+            request.settings = settings;
+            settings.voltage = 34.8 * 1000;
+            await this.printerUsb.sendChangeWaveformControlSettingsRequest(request);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#write-data"), "click", async (ev) => {
             ev.preventDefault();

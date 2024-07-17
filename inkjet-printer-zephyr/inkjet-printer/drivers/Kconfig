@@ -3,4 +3,5 @@ rsource "printer/Kconfig"
 rsource "sensor/Kconfig"
 rsource "motor/Kconfig"
 rsource "adc/Kconfig"
+rsource "dac/Kconfig"
 endmenu

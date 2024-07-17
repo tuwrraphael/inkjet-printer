@@ -13,6 +13,11 @@ enum printer_system_smf_state
     PRINTER_SYSTEM_KEEP_ALIVE
 };
 
+typedef struct
+{
+    double voltage;
+} waveform_settings_t;
+
 int printer_system_smf();
 
 void printer_system_smf_go_to_safe_state();
@@ -30,6 +35,8 @@ void request_change_encoder_mode_settings(print_control_encoder_mode_settings_t 
 void request_prime_nozzles();
 
 void request_change_encoder_mode(bool paused);
+
+void request_set_waveform_settings(waveform_settings_t *settings);
 
 enum printer_system_smf_state printer_system_smf_get_state();
 

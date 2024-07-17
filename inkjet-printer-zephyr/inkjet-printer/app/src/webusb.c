@@ -32,6 +32,7 @@ LOG_MODULE_REGISTER(webusb, CONFIG_APP_LOG_LEVEL);
 #include "failure_handling.h"
 #include "pressure_control.h"
 #include "print_control.h"
+#include "regulator.h"
 
 /* Max packet size for Bulk endpoints */
 #if defined(CONFIG_USB_DC_HAS_HS_SUPPORT)
@@ -349,6 +350,12 @@ static int set_printer_system_state_msg(pb_ostream_t *tx_stream)
 		response.pressure_control.done = pressure_info.done;
 		response.pressure_control.enabled = pressure_info.enabled;
 		break;
+	case 3:
+		response.has_waveform_control = true;
+		double voltage = 0;
+		bool read = regulator_get_voltage(&voltage);
+		response.waveform_control.has_voltage = read;
+		response.waveform_control.voltage = voltage;
 	default:
 		break;
 	}
@@ -375,7 +382,7 @@ static int process_printer_system_state_msg(void *priv)
 	{
 		usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, tx_stream.bytes_written,
 					 USB_TRANS_WRITE, webusb_write_cb, cfg);
-		next_system_sate_message = (next_system_sate_message + 1) % 3;
+		next_system_sate_message = (next_system_sate_message + 1) % 4;
 	}
 	return 0;
 }
@@ -613,6 +620,21 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		else
 		{
 			LOG_ERR("Failed to decode ChangeEncoderModeRequest");
+		}
+	}
+	else if (type == ChangeWaveformControlSettingsRequest_fields) {
+		ChangeWaveformControlSettingsRequest request = {};
+		status = decode_unionmessage_contents(&stream, ChangeWaveformControlSettingsRequest_fields, &request);
+		if (status)
+		{
+			waveform_settings_t settings;
+			settings.voltage = request.settings.voltage;
+			request_set_waveform_settings(&settings);
+			LOG_INF("ChangeWaveformControlSettingsRequest: voltage %f", request.settings.voltage);
+		}
+		else
+		{
+			LOG_ERR("Failed to decode ChangeWaveformControlSettingsRequest");
 		}
 	}
 	else

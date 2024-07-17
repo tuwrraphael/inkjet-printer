@@ -124,6 +124,10 @@ export interface PressureControlState {
     cappingPump: PressureControlPumpParameters;
 }
 
+export interface WaveformControl {
+    voltageMv: number | null;
+}
+
 export interface State {
     printerSystemState: {
         usbConnected: boolean;
@@ -133,6 +137,7 @@ export interface State {
         }
         pressureControl?: PressureControlState;
         printControl: PrintControlState;
+        waveformControl: WaveformControl;
     },
     movementStageState: {
         connected: boolean;

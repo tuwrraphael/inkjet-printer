@@ -20,6 +20,7 @@ zephyr_nanopb_sources(app src/printer_system_state_response.proto)
 zephyr_nanopb_sources(app src/printer_request.proto)
 zephyr_nanopb_sources(app src/pressure_control.proto)
 zephyr_nanopb_sources(app src/print_control.proto)
+zephyr_nanopb_sources(app src/waveform_control.proto)
 
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/printhead_routines.c)

@@ -36,7 +36,8 @@ export class PrinterStatus extends HTMLElement {
     private printedLines: HTMLTableCellElement;
     private nozzlePrimingActive: HTMLTableCellElement;
     private encoderMode: HTMLTableCellElement;
-    private lostLinesBySlowData : HTMLTableCellElement;
+    private lostLinesBySlowData: HTMLTableCellElement;
+    private voltage: HTMLSpanElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -69,6 +70,7 @@ export class PrinterStatus extends HTMLElement {
             this.nozzlePrimingActive = document.querySelector("#nozzle-priming-active");
             this.encoderMode = document.querySelector("#encoder-mode");
             this.lostLinesBySlowData = document.querySelector("#lost-lines-by-slow-data");
+            this.voltage = document.querySelector("#voltage");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -137,7 +139,7 @@ export class PrinterStatus extends HTMLElement {
         return errors.join(", ") || "None";
     }
 
-    
+
 
     formatEncoderMode(encoderMode: PrintControlEncoderMode) {
         switch (encoderMode) {
@@ -180,6 +182,7 @@ export class PrinterStatus extends HTMLElement {
             this.nozzlePrimingActive.innerText = s.printerSystemState.printControl?.nozzlePrimingActive ? "Active" : "Inactive";
             this.encoderMode.innerText = this.formatEncoderMode(s.printerSystemState.printControl?.encoderMode);
             this.lostLinesBySlowData.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesBySlowData);
+            this.voltage.innerText = s.printerSystemState.waveformControl?.voltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.voltageMv / 1000) : "-";
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);

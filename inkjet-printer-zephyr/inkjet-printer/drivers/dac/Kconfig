@@ -1,0 +1,3 @@
+if DAC
+rsource "Kconfig.mcp4725_hotplug"
+endif # DAC

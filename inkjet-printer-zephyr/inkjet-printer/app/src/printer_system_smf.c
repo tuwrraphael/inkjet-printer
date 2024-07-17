@@ -7,6 +7,7 @@
 #include "pressure_control.h"
 #include "failure_handling.h"
 #include "print_control.h"
+#include "regulator.h"
 
 LOG_MODULE_REGISTER(printer_system, CONFIG_APP_LOG_LEVEL);
 
@@ -22,6 +23,7 @@ K_SEM_DEFINE(event_sem, 1, 1);
 #define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE_SETTINGS (1 << 5)
 #define PRINTER_SYSTEM_REQUEST_PRIME_NOZZLES (1 << 6)
 #define PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE (1 << 7)
+#define PRINTER_SYSTEM_REQUEST_CHANGE_WAVEFORM_SETTINGS (1 << 8)
 
 static const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
 
@@ -55,6 +57,7 @@ struct printer_system_state_object
     int32_t events;
     uint32_t nozzle_data[4];
     print_control_encoder_mode_settings_t encoder_mode_settings;
+    waveform_settings_t waveform_settings;
     bool change_encoder_mode_to_paused;
 } printer_system_state_object;
 
@@ -77,9 +80,17 @@ static void printer_system_idle_entry(void *o)
 
 static void printer_system_idle(void *o)
 {
-    // struct printer_system_state_object *object = (struct printer_system_state_object *)o;
+    struct printer_system_state_object *object = (struct printer_system_state_object *)o;
     ARG_UNUSED(o);
     LOG_INF("Idle state\n");
+    if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_CHANGE_WAVEFORM_SETTINGS)
+    {
+        int ret = regulator_set_voltage(object->waveform_settings.voltage);
+        if (ret != 0)
+        {
+            LOG_ERR("Failed to set voltage %d", ret);
+        }
+    }
 }
 
 static void printer_system_startup(void *o)
@@ -311,7 +322,7 @@ static void printer_system_keep_alive_run(void *o)
         {
             return;
         }
-         if (ret != 0)
+        if (ret != 0)
         {
             LOG_ERR("Pressure control failed");
             smf_set_state(SMF_CTX(&printer_system_state_object), &printer_system_states[PRINTER_SYSTEM_IDLE]);
@@ -431,6 +442,12 @@ void request_change_encoder_mode(bool paused)
 {
     printer_system_state_object.change_encoder_mode_to_paused = paused;
     event_post(PRINTER_SYSTEM_REQUEST_CHANGE_ENCODER_MODE);
+}
+
+void request_set_waveform_settings(waveform_settings_t *settings)
+{
+    memcpy(&printer_system_state_object.waveform_settings, settings, sizeof(waveform_settings_t));
+    event_post(PRINTER_SYSTEM_REQUEST_CHANGE_WAVEFORM_SETTINGS);
 }
 
 int printer_system_smf()

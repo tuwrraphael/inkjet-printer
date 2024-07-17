@@ -10,7 +10,8 @@ export const DefaultState: State =
             flags: 0
         },
         pressureControl: null,
-        printControl: null
+        printControl: null,
+        waveformControl: null
     },
     movementStageState: {
         connected: false,
@@ -50,7 +51,7 @@ export const DefaultState: State =
             printheadSwathePerpendicular: 17.417,
             printheadAngleRads: deg2Rad(90 - 63.75),
             //[2, 7, 8, 118, 119, 120, 121, 122, 123, 124, 125, 126, 55, 56]
-            blockedNozzles: [0,1,2,3,5,6,7,8,9,33,34,35,36,37,98,99,100,117,118,119,120,121,122,123,124,125,126,127,85,86,87,55,56]
+            blockedNozzles: [0, 1, 2, 3, 5, 6, 7, 8, 9, 33, 34, 35, 36, 37, 98, 99, 100, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 85, 86, 87, 55, 56]
         },
         printingParams: {
             fireEveryTicks: 4,

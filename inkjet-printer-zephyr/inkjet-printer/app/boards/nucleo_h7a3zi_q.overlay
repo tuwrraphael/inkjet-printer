@@ -241,7 +241,7 @@
 
 	hv_dac: dac@60 {
 		status = "okay";
-		compatible = "microchip,mcp4725";
+		compatible = "microchip,mcp4725hotplug";
 		
 		#io-channel-cells = <1>;
 		#address-cells = <1>;

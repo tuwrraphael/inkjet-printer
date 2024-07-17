@@ -442,7 +442,6 @@ static int cmd_pressure_control_enable(const struct shell *sh, size_t argc, char
 SHELL_SUBCMD_DICT_SET_CREATE(pressure_control_enable_cmds, cmd_pressure_control_enable,
 							 (enable, true, "enable"), (disable, false, "disable"));
 
-
 static int cmd_pressure_control_print_pressure(const struct shell *sh, size_t argc, char **argv, void *data)
 {
 	ARG_UNUSED(argc);
@@ -638,8 +637,17 @@ static int cmd_regulator_get_voltage(const struct shell *sh, size_t argc, char *
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	float voltage = regulator_get_voltage();
-	shell_print(sh, "Voltage: %f", voltage);
+	double voltage;
+	bool read = regulator_get_voltage(&voltage);
+	if (!read)
+	{
+		shell_print(sh, "Failed to read voltage");
+		return -EIO;
+	}
+	else
+	{
+		shell_print(sh, "Voltage: %f", voltage);
+	}
 	return 0;
 }
 
@@ -647,11 +655,11 @@ static int cmd_regulator_set_voltage(const struct shell *sh, size_t argc, char *
 {
 	if (argc != 2)
 	{
-		shell_print(sh, "Usage: regulator_set_voltage <voltage>");
+		shell_print(sh, "Usage: regulator_set_voltage <voltage in mv>");
 		return EINVAL;
 	}
 	double voltage = atof(argv[1]);
-	int ret = set_regulator_voltage(voltage);
+	int ret = regulator_set_voltage(voltage);
 	if (ret != 0)
 	{
 		shell_print(sh, "Failed to set voltage");

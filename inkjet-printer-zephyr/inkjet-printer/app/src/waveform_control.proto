@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message WavefromControlSettings {
+    double voltage = 1;
+}
+
+message WaveformControlState {
+    optional double voltage = 1;
+}

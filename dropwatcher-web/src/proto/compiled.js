@@ -4063,6 +4063,214 @@ export const ChangeEncoderModeRequest = $root.ChangeEncoderModeRequest = (() => 
     return ChangeEncoderModeRequest;
 })();
 
+export const ChangeWaveformControlSettingsRequest = $root.ChangeWaveformControlSettingsRequest = (() => {
+
+    /**
+     * Properties of a ChangeWaveformControlSettingsRequest.
+     * @exports IChangeWaveformControlSettingsRequest
+     * @interface IChangeWaveformControlSettingsRequest
+     * @property {IWavefromControlSettings|null} [settings] ChangeWaveformControlSettingsRequest settings
+     */
+
+    /**
+     * Constructs a new ChangeWaveformControlSettingsRequest.
+     * @exports ChangeWaveformControlSettingsRequest
+     * @classdesc Represents a ChangeWaveformControlSettingsRequest.
+     * @implements IChangeWaveformControlSettingsRequest
+     * @constructor
+     * @param {IChangeWaveformControlSettingsRequest=} [properties] Properties to set
+     */
+    function ChangeWaveformControlSettingsRequest(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ChangeWaveformControlSettingsRequest settings.
+     * @member {IWavefromControlSettings|null|undefined} settings
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @instance
+     */
+    ChangeWaveformControlSettingsRequest.prototype.settings = null;
+
+    /**
+     * Creates a new ChangeWaveformControlSettingsRequest instance using the specified properties.
+     * @function create
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {IChangeWaveformControlSettingsRequest=} [properties] Properties to set
+     * @returns {ChangeWaveformControlSettingsRequest} ChangeWaveformControlSettingsRequest instance
+     */
+    ChangeWaveformControlSettingsRequest.create = function create(properties) {
+        return new ChangeWaveformControlSettingsRequest(properties);
+    };
+
+    /**
+     * Encodes the specified ChangeWaveformControlSettingsRequest message. Does not implicitly {@link ChangeWaveformControlSettingsRequest.verify|verify} messages.
+     * @function encode
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {IChangeWaveformControlSettingsRequest} message ChangeWaveformControlSettingsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeWaveformControlSettingsRequest.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.settings != null && Object.hasOwnProperty.call(message, "settings"))
+            $root.WavefromControlSettings.encode(message.settings, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ChangeWaveformControlSettingsRequest message, length delimited. Does not implicitly {@link ChangeWaveformControlSettingsRequest.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {IChangeWaveformControlSettingsRequest} message ChangeWaveformControlSettingsRequest message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ChangeWaveformControlSettingsRequest.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ChangeWaveformControlSettingsRequest message from the specified reader or buffer.
+     * @function decode
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ChangeWaveformControlSettingsRequest} ChangeWaveformControlSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeWaveformControlSettingsRequest.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.ChangeWaveformControlSettingsRequest();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.settings = $root.WavefromControlSettings.decode(reader, reader.uint32());
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ChangeWaveformControlSettingsRequest message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ChangeWaveformControlSettingsRequest} ChangeWaveformControlSettingsRequest
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ChangeWaveformControlSettingsRequest.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ChangeWaveformControlSettingsRequest message.
+     * @function verify
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ChangeWaveformControlSettingsRequest.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.settings != null && message.hasOwnProperty("settings")) {
+            let error = $root.WavefromControlSettings.verify(message.settings);
+            if (error)
+                return "settings." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a ChangeWaveformControlSettingsRequest message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ChangeWaveformControlSettingsRequest} ChangeWaveformControlSettingsRequest
+     */
+    ChangeWaveformControlSettingsRequest.fromObject = function fromObject(object) {
+        if (object instanceof $root.ChangeWaveformControlSettingsRequest)
+            return object;
+        let message = new $root.ChangeWaveformControlSettingsRequest();
+        if (object.settings != null) {
+            if (typeof object.settings !== "object")
+                throw TypeError(".ChangeWaveformControlSettingsRequest.settings: object expected");
+            message.settings = $root.WavefromControlSettings.fromObject(object.settings);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ChangeWaveformControlSettingsRequest message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {ChangeWaveformControlSettingsRequest} message ChangeWaveformControlSettingsRequest
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ChangeWaveformControlSettingsRequest.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.settings = null;
+        if (message.settings != null && message.hasOwnProperty("settings"))
+            object.settings = $root.WavefromControlSettings.toObject(message.settings, options);
+        return object;
+    };
+
+    /**
+     * Converts this ChangeWaveformControlSettingsRequest to JSON.
+     * @function toJSON
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ChangeWaveformControlSettingsRequest.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for ChangeWaveformControlSettingsRequest
+     * @function getTypeUrl
+     * @memberof ChangeWaveformControlSettingsRequest
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    ChangeWaveformControlSettingsRequest.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/ChangeWaveformControlSettingsRequest";
+    };
+
+    return ChangeWaveformControlSettingsRequest;
+})();
+
 export const PrinterRequest = $root.PrinterRequest = (() => {
 
     /**
@@ -4080,6 +4288,7 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @property {IChangePrintMemoryRequest|null} [changePrintMemoryRequest] PrinterRequest changePrintMemoryRequest
      * @property {INozzlePrimingRequest|null} [nozzlePrimingRequest] PrinterRequest nozzlePrimingRequest
      * @property {IChangeEncoderModeRequest|null} [changeEncoderModeRequest] PrinterRequest changeEncoderModeRequest
+     * @property {IChangeWaveformControlSettingsRequest|null} [changeWaveformControlSettingsRequest] PrinterRequest changeWaveformControlSettingsRequest
      */
 
     /**
@@ -4184,6 +4393,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
      * @instance
      */
     PrinterRequest.prototype.changeEncoderModeRequest = null;
+
+    /**
+     * PrinterRequest changeWaveformControlSettingsRequest.
+     * @member {IChangeWaveformControlSettingsRequest|null|undefined} changeWaveformControlSettingsRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    PrinterRequest.prototype.changeWaveformControlSettingsRequest = null;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -4310,6 +4527,17 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
     });
 
     /**
+     * PrinterRequest _changeWaveformControlSettingsRequest.
+     * @member {"changeWaveformControlSettingsRequest"|undefined} _changeWaveformControlSettingsRequest
+     * @memberof PrinterRequest
+     * @instance
+     */
+    Object.defineProperty(PrinterRequest.prototype, "_changeWaveformControlSettingsRequest", {
+        get: $util.oneOfGetter($oneOfFields = ["changeWaveformControlSettingsRequest"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
      * Creates a new PrinterRequest instance using the specified properties.
      * @function create
      * @memberof PrinterRequest
@@ -4355,6 +4583,8 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             $root.NozzlePrimingRequest.encode(message.nozzlePrimingRequest, writer.uint32(/* id 10, wireType 2 =*/82).fork()).ldelim();
         if (message.changeEncoderModeRequest != null && Object.hasOwnProperty.call(message, "changeEncoderModeRequest"))
             $root.ChangeEncoderModeRequest.encode(message.changeEncoderModeRequest, writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
+        if (message.changeWaveformControlSettingsRequest != null && Object.hasOwnProperty.call(message, "changeWaveformControlSettingsRequest"))
+            $root.ChangeWaveformControlSettingsRequest.encode(message.changeWaveformControlSettingsRequest, writer.uint32(/* id 12, wireType 2 =*/98).fork()).ldelim();
         return writer;
     };
 
@@ -4431,6 +4661,10 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                 }
             case 11: {
                     message.changeEncoderModeRequest = $root.ChangeEncoderModeRequest.decode(reader, reader.uint32());
+                    break;
+                }
+            case 12: {
+                    message.changeWaveformControlSettingsRequest = $root.ChangeWaveformControlSettingsRequest.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -4557,6 +4791,14 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
                     return "changeEncoderModeRequest." + error;
             }
         }
+        if (message.changeWaveformControlSettingsRequest != null && message.hasOwnProperty("changeWaveformControlSettingsRequest")) {
+            properties._changeWaveformControlSettingsRequest = 1;
+            {
+                let error = $root.ChangeWaveformControlSettingsRequest.verify(message.changeWaveformControlSettingsRequest);
+                if (error)
+                    return "changeWaveformControlSettingsRequest." + error;
+            }
+        }
         return null;
     };
 
@@ -4626,6 +4868,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (typeof object.changeEncoderModeRequest !== "object")
                 throw TypeError(".PrinterRequest.changeEncoderModeRequest: object expected");
             message.changeEncoderModeRequest = $root.ChangeEncoderModeRequest.fromObject(object.changeEncoderModeRequest);
+        }
+        if (object.changeWaveformControlSettingsRequest != null) {
+            if (typeof object.changeWaveformControlSettingsRequest !== "object")
+                throw TypeError(".PrinterRequest.changeWaveformControlSettingsRequest: object expected");
+            message.changeWaveformControlSettingsRequest = $root.ChangeWaveformControlSettingsRequest.fromObject(object.changeWaveformControlSettingsRequest);
         }
         return message;
     };
@@ -4698,6 +4945,11 @@ export const PrinterRequest = $root.PrinterRequest = (() => {
             if (options.oneofs)
                 object._changeEncoderModeRequest = "changeEncoderModeRequest";
         }
+        if (message.changeWaveformControlSettingsRequest != null && message.hasOwnProperty("changeWaveformControlSettingsRequest")) {
+            object.changeWaveformControlSettingsRequest = $root.ChangeWaveformControlSettingsRequest.toObject(message.changeWaveformControlSettingsRequest, options);
+            if (options.oneofs)
+                object._changeWaveformControlSettingsRequest = "changeWaveformControlSettingsRequest";
+        }
         return object;
     };
 
@@ -4754,6 +5006,430 @@ export const PrinterSystemState = $root.PrinterSystemState = (() => {
     return values;
 })();
 
+export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
+
+    /**
+     * Properties of a WavefromControlSettings.
+     * @exports IWavefromControlSettings
+     * @interface IWavefromControlSettings
+     * @property {number|null} [voltage] WavefromControlSettings voltage
+     */
+
+    /**
+     * Constructs a new WavefromControlSettings.
+     * @exports WavefromControlSettings
+     * @classdesc Represents a WavefromControlSettings.
+     * @implements IWavefromControlSettings
+     * @constructor
+     * @param {IWavefromControlSettings=} [properties] Properties to set
+     */
+    function WavefromControlSettings(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * WavefromControlSettings voltage.
+     * @member {number} voltage
+     * @memberof WavefromControlSettings
+     * @instance
+     */
+    WavefromControlSettings.prototype.voltage = 0;
+
+    /**
+     * Creates a new WavefromControlSettings instance using the specified properties.
+     * @function create
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {IWavefromControlSettings=} [properties] Properties to set
+     * @returns {WavefromControlSettings} WavefromControlSettings instance
+     */
+    WavefromControlSettings.create = function create(properties) {
+        return new WavefromControlSettings(properties);
+    };
+
+    /**
+     * Encodes the specified WavefromControlSettings message. Does not implicitly {@link WavefromControlSettings.verify|verify} messages.
+     * @function encode
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {IWavefromControlSettings} message WavefromControlSettings message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WavefromControlSettings.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.voltage != null && Object.hasOwnProperty.call(message, "voltage"))
+            writer.uint32(/* id 1, wireType 1 =*/9).double(message.voltage);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified WavefromControlSettings message, length delimited. Does not implicitly {@link WavefromControlSettings.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {IWavefromControlSettings} message WavefromControlSettings message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WavefromControlSettings.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a WavefromControlSettings message from the specified reader or buffer.
+     * @function decode
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {WavefromControlSettings} WavefromControlSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WavefromControlSettings.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.WavefromControlSettings();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.voltage = reader.double();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a WavefromControlSettings message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {WavefromControlSettings} WavefromControlSettings
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WavefromControlSettings.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a WavefromControlSettings message.
+     * @function verify
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    WavefromControlSettings.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.voltage != null && message.hasOwnProperty("voltage"))
+            if (typeof message.voltage !== "number")
+                return "voltage: number expected";
+        return null;
+    };
+
+    /**
+     * Creates a WavefromControlSettings message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {WavefromControlSettings} WavefromControlSettings
+     */
+    WavefromControlSettings.fromObject = function fromObject(object) {
+        if (object instanceof $root.WavefromControlSettings)
+            return object;
+        let message = new $root.WavefromControlSettings();
+        if (object.voltage != null)
+            message.voltage = Number(object.voltage);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a WavefromControlSettings message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {WavefromControlSettings} message WavefromControlSettings
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    WavefromControlSettings.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.voltage = 0;
+        if (message.voltage != null && message.hasOwnProperty("voltage"))
+            object.voltage = options.json && !isFinite(message.voltage) ? String(message.voltage) : message.voltage;
+        return object;
+    };
+
+    /**
+     * Converts this WavefromControlSettings to JSON.
+     * @function toJSON
+     * @memberof WavefromControlSettings
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    WavefromControlSettings.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for WavefromControlSettings
+     * @function getTypeUrl
+     * @memberof WavefromControlSettings
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    WavefromControlSettings.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/WavefromControlSettings";
+    };
+
+    return WavefromControlSettings;
+})();
+
+export const WaveformControlState = $root.WaveformControlState = (() => {
+
+    /**
+     * Properties of a WaveformControlState.
+     * @exports IWaveformControlState
+     * @interface IWaveformControlState
+     * @property {number|null} [voltage] WaveformControlState voltage
+     */
+
+    /**
+     * Constructs a new WaveformControlState.
+     * @exports WaveformControlState
+     * @classdesc Represents a WaveformControlState.
+     * @implements IWaveformControlState
+     * @constructor
+     * @param {IWaveformControlState=} [properties] Properties to set
+     */
+    function WaveformControlState(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * WaveformControlState voltage.
+     * @member {number|null|undefined} voltage
+     * @memberof WaveformControlState
+     * @instance
+     */
+    WaveformControlState.prototype.voltage = null;
+
+    // OneOf field names bound to virtual getters and setters
+    let $oneOfFields;
+
+    /**
+     * WaveformControlState _voltage.
+     * @member {"voltage"|undefined} _voltage
+     * @memberof WaveformControlState
+     * @instance
+     */
+    Object.defineProperty(WaveformControlState.prototype, "_voltage", {
+        get: $util.oneOfGetter($oneOfFields = ["voltage"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
+     * Creates a new WaveformControlState instance using the specified properties.
+     * @function create
+     * @memberof WaveformControlState
+     * @static
+     * @param {IWaveformControlState=} [properties] Properties to set
+     * @returns {WaveformControlState} WaveformControlState instance
+     */
+    WaveformControlState.create = function create(properties) {
+        return new WaveformControlState(properties);
+    };
+
+    /**
+     * Encodes the specified WaveformControlState message. Does not implicitly {@link WaveformControlState.verify|verify} messages.
+     * @function encode
+     * @memberof WaveformControlState
+     * @static
+     * @param {IWaveformControlState} message WaveformControlState message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WaveformControlState.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.voltage != null && Object.hasOwnProperty.call(message, "voltage"))
+            writer.uint32(/* id 1, wireType 1 =*/9).double(message.voltage);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified WaveformControlState message, length delimited. Does not implicitly {@link WaveformControlState.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof WaveformControlState
+     * @static
+     * @param {IWaveformControlState} message WaveformControlState message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    WaveformControlState.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a WaveformControlState message from the specified reader or buffer.
+     * @function decode
+     * @memberof WaveformControlState
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {WaveformControlState} WaveformControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WaveformControlState.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.WaveformControlState();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1: {
+                    message.voltage = reader.double();
+                    break;
+                }
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a WaveformControlState message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof WaveformControlState
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {WaveformControlState} WaveformControlState
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    WaveformControlState.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a WaveformControlState message.
+     * @function verify
+     * @memberof WaveformControlState
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    WaveformControlState.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        let properties = {};
+        if (message.voltage != null && message.hasOwnProperty("voltage")) {
+            properties._voltage = 1;
+            if (typeof message.voltage !== "number")
+                return "voltage: number expected";
+        }
+        return null;
+    };
+
+    /**
+     * Creates a WaveformControlState message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof WaveformControlState
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {WaveformControlState} WaveformControlState
+     */
+    WaveformControlState.fromObject = function fromObject(object) {
+        if (object instanceof $root.WaveformControlState)
+            return object;
+        let message = new $root.WaveformControlState();
+        if (object.voltage != null)
+            message.voltage = Number(object.voltage);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a WaveformControlState message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof WaveformControlState
+     * @static
+     * @param {WaveformControlState} message WaveformControlState
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    WaveformControlState.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (message.voltage != null && message.hasOwnProperty("voltage")) {
+            object.voltage = options.json && !isFinite(message.voltage) ? String(message.voltage) : message.voltage;
+            if (options.oneofs)
+                object._voltage = "voltage";
+        }
+        return object;
+    };
+
+    /**
+     * Converts this WaveformControlState to JSON.
+     * @function toJSON
+     * @memberof WaveformControlState
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    WaveformControlState.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    /**
+     * Gets the default type url for WaveformControlState
+     * @function getTypeUrl
+     * @memberof WaveformControlState
+     * @static
+     * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+     * @returns {string} The default type url
+     */
+    WaveformControlState.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+        if (typeUrlPrefix === undefined) {
+            typeUrlPrefix = "type.googleapis.com";
+        }
+        return typeUrlPrefix + "/WaveformControlState";
+    };
+
+    return WaveformControlState;
+})();
+
 export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (() => {
 
     /**
@@ -4764,6 +5440,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      * @property {number|null} [errorFlags] PrinterSystemStateResponse errorFlags
      * @property {IPressureControlSystemState|null} [pressureControl] PrinterSystemStateResponse pressureControl
      * @property {IPrintControlState|null} [printControl] PrinterSystemStateResponse printControl
+     * @property {IWaveformControlState|null} [waveformControl] PrinterSystemStateResponse waveformControl
      */
 
     /**
@@ -4813,6 +5490,14 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      */
     PrinterSystemStateResponse.prototype.printControl = null;
 
+    /**
+     * PrinterSystemStateResponse waveformControl.
+     * @member {IWaveformControlState|null|undefined} waveformControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    PrinterSystemStateResponse.prototype.waveformControl = null;
+
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
 
@@ -4835,6 +5520,17 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      */
     Object.defineProperty(PrinterSystemStateResponse.prototype, "_printControl", {
         get: $util.oneOfGetter($oneOfFields = ["printControl"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
+     * PrinterSystemStateResponse _waveformControl.
+     * @member {"waveformControl"|undefined} _waveformControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    Object.defineProperty(PrinterSystemStateResponse.prototype, "_waveformControl", {
+        get: $util.oneOfGetter($oneOfFields = ["waveformControl"]),
         set: $util.oneOfSetter($oneOfFields)
     });
 
@@ -4870,6 +5566,8 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             $root.PressureControlSystemState.encode(message.pressureControl, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         if (message.printControl != null && Object.hasOwnProperty.call(message, "printControl"))
             $root.PrintControlState.encode(message.printControl, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        if (message.waveformControl != null && Object.hasOwnProperty.call(message, "waveformControl"))
+            $root.WaveformControlState.encode(message.waveformControl, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
         return writer;
     };
 
@@ -4918,6 +5616,10 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
                 }
             case 4: {
                     message.printControl = $root.PrintControlState.decode(reader, reader.uint32());
+                    break;
+                }
+            case 5: {
+                    message.waveformControl = $root.WaveformControlState.decode(reader, reader.uint32());
                     break;
                 }
             default:
@@ -4988,6 +5690,14 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
                     return "printControl." + error;
             }
         }
+        if (message.waveformControl != null && message.hasOwnProperty("waveformControl")) {
+            properties._waveformControl = 1;
+            {
+                let error = $root.WaveformControlState.verify(message.waveformControl);
+                if (error)
+                    return "waveformControl." + error;
+            }
+        }
         return null;
     };
 
@@ -5051,6 +5761,11 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
                 throw TypeError(".PrinterSystemStateResponse.printControl: object expected");
             message.printControl = $root.PrintControlState.fromObject(object.printControl);
         }
+        if (object.waveformControl != null) {
+            if (typeof object.waveformControl !== "object")
+                throw TypeError(".PrinterSystemStateResponse.waveformControl: object expected");
+            message.waveformControl = $root.WaveformControlState.fromObject(object.waveformControl);
+        }
         return message;
     };
 
@@ -5084,6 +5799,11 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             object.printControl = $root.PrintControlState.toObject(message.printControl, options);
             if (options.oneofs)
                 object._printControl = "printControl";
+        }
+        if (message.waveformControl != null && message.hasOwnProperty("waveformControl")) {
+            object.waveformControl = $root.WaveformControlState.toObject(message.waveformControl, options);
+            if (options.oneofs)
+                object._waveformControl = "waveformControl";
         }
         return object;
     };

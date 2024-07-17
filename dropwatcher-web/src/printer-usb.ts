@@ -1,4 +1,4 @@
-import { ChangeEncoderModeRequest, NozzlePrimingRequest } from "./proto/compiled";
+import { ChangeEncoderModeRequest, ChangeWaveformControlSettingsRequest, NozzlePrimingRequest } from "./proto/compiled";
 import {
     CameraFrameRequest,
     ChangeDropwatcherParametersRequest,
@@ -134,9 +134,15 @@ export class PrinterUSB {
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 
-    async sendChangeEncoderModeRequest(request : ChangeEncoderModeRequest) {
+    async sendChangeEncoderModeRequest(request: ChangeEncoderModeRequest) {
         let printerRequest = new PrinterRequest();
         printerRequest.changeEncoderModeRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+    }
+
+    async sendChangeWaveformControlSettingsRequest(request: ChangeWaveformControlSettingsRequest) {
+        let printerRequest = new PrinterRequest();
+        printerRequest.changeWaveformControlSettingsRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 

@@ -3,8 +3,8 @@
 
 int regulator_initialize(void);
 
-double regulator_get_voltage(void);
+bool regulator_get_voltage(double *voltage_mv);
 
-int set_regulator_voltage(double voltage);
+int regulator_set_voltage(double voltage_mv);
 
 #endif // REGULATOR_H
