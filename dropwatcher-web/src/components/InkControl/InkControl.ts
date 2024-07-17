@@ -2,11 +2,14 @@ import template from "./InkControl.html";
 import "./InkControl.scss";
 import "../Chart/Chart";
 import { abortableEventListener } from "../../utils/abortableEventListener";
-import { PressureControlAlgorithm, ChangePressureControlParametersRequest, PressureControlDirection, PressureControlParameters } from "../../proto/compiled";
+import { PressureControlAlgorithm, ChangePressureControlParametersRequest, PressureControlDirection, PressureControlParameters, PrinterSystemState } from "../../proto/compiled";
 import { PrinterUSB } from "../../printer-usb";
 import { Store } from "../../state/Store";
 import { State, StateChanges } from "../../state/State";
 import { PressureControlPumpParameters } from "../../proto/compiled";
+import "../PumpStatus/PumpStatus";
+import { PumpStatus } from "../PumpStatus/PumpStatus";
+import { ChangePrinterSystemStateRequest } from "../../proto/compiled";
 
 export class InkControl extends HTMLElement {
 
@@ -20,7 +23,11 @@ export class InkControl extends HTMLElement {
     private printerUSB: PrinterUSB;
     private btnStop: HTMLButtonElement;
     private store: Store;
-    private targetPressure: HTMLInputElement;
+    // private targetPressure: HTMLInputElement;
+    private inkPumpStatus: PumpStatus;
+    private cappingPumpStatus: PumpStatus;
+    private btnKeepAlive : HTMLButtonElement;
+
     constructor() {
         super();
         this.printerUSB = PrinterUSB.getInstance();
@@ -38,6 +45,9 @@ export class InkControl extends HTMLElement {
             this.nozzlePrimingGroup = this.querySelector("#nozzle-priming-group");
             this.targetPressureGroup = this.querySelector("#target-pressure-group");
             this.btnStop = this.querySelector("#btn-stop");
+            this.inkPumpStatus = this.querySelector("#ink-pump-status");
+            this.cappingPumpStatus = this.querySelector("#capping-pump-status");
+            this.btnKeepAlive = this.querySelector("#btn-keepalive");
             // this.targetPressure = this.querySelector("#target-pressure");
             // abortableEventListener(this.action, "change", () => this.actionChanged(), this.abortController.signal);
             abortableEventListener(this.btnStart, "click", (ev) => {
@@ -48,6 +58,12 @@ export class InkControl extends HTMLElement {
                 ev.preventDefault();
                 this.stop().catch(console.error);
             }, this.abortController.signal);
+            abortableEventListener(this.btnKeepAlive, "click", async (ev) => {
+                ev.preventDefault();
+                let request = new ChangePrinterSystemStateRequest();
+                request.state = PrinterSystemState.PrinterSystemState_KEEP_ALIVE;
+                await this.printerUSB.sendChangeSystemStateRequest(request);
+            }, this.abortController.signal);
         }
         // this.actionChanged();
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
@@ -56,9 +72,15 @@ export class InkControl extends HTMLElement {
         if (!s) {
             return;
         }
-        // if (!c || c.includes("printerSystemState")) {
-        //     this.targetPressure.value = s.printerSystemState.pressureControl?.parameters.targetPressure.toString();
-        // }
+        if (!c || c.includes("printerSystemState")) {
+            // this.targetPressure.value = s.printerSystemState.pressureControl?.parameters.targetPressure.toString();
+            if (s.printerSystemState.pressureControl?.inkPump) {
+                this.inkPumpStatus.setPumpParameters(s.printerSystemState.pressureControl.inkPump);
+            }
+            if (s.printerSystemState.pressureControl?.cappingPump) {
+                this.cappingPumpStatus.setPumpParameters(s.printerSystemState.pressureControl.cappingPump);
+            }
+        }
     }
 
 
@@ -128,7 +150,7 @@ export class InkControl extends HTMLElement {
 
             await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
 
-            
+
 
             // switch (action) {
             //     case "priming":

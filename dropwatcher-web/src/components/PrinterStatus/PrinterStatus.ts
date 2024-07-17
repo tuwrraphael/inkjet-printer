@@ -20,12 +20,6 @@ export class PrinterStatus extends HTMLElement {
     private currentPressure: HTMLSpanElement;
     private pressureControlEnabled: HTMLTableCellElement;
     private pressureControlDone: HTMLTableCellElement;
-    // private pressureControlTargetPressure: HTMLSpanElement;
-    // private pressureControlDirection: HTMLTableCellElement;
-    // private pressureControlFeedTime: HTMLSpanElement;
-    // private pressureControlFeedPwm: HTMLSpanElement;
-    // private pressureControlLimitPressure: HTMLSpanElement;
-    // private pressureControlAlgorithm: HTMLTableCellElement;
     private connectUsbButton: HTMLButtonElement;
     private stageConnected: HTMLTableCellElement;
     private stagePosition: HTMLTableCellElement;
@@ -63,12 +57,6 @@ export class PrinterStatus extends HTMLElement {
             this.currentPressure = document.querySelector("#current-pressure");
             this.pressureControlEnabled = document.querySelector("#pressure-control-enabled");
             this.pressureControlDone = document.querySelector("#pressure-control-done");
-            // this.pressureControlTargetPressure = document.querySelector("#pressure-control-target-pressure");
-            // this.pressureControlDirection = document.querySelector("#pressure-control-direction");
-            // this.pressureControlFeedTime = document.querySelector("#pressure-control-feed-time");
-            // this.pressureControlFeedPwm = document.querySelector("#pressure-control-feed-pwm");
-            // this.pressureControlLimitPressure = document.querySelector("#pressure-control-limit-pressure");
-            // this.pressureControlAlgorithm = document.querySelector("#pressure-control-algorithm");
             this.connectUsbButton = document.querySelector("#connect-usb");
             this.sequentialFires = document.querySelector("#sequential-fires");
             this.fireEveryTicks = document.querySelector("#fire-every-ticks");
@@ -121,6 +109,8 @@ export class PrinterStatus extends HTMLElement {
                 return "Dropwatcher";
             case PrinterSystemState.Print:
                 return "Print";
+            case PrinterSystemState.KeepAlive:
+                return "Keep Alive";
             default:
                 return "Unspecified";
         }
@@ -147,27 +137,7 @@ export class PrinterStatus extends HTMLElement {
         return errors.join(", ") || "None";
     }
 
-    formatPressureControlDirection(direction: PressureControlDirection) {
-        switch (direction) {
-            case PressureControlDirection.Pressure:
-                return "Pressure";
-            case PressureControlDirection.Vacuum:
-                return "Vacuum";
-            default:
-                return "Unspecified";
-        }
-    }
-
-    formatPressureControlAlgorithm(algorithm: PressureControlAlgorithm) {
-        switch (algorithm) {
-            case PressureControlAlgorithm.FeedwithLimit:
-                return "Feed with Limit";
-            case PressureControlAlgorithm.TargetPressure:
-                return "Target Pressure";
-            default:
-                return "Unspecified";
-        }
-    }
+    
 
     formatEncoderMode(encoderMode: PrintControlEncoderMode) {
         switch (encoderMode) {
@@ -198,12 +168,6 @@ export class PrinterStatus extends HTMLElement {
             this.currentPressure.innerText = this.formatNumber(currentPressure);
             this.pressureControlEnabled.innerText = s.printerSystemState.pressureControl?.enabled ? "Enabled" : "Disabled";
             this.pressureControlDone.innerText = s.printerSystemState.pressureControl?.done ? "Done" : "-";
-            // this.pressureControlTargetPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.targetPressure);
-            // this.pressureControlDirection.innerText = this.formatPressureControlDirection(s.printerSystemState.pressureControl?.parameters.direction);
-            // this.pressureControlFeedTime.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.feedTime);
-            // this.pressureControlFeedPwm.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.feedPwm);
-            // this.pressureControlLimitPressure.innerText = this.formatNumber(s.printerSystemState.pressureControl?.parameters.limitPressure);
-            // this.pressureControlAlgorithm.innerText = this.formatPressureControlAlgorithm(s.printerSystemState.pressureControl?.parameters.algorithm);
             this.connectUsbButton.style.display = s.printerSystemState.usbConnected ? "none" : "";
             this.sequentialFires.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.sequentialFires);
             this.fireEveryTicks.innerText = this.formatNumber(s.printerSystemState.printControl?.encoderModeSettings.fireEveryTicks);

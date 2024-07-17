@@ -94,6 +94,8 @@ function mapPrinterSystemState(s: ProtoPrinterSystemState): PrinterSystemState {
             return PrinterSystemState.Dropwatcher;
         case ProtoPrinterSystemState.PrinterSystemState_PRINT:
             return PrinterSystemState.Print;
+        case ProtoPrinterSystemState.PrinterSystemState_KEEP_ALIVE:
+            return PrinterSystemState.KeepAlive;
         default:
             return PrinterSystemState.Unspecified;
     }
@@ -322,43 +324,7 @@ async function handleMessage(msg: Actions) {
             }));
             break;
         case ActionType.PrinterSystemStateResponseReceived:
-            updateState(oldState => {
-                let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
-                if (pressure.length > maxPressureHistory) {
-                    pressure = pressure.slice(pressure.length - maxPressureHistory);
-                }
-                return {
-                    printerSystemState: {
-                        ...oldState.printerSystemState,
-                        state: mapPrinterSystemState(msg.response.state),
-                        errors: {
-                            flags: Number(msg.response.errorFlags || 0)
-                        },
-                        pressureControl: msg.response.pressureControl ? {
-                            pressure: pressure,
-                            done: msg.response.pressureControl ? Boolean(msg.response.pressureControl.done) : undefined,
-                            enabled: msg.response.pressureControl ? Boolean(msg.response.pressureControl.enabled) : undefined,
-                            inkPump: msg.response.pressureControl?.parameters?.inkPump ? mapPressureControlParameters(msg.response.pressureControl.parameters.inkPump) : null,
-                            cappingPump: msg.response.pressureControl?.parameters?.cappingPump ? mapPressureControlParameters(msg.response.pressureControl.parameters.cappingPump) : null
-                        } : null,
-                        printControl: msg.response.printControl ? {
-                            encoderModeSettings: {
-                                fireEveryTicks: msg.response.printControl.encoderModeSettings.fireEveryTicks || 0,
-                                printFirstLineAfterEncoderTick: msg.response.printControl.encoderModeSettings.printFirstLineAfterEncoderTick || 0,
-                                sequentialFires: msg.response.printControl.encoderModeSettings.sequentialFires | 0
-                            },
-                            encoderValue: msg.response.printControl.encoderValue || 0,
-                            expectedEncoderValue: msg.response.printControl.expectedEncoderValue || 0,
-                            lastPrintedLine: msg.response.printControl.lastPrintedLine || 0,
-                            lostLinesCount: msg.response.printControl.lostLinesCount || 0,
-                            printedLines: msg.response.printControl.printedLines || 0,
-                            nozzlePrimingActive: msg.response.printControl.nozzlePrimingActive || false,
-                            encoderMode: msg.response.printControl.encoderMode ? mapEncoderMode(msg.response.printControl.encoderMode) : PrintControlEncoderMode.Unspecified,
-                            lostLinesBySlowData: msg.response.printControl.lostLinesBySlowData || 0,
-                        } : null
-                    }
-                };
-            });
+            mergeSystemStateResponse(msg);
             break;
         case ActionType.InitializeWorker:
             state = msg.state;
@@ -538,6 +504,61 @@ self.addEventListener("message", ev => {
     let msg: Actions = ev.data;
     handleMessage(msg).catch(err => console.error(err));
 });
+
+function mergeSystemStateResponse(msg: PrinterSystemStateResponseReceived) {
+    updateState(oldState => {
+        let pressureControlState = oldState.printerSystemState.pressureControl;
+
+        if (msg.response.pressureControl) {
+            let pressure = [...oldState.printerSystemState.pressureControl?.pressure || [], { mbar: msg.response.pressureControl ? Number(msg.response.pressureControl.pressure || 0) : undefined, timestamp: new Date() }];
+            if (pressure.length > maxPressureHistory) {
+                pressure = pressure.slice(pressure.length - maxPressureHistory);
+            }
+            pressureControlState = {
+                ...oldState.printerSystemState.pressureControl,
+                pressure: pressure,
+                done: msg.response.pressureControl ? Boolean(msg.response.pressureControl.done) : undefined,
+                enabled: msg.response.pressureControl ? Boolean(msg.response.pressureControl.enabled) : undefined,
+            };
+            if (msg.response.pressureControl.parameters?.inkPump) {
+                pressureControlState.inkPump = mapPressureControlParameters(msg.response.pressureControl.parameters.inkPump);
+            }
+            if (msg.response.pressureControl.parameters?.cappingPump) {
+                pressureControlState.cappingPump = mapPressureControlParameters(msg.response.pressureControl.parameters.cappingPump);
+            }
+        }
+
+        let printControlState = oldState.printerSystemState.printControl;
+        if (msg.response.printControl) {
+            printControlState = {
+                encoderModeSettings: {
+                    fireEveryTicks: msg.response.printControl.encoderModeSettings.fireEveryTicks || 0,
+                    printFirstLineAfterEncoderTick: msg.response.printControl.encoderModeSettings.printFirstLineAfterEncoderTick || 0,
+                    sequentialFires: msg.response.printControl.encoderModeSettings.sequentialFires | 0
+                },
+                encoderValue: msg.response.printControl.encoderValue || 0,
+                expectedEncoderValue: msg.response.printControl.expectedEncoderValue || 0,
+                lastPrintedLine: msg.response.printControl.lastPrintedLine || 0,
+                lostLinesCount: msg.response.printControl.lostLinesCount || 0,
+                printedLines: msg.response.printControl.printedLines || 0,
+                nozzlePrimingActive: msg.response.printControl.nozzlePrimingActive || false,
+                encoderMode: msg.response.printControl.encoderMode ? mapEncoderMode(msg.response.printControl.encoderMode) : PrintControlEncoderMode.Unspecified,
+                lostLinesBySlowData: msg.response.printControl.lostLinesBySlowData || 0,
+            };
+        }
+        return {
+            printerSystemState: {
+                ...oldState.printerSystemState,
+                state: mapPrinterSystemState(msg.response.state),
+                errors: {
+                    flags: Number(msg.response.errorFlags || 0)
+                },
+                pressureControl: pressureControlState,
+                printControl: printControlState
+            }
+        };
+    });
+}
 
 async function openFile(msg: OpenFile) {
     let file = await msg.handle.getFile();

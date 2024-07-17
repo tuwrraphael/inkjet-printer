@@ -4813,6 +4813,31 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
      */
     PrinterSystemStateResponse.prototype.printControl = null;
 
+    // OneOf field names bound to virtual getters and setters
+    let $oneOfFields;
+
+    /**
+     * PrinterSystemStateResponse _pressureControl.
+     * @member {"pressureControl"|undefined} _pressureControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    Object.defineProperty(PrinterSystemStateResponse.prototype, "_pressureControl", {
+        get: $util.oneOfGetter($oneOfFields = ["pressureControl"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
+    /**
+     * PrinterSystemStateResponse _printControl.
+     * @member {"printControl"|undefined} _printControl
+     * @memberof PrinterSystemStateResponse
+     * @instance
+     */
+    Object.defineProperty(PrinterSystemStateResponse.prototype, "_printControl", {
+        get: $util.oneOfGetter($oneOfFields = ["printControl"]),
+        set: $util.oneOfSetter($oneOfFields)
+    });
+
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.
      * @function create
@@ -4930,6 +4955,7 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
     PrinterSystemStateResponse.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        let properties = {};
         if (message.state != null && message.hasOwnProperty("state"))
             switch (message.state) {
             default:
@@ -4947,14 +4973,20 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
             if (!$util.isInteger(message.errorFlags))
                 return "errorFlags: integer expected";
         if (message.pressureControl != null && message.hasOwnProperty("pressureControl")) {
-            let error = $root.PressureControlSystemState.verify(message.pressureControl);
-            if (error)
-                return "pressureControl." + error;
+            properties._pressureControl = 1;
+            {
+                let error = $root.PressureControlSystemState.verify(message.pressureControl);
+                if (error)
+                    return "pressureControl." + error;
+            }
         }
         if (message.printControl != null && message.hasOwnProperty("printControl")) {
-            let error = $root.PrintControlState.verify(message.printControl);
-            if (error)
-                return "printControl." + error;
+            properties._printControl = 1;
+            {
+                let error = $root.PrintControlState.verify(message.printControl);
+                if (error)
+                    return "printControl." + error;
+            }
         }
         return null;
     };
@@ -5038,17 +5070,21 @@ export const PrinterSystemStateResponse = $root.PrinterSystemStateResponse = (()
         if (options.defaults) {
             object.state = options.enums === String ? "PrinterSystemState_UNSPECIFIED" : 0;
             object.errorFlags = 0;
-            object.pressureControl = null;
-            object.printControl = null;
         }
         if (message.state != null && message.hasOwnProperty("state"))
             object.state = options.enums === String ? $root.PrinterSystemState[message.state] === undefined ? message.state : $root.PrinterSystemState[message.state] : message.state;
         if (message.errorFlags != null && message.hasOwnProperty("errorFlags"))
             object.errorFlags = message.errorFlags;
-        if (message.pressureControl != null && message.hasOwnProperty("pressureControl"))
+        if (message.pressureControl != null && message.hasOwnProperty("pressureControl")) {
             object.pressureControl = $root.PressureControlSystemState.toObject(message.pressureControl, options);
-        if (message.printControl != null && message.hasOwnProperty("printControl"))
+            if (options.oneofs)
+                object._pressureControl = "pressureControl";
+        }
+        if (message.printControl != null && message.hasOwnProperty("printControl")) {
             object.printControl = $root.PrintControlState.toObject(message.printControl, options);
+            if (options.oneofs)
+                object._printControl = "printControl";
+        }
         return object;
     };
 

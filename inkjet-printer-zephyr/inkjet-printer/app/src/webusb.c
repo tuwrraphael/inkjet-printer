@@ -89,6 +89,10 @@ struct
 									WEBUSB_BULK_EP_MPS, 0),
 };
 
+static int process_printer_system_state_msg(void *priv);
+static uint8_t tx_buf[64];
+static int next_system_sate_message = 0;
+
 /**
  * @brief Custom handler for standard requests in order to
  *        catch the request and return the WebUSB Platform
@@ -151,8 +155,11 @@ void webusb_register_request_handlers(struct webusb_req_handlers *handlers)
 static void webusb_write_cb(uint8_t ep, int size, void *priv)
 {
 	LOG_DBG("ep %x size %u", ep, size);
+	if (next_system_sate_message != 0)
+	{
+		process_printer_system_state_msg(priv);
+	}
 }
-
 const pb_msgdesc_t *decode_printer_request_type(pb_istream_t *stream)
 {
 	pb_wire_type_t wire_type;
@@ -190,8 +197,6 @@ bool decode_unionmessage_contents(pb_istream_t *stream, const pb_msgdesc_t *mess
 	pb_close_string_substream(stream, &substream);
 	return status;
 }
-
-static uint8_t tx_buf[64];
 
 static PrinterSystemState map_system_state_to_proto(enum printer_system_smf_state state)
 {
@@ -294,6 +299,87 @@ static void map_pump_parameters_to_proto(pressure_control_algorithm_init_t *in, 
 	out->feed_time = in->feed_time;
 }
 
+static int set_printer_system_state_msg(pb_ostream_t *tx_stream)
+{
+	PrinterSystemStateResponse response = PrinterSystemStateResponse_init_zero;
+	response.state = map_system_state_to_proto(printer_system_smf_get_state());
+	response.error_flags = failure_handling_get_error_state();
+	pressure_control_info_t pressure_info;
+	switch (next_system_sate_message)
+	{
+	case 0:
+		print_control_info_t print_control_info;
+		print_control_get_info(&print_control_info);
+		response.has_print_control = true;
+		response.print_control.has_encoder_mode_settings = true;
+		response.print_control.encoder_mode_settings.fire_every_ticks = print_control_info.encoder_mode_settings.fire_every_ticks;
+		response.print_control.encoder_mode_settings.print_first_line_after_encoder_tick = print_control_info.encoder_mode_settings.print_first_line_after_encoder_tick;
+		response.print_control.encoder_mode_settings.sequential_fires = print_control_info.encoder_mode_settings.sequential_fires;
+		response.print_control.encoder_value = print_control_info.encoder_value;
+		response.print_control.expected_encoder_value = print_control_info.expected_encoder_value;
+		response.print_control.last_printed_line = print_control_info.last_printed_line;
+		response.print_control.lost_lines_count = print_control_info.lost_lines_count;
+		response.print_control.lost_lines_by_slow_data = print_control_info.lost_lines_by_slow_data;
+		response.print_control.printed_lines = print_control_info.printed_lines;
+		response.print_control.nozzle_priming_active = print_control_info.nozzle_priming_active;
+		response.print_control.encoder_mode = map_encoder_mode_to_proto(print_control_info.encoder_mode);
+		break;
+	case 1:
+		pressure_control_get_info(&pressure_info);
+		response.has_pressure_control = true;
+		response.pressure_control.has_parameters = true;
+
+		response.pressure_control.parameters.has_ink_pump = true;
+		map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_INK_PUMP_IDX], &response.pressure_control.parameters.ink_pump);
+
+		response.pressure_control.pressure = pressure_info.pressure;
+		response.pressure_control.done = pressure_info.done;
+		response.pressure_control.enabled = pressure_info.enabled;
+		break;
+	case 2:
+		pressure_control_info_t pressure_info;
+		pressure_control_get_info(&pressure_info);
+		response.has_pressure_control = true;
+		response.pressure_control.has_parameters = true;
+
+		response.pressure_control.parameters.has_capping_pump = true;
+		map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_CAPPING_PUMP_IDX], &response.pressure_control.parameters.capping_pump);
+
+		response.pressure_control.pressure = pressure_info.pressure;
+		response.pressure_control.done = pressure_info.done;
+		response.pressure_control.enabled = pressure_info.enabled;
+		break;
+	default:
+		break;
+	}
+	bool status = pb_encode(tx_stream, PrinterSystemStateResponse_fields, &response);
+	if (status != true)
+	{
+		LOG_ERR("Failed to encode PrinterSystemStateResponse %d: %s", next_system_sate_message, tx_stream->errmsg);
+		return status;
+	}
+	return 0;
+}
+
+static int process_printer_system_state_msg(void *priv)
+{
+	struct usb_cfg_data *cfg = priv;
+	pb_ostream_t tx_stream = pb_ostream_from_buffer(tx_buf, sizeof(tx_buf));
+	int res = set_printer_system_state_msg(&tx_stream);
+	if (res != 0)
+	{
+		next_system_sate_message = 0;
+		return res;
+	}
+	else
+	{
+		usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, tx_stream.bytes_written,
+					 USB_TRANS_WRITE, webusb_write_cb, cfg);
+		next_system_sate_message = (next_system_sate_message + 1) % 3;
+	}
+	return 0;
+}
+
 static void webusb_read_cb(uint8_t ep, int size, void *priv)
 {
 	struct usb_cfg_data *cfg = priv;
@@ -316,52 +402,11 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		status = decode_unionmessage_contents(&stream, GetPrinterSystemStateRequest_fields, &request);
 		if (status)
 		{
-			// LOG_INF("GetPrinterSystemStateRequest");
-			pb_ostream_t tx_stream = pb_ostream_from_buffer(tx_buf, sizeof(tx_buf));
-			PrinterSystemStateResponse response = PrinterSystemStateResponse_init_zero;
-			response.state = map_system_state_to_proto(printer_system_smf_get_state());
-			response.error_flags = failure_handling_get_error_state();
-			pressure_control_info_t pressure_info;
-			pressure_control_get_info(&pressure_info);
-			response.has_pressure_control = true;
-			response.pressure_control.has_parameters = true;
-
-			// response.pressure_control.parameters.has_ink_pump = true;
-			// map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_INK_PUMP_IDX], &response.pressure_control.parameters.ink_pump);
-
-			// response.pressure_control.parameters.has_capping_pump = true;
-			// map_pump_parameters_to_proto(&pressure_info.algorithm[PRESSURE_CONTROL_CAPPING_PUMP_IDX], &response.pressure_control.parameters.capping_pump);
-
-			response.pressure_control.pressure = pressure_info.pressure;
-			response.pressure_control.done = pressure_info.done;
-			response.pressure_control.enabled = pressure_info.enabled;
-
-			print_control_info_t print_control_info;
-			print_control_get_info(&print_control_info);
-			response.has_print_control = true;
-			response.print_control.has_encoder_mode_settings = true;
-			response.print_control.encoder_mode_settings.fire_every_ticks = print_control_info.encoder_mode_settings.fire_every_ticks;
-			response.print_control.encoder_mode_settings.print_first_line_after_encoder_tick = print_control_info.encoder_mode_settings.print_first_line_after_encoder_tick;
-			response.print_control.encoder_mode_settings.sequential_fires = print_control_info.encoder_mode_settings.sequential_fires;
-			response.print_control.encoder_value = print_control_info.encoder_value;
-			response.print_control.expected_encoder_value = print_control_info.expected_encoder_value;
-			response.print_control.last_printed_line = print_control_info.last_printed_line;
-			response.print_control.lost_lines_count = print_control_info.lost_lines_count;
-			response.print_control.lost_lines_by_slow_data = print_control_info.lost_lines_by_slow_data;
-			response.print_control.printed_lines = print_control_info.printed_lines;
-			response.print_control.nozzle_priming_active = print_control_info.nozzle_priming_active;
-			response.print_control.encoder_mode = map_encoder_mode_to_proto(print_control_info.encoder_mode);
-			status = pb_encode(&tx_stream, PrinterSystemStateResponse_fields, &response);
-			if (status)
+			if (next_system_sate_message != 0)
 			{
-				// LOG_INF("PrinterSystemStateResponse: length %d", tx_stream.bytes_written);
-				usb_transfer(cfg->endpoint[WEBUSB_IN_EP_IDX].ep_addr, tx_buf, tx_stream.bytes_written,
-							 USB_TRANS_WRITE, webusb_write_cb, cfg);
+				LOG_ERR("GetPrinterSystemStateRequest: already processing a request");
 			}
-			else
-			{
-				LOG_ERR("Failed to encode PrinterSystemStateResponse");
-			}
+			process_printer_system_state_msg(priv);
 		}
 		else
 		{

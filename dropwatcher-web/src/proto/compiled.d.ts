@@ -1723,6 +1723,12 @@ export class PrinterSystemStateResponse implements IPrinterSystemStateResponse {
     /** PrinterSystemStateResponse printControl. */
     public printControl?: (IPrintControlState|null);
 
+    /** PrinterSystemStateResponse _pressureControl. */
+    public _pressureControl?: "pressureControl";
+
+    /** PrinterSystemStateResponse _printControl. */
+    public _printControl?: "printControl";
+
     /**
      * Creates a new PrinterSystemStateResponse instance using the specified properties.
      * @param [properties] Properties to set
