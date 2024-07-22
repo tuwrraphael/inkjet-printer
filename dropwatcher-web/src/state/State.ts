@@ -1,10 +1,11 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
-import { LayerPlan } from "../slicer/LayerPlan";
+import { LayerPlan, PrintPlan } from "../slicer/LayerPlan";
 import { TrackRasterization } from "../slicer/TrackRasterization";
 import { PrintingParams } from "../slicer/PrintingParams";
 import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
 import { CorrectionTrack } from "../slicer/TrackRasterizer";
+import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -91,7 +92,7 @@ export interface Model {
 
 export interface ModelParams {
     position: Point;
-    modelGroup: string;
+    modelGroupId: string;
 }
 
 export enum SlicingStatus {
@@ -126,6 +127,17 @@ export interface PressureControlState {
 
 export interface WaveformControl {
     voltageMv: number | null;
+}
+
+export type PrintBedViewMode = {
+    mode: "layerPlan"
+} | { mode: "rasterization", modelGroup: string, trackIncrement: number }
+    | { mode: "printingTrack", moveAxisPosition: number };
+
+export interface PrintBedViewState {
+    selectedModelId: string | null;
+    viewLayer: number;
+    viewMode: PrintBedViewMode;
 }
 
 export interface State {
@@ -163,22 +175,23 @@ export interface State {
         }
     },
     printState: {
-        printerParams: PrinterParams,
-        printingParams: PrintingParams,
+        printerParams: PrinterParams;
+        printingParams: PrintingParams;
         slicingState: {
-            moveAxisPos: number;
             track: TrackRasterization;
             correctionTracks: CorrectionTrack[];
-            currentLayerPlan: LayerPlan;
-            completePlan: LayerPlan[];
+            printPlan: PrintPlan;
             slicingStatus: SlicingStatus;
+        };
+        currentPrintingTrack: {
+            track: TrackRasterization;
+            moveAxisPosition: number;
         }
-        viewLayer: number,
-        modelParams: { [id: string]: ModelParams },
+        modelParams: { [id: string]: ModelParams };
         modelGroupPrintingParams: {
             [id: string]: ModelGroupPrintingParams
-        },
-        customTracks: CustomTrack[]
+        };
+        customTracks: CustomTrack[];
     },
     models: Model[],
     currentFileState: {
@@ -186,7 +199,7 @@ export interface State {
         saving: boolean,
         lastSaved: Date | null
     } | null,
-    selectedModelId: string | null
+    printBedViewState: PrintBedViewState;
 }
 
 export type StateChanges = (keyof State)[];

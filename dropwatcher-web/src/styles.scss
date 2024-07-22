@@ -21,7 +21,7 @@ body {
     margin: 0;
 }
 
-form {
+form:not(.inline) {
 
     max-width: 25em;
 

@@ -6,7 +6,6 @@ import { PrintingParams } from "./PrintingParams";
 import { TrackRasterization } from "./TrackRasterization";
 import { SliceModelInfo } from "./SliceModelInfo";
 import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
-import { get } from "http";
 
 type BlockedNozzleJets = Set<number>;
 
@@ -51,7 +50,7 @@ export class TrackRasterizer {
                     let baseY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
                     let nozzleX = baseX + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                     let nozzleY = baseY + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
-                    if (this.insideLayer([nozzleX, nozzleY], nozzle)) {
+                    if (this.insideLayer([nozzleX, nozzleY])) {
                         return tick;
                     }
                 }
@@ -86,7 +85,7 @@ export class TrackRasterizer {
                         let baseY = tick * encoderMMperDot + (fire / this.printingParams.sequentialFires) * encoderMMperDot * this.printingParams.fireEveryTicks;
                         let nozzleX = baseX + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                         let nozzleY = baseY + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
-                        if (!blockedNozzleJets.has(nozzle) && this.insideLayer([nozzleX, nozzleY], nozzle)) {
+                        if (!blockedNozzleJets.has(nozzle) && this.insideLayer([nozzleX, nozzleY])) {
                             let isNozzleBlocked = this.printerParams.blockedNozzles.includes(nozzle);
                             if (isNozzleBlocked) {
                                 blockedNozzleJets.add(nozzle);
@@ -130,7 +129,17 @@ export class TrackRasterizer {
 
         let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(moveAxisPos) + offsetThisLayer;
 
-        let res = this.rasterizeArea(moveAxisPos, null, printFirstLineAfterEncoderTick);
+        let useNozzles = new Array(this.printerParams.numNozzles).fill(0).map((_, i) => i).filter(nozzleId => {
+            if (null == this.printingParams.skipNozzles) {
+                return true;
+            } else {
+                let nozzleOffset = this.printingParams.offsetLayers.moveAxis.everyOtherLayerByNozzles || 0;
+                let nozzleOffsetThisLayer = isOtherLayer ? nozzleOffset : 0;
+                return (nozzleId + nozzleOffsetThisLayer) % (this.printingParams.skipNozzles + 1) == 0;
+            }
+        });
+
+        let res = this.rasterizeArea(moveAxisPos, useNozzles, printFirstLineAfterEncoderTick);
 
         let printAxisMovements = this.getPrintAxisMovements(printFirstLineAfterEncoderTick, res.printLastLineAfterEncoderTick);
 
@@ -214,18 +223,8 @@ export class TrackRasterizer {
         return movements;
     }
 
-
-    private * eligibleForNozzle(nozzleId: number): Iterable<[string, SliceModelInfo]> {
-        for (let [id, sliceModelInfo] of this.map) {
-            let skipNozzles = (this.modelParamsDict[id].skipNozzles || 0) + 1;
-            if (1 == skipNozzles || nozzleId % skipNozzles == 0) {
-                yield [id, sliceModelInfo];
-            }
-        }
-    }
-
-    private insideLayer(point: [number, number], nozzleId: number) {
-        for (let [modelId, sliceModelInfo] of this.eligibleForNozzle(nozzleId)) {
+    private insideLayer(point: [number, number]) {
+        for (let [modelId, sliceModelInfo] of this.map) {
             if (!sliceModelInfo.contourBoundingBoxes.some(bb => {
                 return point[0] >= bb.min[0] && point[0] <= bb.max[0] && point[1] >= bb.min[1] && point[1] <= bb.max[1];
             })) {

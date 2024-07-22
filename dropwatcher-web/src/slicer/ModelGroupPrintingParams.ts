@@ -1,9 +1,11 @@
 import { PrintingParams } from "./PrintingParams";
 
 
-export interface ModelGroupPrintingParams extends Pick<PrintingParams, "dryingTime" |
+export interface ModelGroupPrintingParams extends Partial<Pick<PrintingParams, "dryingTimeSeconds" |
     "offsetLayers" |
     "fireEveryTicks" |
-    "sequentialFires"
-> {
+    "sequentialFires" |
+    "waveform" |
+    "skipNozzles"
+>> {
 }

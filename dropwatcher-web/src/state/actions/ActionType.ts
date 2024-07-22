@@ -10,7 +10,7 @@ export const enum ActionType {
     CameraStateChanged,
     DropwatcherNozzlePosChanged,
     ModelAdded,
-    ViewLayerChanged,
+    PrintBedViewStateChanged,
     ModelPositionChanged,
     SlicePositionChanged,
     SlicePositionIncrement,
@@ -22,5 +22,6 @@ export const enum ActionType {
     ModelParamsChanged,
     SetSlicerWorker,
     PrintingTrack,
-    SetCustomTracks
+    SetCustomTracks,
+    ModelGroupParamsChanged
 }

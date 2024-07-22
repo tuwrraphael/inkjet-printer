@@ -11,4 +11,5 @@ export interface SliceModelInfo {
         };
     }[];
     contourBoundingBoxes: { min: Point; max: Point; }[];
+    modelGroupId: string;
 }

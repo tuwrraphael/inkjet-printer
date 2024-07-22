@@ -15,13 +15,12 @@ import { PrintBedSimulation, PrintBedSimulationTagName } from "../PrintBedSimula
 import { ModelAdded } from "../../state/actions/ModelAdded";
 import { parseSvgFile } from "../../utils/parseSvgFile";
 import { svgToModel } from "../../utils/svgToModel";
-import { SlicePositionChanged } from "../../state/actions/SlicePositionChanged";
-import { SlicePositionIncrement } from "../../state/actions/SlicePositionIncrement";
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
 import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
 import "../PrintOptions/PrintOptions";
 import "../ModelList/ModelList";
 import "../ModelParams/ModelParams";
+import "../PrintBedViewStateControl/PrintBedViewStateControl";
 
 import bwipjs from 'bwip-js';
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
@@ -30,10 +29,10 @@ import { mirrorY } from "../../utils/mirrorY";
 import { TrackRasterization } from "../../slicer/TrackRasterization";
 import { SetCustomTracks } from "../../state/actions/SetCustomTracks";
 import { getPrintheadSwathe } from "../../slicer/getPrintheadSwathe";
-import { start } from "repl";
 import { setNozzleForRow } from "../../slicer/setNozzleDataView";
 import { ChangeWaveformControlSettingsRequest } from "../../proto/compiled";
 import { WavefromControlSettings } from "../../proto/compiled";
+import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 
 let cameraOffset = {
     x: 165.4 - 13.14,
@@ -59,7 +58,7 @@ export class PrintComponent extends HTMLElement {
     private movementStage: MovementStage;
     private printBedSimulation: PrintBedSimulation;
     private slicingInProgress: HTMLSpanElement;
-    private moveAxisPos: HTMLInputElement;
+    private moveAxisPos: HTMLSpanElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -147,31 +146,38 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F4000");
         }, this.abortController.signal);
-        abortableEventListener(this.moveAxisPos, "change", async (ev) => {
-            ev.preventDefault();
-            let moveAxisPos = parseInt(this.moveAxisPos.value);
-            this.store.postAction(new SlicePositionChanged(moveAxisPos));
-        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#slice-first-track"), "click", async (ev) => {
             ev.preventDefault();
-            console.log(this.store.state.printState.slicingState.currentLayerPlan);
-            this.store.postAction(new SlicePositionChanged(this.store.state.printState.slicingState.currentLayerPlan.tracks[0].startMoveAxisPosition || 0));
+            this.store.postAction(new PrintBedViewStateChanged({
+                viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
+                    mode: "rasterization",
+                    trackIncrement: 0,
+                    modelGroup: null,
+                } : {
+                    mode: "rasterization",
+                    trackIncrement: 0,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
+                }
+            }));
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#slice-next-track"), "click", async (ev) => {
             ev.preventDefault();
-            this.store.postAction(new SlicePositionIncrement(1));
+            this.store.postAction(new PrintBedViewStateChanged({
+                viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
+                    mode: "rasterization",
+                    trackIncrement: 0,
+                    modelGroup: null,
+                } : {
+                    mode: "rasterization",
+                    trackIncrement: this.store.state.printBedViewState.viewMode.trackIncrement + 1,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
+                }
+            }));
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#move-stage-to"), "click", async (ev) => {
-            ev.preventDefault();
-            await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.store.state.printState.slicingState.moveAxisPos, 1000);
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#sync-from-stage"), "click", async (ev) => {
-            ev.preventDefault();
-            if (null == this.store.state.movementStageState.pos?.x) {
-                return;
-            }
-            this.store.postAction(new SlicePositionChanged(this.store.state.movementStageState.pos.x));
-        }, this.abortController.signal);
+        // abortableEventListener(this.querySelector("#move-stage-to"), "click", async (ev) => {
+        //     ev.preventDefault();
+        //     await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.store.state.printState.slicingState.moveAxisPos, 1000);
+        // }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-set-voltage"), "click", async (ev) => {
             ev.preventDefault();
             let request = new ChangeWaveformControlSettingsRequest();
@@ -220,7 +226,7 @@ export class PrintComponent extends HTMLElement {
             let numColumns = 16;
 
 
-            
+
             for (let block = 0; block < blocks; block++) {
                 let blockOffset = spacing / blocks * block;
 
@@ -248,13 +254,13 @@ export class PrintComponent extends HTMLElement {
                 for (let i = 0; i < numColumns; i++) {
                     tracks.push({ layer: 0, track: r, moveAxisPos: moveAxisPos + i * colSpacing + block * blockSpacing });
                 }
-                
+
             }
             console.log(tracks);
             this.store.postAction(new SetCustomTracks(tracks));
 
             // let startEncoderTick = 100;
-            
+
             let nozzleDistance = getNozzleDistance(this.store.state.printState.printerParams);
 
             // let spacing = 16;
@@ -283,7 +289,7 @@ export class PrintComponent extends HTMLElement {
             for (let nozzle = 0; nozzle < this.store.state.printState.printerParams.numNozzles; nozzle++) {
 
                 let inBlock = Math.floor(((blocks * nozzle) / spacing)) % blocks;
-                
+
 
                 let nozzleX = moveAxisPos + ((this.store.state.printState.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                 let nozzleYEncoderTick = startEncoderTick + nozzle % (spacing / blocks) * (rows + spacingRows) * this.store.state.printState.printingParams.fireEveryTicks;
@@ -422,20 +428,24 @@ export class PrintComponent extends HTMLElement {
         console.log(maxLayersModels);
         let maxLayersCustomTracks = this.store.state.printState.customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
         let maxLayers = Math.max(maxLayersModels, maxLayersCustomTracks);
-        let completePlan = this.store.state.printState.slicingState.completePlan || [];
-        console.log(completePlan);
+        let printPlan = this.store.state.printState.slicingState.printPlan;
+        if (null == printPlan) {
+            return [];
+        }
         for (let i = 0; i < maxLayers; i++) {
-            let layerPlan = completePlan[i];
+            let layerPlan = printPlan.layers[i];
             if (null != layerPlan) {
-                for (let j = 0; j < layerPlan.tracks.length; j++) {
-                    steps.push({
-                        type: PrinterTaskType.PrintTrack,
-                        fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
-                        sequentialFires: this.store.state.printState.printingParams.sequentialFires,
-                        layer: i,
-                        moveAxisPos: layerPlan.tracks[j].startMoveAxisPosition
-                    });
-                }
+                steps.push({
+                    type: PrinterTaskType.PrintLayer,
+                    layerNr: i,
+                    layerPlan: layerPlan,
+                    z: height,
+                    dryingPosition: {
+                        x: 0,
+                        y: 175,
+                        z: 25
+                    }
+                });
             }
             let layerCustomTracks = this.store.state.printState.customTracks.filter(t => t.layer == i);
             if (layerCustomTracks.length > 0) {
@@ -479,12 +489,12 @@ export class PrintComponent extends HTMLElement {
                 });
             }
         }
-        if (completePlan.length > 0) {
+        if (printPlan.layers.length > 0) {
             steps.push({
                 type: PrinterTaskType.Move,
                 movement: {
-                    x: completePlan[0].tracks[0].startMoveAxisPosition + lowestZoomCameraOffset.x,
-                    y: completePlan[0].tracks[0].startPrintAxisPosition + lowestZoomCameraOffset.y,
+                    x: printPlan.layers[0].modelGroupPlans[0].tracks[0].moveAxisPosition + lowestZoomCameraOffset.x,
+                    y: printPlan.layers[0].modelGroupPlans[0].tracks[0].startPrintAxisPosition + lowestZoomCameraOffset.y,
                     z: lowestZoomCameraOffset.z,
                 },
                 feedRate: 10000
@@ -504,7 +514,7 @@ export class PrintComponent extends HTMLElement {
         }
         if (c.includes("printState")) {
             this.slicingInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";
-            this.moveAxisPos.value = "" + s.printState.slicingState.moveAxisPos;
+            // this.moveAxisPos.innerText = "" + s.printBedViewState.;
         }
     }
 

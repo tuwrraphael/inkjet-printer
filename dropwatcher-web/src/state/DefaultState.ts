@@ -59,31 +59,39 @@ export const DefaultState: State =
             firstLayerHeight: 1.5,
             encoderMargin: 2,
             bedTemperature: 0,
-            dryingTime: 0,
+            dryingTimeSeconds: 0,
+            waveform: {
+                voltage: 28
+            },
+            skipNozzles: 1,
             offsetLayers: {
                 printAxis: {
                     everyOtherLayerByTicks: 2,
                 },
                 moveAxis: {
-                    randomizedStart: 5,
-                    everyOtherLayerByNozzleDistanceFactor: 0.5
+                    everyOtherLayerByNozzles: 1
                 }
             }
         },
         slicingState: {
-            moveAxisPos: 0,
             track: null,
             correctionTracks: [],
-            currentLayerPlan: null,
-            completePlan: null,
+            printPlan: null,
             slicingStatus: SlicingStatus.None
         },
-        viewLayer: 0,
+        currentPrintingTrack: null,
         modelParams: {},
-        modelGroupPrintingParams: {},
+        modelGroupPrintingParams: {
+        },
         customTracks: []
     },
     models: [],
     currentFileState: null,
-    selectedModelId: null
+    printBedViewState: {
+        viewLayer: 0,
+        selectedModelId: null,
+        viewMode: {
+            mode: "layerPlan"
+        }
+    }
 };

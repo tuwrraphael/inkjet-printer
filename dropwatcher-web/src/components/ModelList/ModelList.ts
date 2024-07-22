@@ -44,13 +44,13 @@ export class ModelList extends HTMLElement {
     }
 
     private async update(s: State, c: StateChanges) {
-        let keysOfInterest: (keyof State)[] = ["models", "printState", "selectedModelId"];
+        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState"];
         if (s && (null == c || keysOfInterest.some(k => c.includes(k)))) {
             this.renderer.update(s.models.map(m => {
                 return {
                     model: m,
                     modelParams: s.printState.modelParams[m.id],
-                    isSelected: s.selectedModelId === m.id
+                    isSelected: s.printBedViewState.selectedModelId === m.id
                 };
             }), (e, m) => {
                 e.setData(m);

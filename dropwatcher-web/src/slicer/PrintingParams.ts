@@ -4,14 +4,17 @@ export interface PrintingParams {
     firstLayerHeight: number;
     encoderMargin: number;
     bedTemperature: number;
-    dryingTime: number;
+    dryingTimeSeconds: number;
+    waveform: {
+        voltage: number;
+    };
+    skipNozzles: number;
     offsetLayers: {
         printAxis: {
             everyOtherLayerByTicks: number | null
         },
         moveAxis: {
-            randomizedStart: number | null,
-            everyOtherLayerByNozzleDistanceFactor: number | null
+            everyOtherLayerByNozzles: number | null
         }
     }
 }

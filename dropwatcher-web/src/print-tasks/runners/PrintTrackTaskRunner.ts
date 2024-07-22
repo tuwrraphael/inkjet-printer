@@ -1,27 +1,72 @@
 import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
 import { ChangeEncoderModeRequest, ChangeEncoderModeSettingsRequest, ChangePrintMemoryRequest, PrintControlEncoderModeSettings } from "../../proto/compiled";
+import { PrintingParams } from "../../slicer/PrintingParams";
 import { SlicerClient } from "../../slicer/SlicerClient";
+import { TrackPlan } from "../../slicer/TrackPlan";
 import { Store } from "../../state/Store";
 import { PrintingTrack } from "../../state/actions/PrintingTrack";
-import { PrinterTaskPrintCustomTracksTask, PrintTrackTask } from "../printer-program";
+import { PrinterTaskPrintCustomTracksTask, PrintLayerTask } from "../printer-program";
+import { PrinterTaskCancellationToken } from "../PrinterTaskCancellationToken";
+import { add } from "date-fns";
 
-export class PrintTrackTaskRunner {
-    constructor(private task: PrintTrackTask,
+export class PrintLayerTaskRunner {
+    constructor(private task: PrintLayerTask,
         private movementStage: MovementStage,
         private slicerClient: SlicerClient,
         private printerUSB: PrinterUSB,
         private store: Store) {
     }
-    async run() {
-        await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.task.moveAxisPos, 10000);
-        let track = await this.slicerClient.slicer.rasterizeTrack(this.task.layer, this.task.moveAxisPos);
-        for (let t of [{ pos: this.task.moveAxisPos, track: track.track }, ...track.correctionTracks.map((t) => { return { pos: t.moveAxisPos, track: t.track } })]) {
+    async run(cancellationToken: PrinterTaskCancellationToken) {
+        await this.movementStage.movementExecutor.moveAbsoluteZAndWait(this.task.z, 150);
+        if (cancellationToken.isCanceled()) {
+            return;
+        }
+        let dryUntil: Date = new Date();
+        for (let group of this.task.layerPlan.modelGroupPlans) {
+            for (let track of group.tracks) {
+                await this.printTrack(track, { layerNr: this.task.layerNr, modelGroupId: group.modelGroupId },
+                    group.printingParams,
+                    cancellationToken);
+                if (cancellationToken.isCanceled()) {
+                    return;
+                }
+                let dryGroupUntil = add(dryUntil, { seconds: group.printingParams.dryingTimeSeconds });
+                if (dryGroupUntil > dryUntil) {
+                    dryUntil = dryGroupUntil;
+                }
+            }
+            if (cancellationToken.isCanceled()) {
+                return;
+            }
+        }
+        await this.movementStage.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 10000);
+        if (cancellationToken.isCanceled()) {
+            return;
+        }
+        await new Promise((resolve) => {
+            setTimeout(resolve, dryUntil.getTime() - new Date().getTime());
+        });
+    }
+
+    private async printTrack(trackPlan: TrackPlan,
+        sliceInfo: {
+            layerNr: number,
+            modelGroupId: string,
+        },
+        printingParams: PrintingParams,
+        cancellationToken: PrinterTaskCancellationToken) {
+        await this.movementStage.movementExecutor.moveAbsoluteXAndWait(trackPlan.moveAxisPosition, 10000);
+        if (cancellationToken.isCanceled()) {
+            return;
+        }
+        let track = await this.slicerClient.slicer.rasterizeTrack(sliceInfo.modelGroupId, sliceInfo.layerNr, trackPlan.moveAxisPosition);
+        for (let t of [{ pos: trackPlan.moveAxisPosition, track: track.track }, ...track.correctionTracks.map((t) => { return { pos: t.moveAxisPos, track: t.track } })]) {
             let printTrack = t.track;
             if (printTrack.linesToPrint == 0) {
                 return;
             }
-            this.store.postAction(new PrintingTrack(this.task.layer, printTrack, t.pos));
+            this.store.postAction(new PrintingTrack(this.task.layerNr, printTrack, t.pos));
             let chunkSize = 8;
             for (let i = 0; i < printTrack.data.length; i += chunkSize) {
                 let chunk = printTrack.data.slice(i, i + chunkSize);
@@ -31,12 +76,15 @@ export class PrintTrackTaskRunner {
                 await this.printerUSB.sendChangePrintMemoryRequest(printMemoryRequest);
             }
             await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.startPrintAxisPosition, 10000);
+            if (cancellationToken.isCanceled()) {
+                return;
+            }
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
-            encoderModeSettings.fireEveryTicks = this.task.fireEveryTicks;
+            encoderModeSettings.fireEveryTicks = printingParams.fireEveryTicks;
             encoderModeSettings.printFirstLineAfterEncoderTick = printTrack.printFirstLineAfterEncoderTick;
             encoderModeSettings.linesToPrint = printTrack.linesToPrint;
-            encoderModeSettings.sequentialFires = this.task.sequentialFires;
+            encoderModeSettings.sequentialFires = printingParams.sequentialFires;
             encoderModeSettings.startPaused = false;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);

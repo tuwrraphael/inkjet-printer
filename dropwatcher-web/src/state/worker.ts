@@ -23,19 +23,19 @@ import { CameraStateChanged } from "./actions/CameraStateChanged";
 import { OpenFile } from "./actions/OpenFile";
 import { SaveToFile } from "./actions/SaveToFile";
 import { ModelAdded } from "./actions/ModelAdded";
-import { ViewLayerChanged } from "./actions/ViewLayerChanged";
+import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
 import { ModelPositionChanged } from "./actions/ModelPositionChanged";
-import { SlicePositionChanged } from "./actions/SlicePositionChanged";
-import { SlicePositionIncrement } from "./actions/SlicePositionIncrement";
 import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 import { getModelBoundingBox } from "../utils/getModelBoundingBox";
 import { SaveToCurrentFile } from "./actions/SaveToCurrentFile";
 import { ModelSelected } from "./actions/ModelSelected";
-import { ModelParamsChanged } from "./actions/ModelParamsChanged";
+import { ModelGroupParamsChanged, ModelParamsChanged } from "./actions/ModelParamsChanged";
 import { SetSlicerWorker } from "./actions/SetSlicerWorker";
 import { Slicer } from "../slicer/SlicerWorker";
 import { PrintingTrack } from "./actions/PrintingTrack";
 import { SetCustomTracks } from "./actions/SetCustomTracks";
+import { moveAxisPositionFromPlanAndIncrement } from "../utils/moveAxisPositionFromPlanAndIncrement";
+import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -48,10 +48,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | CameraStateChanged
     | DropwatcherNozzlePosChanged
     | ModelAdded
-    | ViewLayerChanged
+    | PrintBedViewStateChanged
     | ModelPositionChanged
-    | SlicePositionChanged
-    | SlicePositionIncrement
     | PrintingParamsChanged
     | SaveToFile
     | OpenFile
@@ -61,6 +59,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | SetSlicerWorker
     | PrintingTrack
     | SetCustomTracks
+    | ModelGroupParamsChanged
     ;
 let state: State;
 let initialized = false;
@@ -164,6 +163,39 @@ function getNextModelId() {
 
 let slicer: Comlink.Remote<Slicer> = null;
 
+
+async function rasterizeTrack() {
+    if (state.printBedViewState.viewMode.mode != "rasterization") {
+        return;
+    }
+    let layerPlan = state.printState.slicingState.printPlan.layers[state.printBedViewState.viewLayer];
+    let modelGroup = state.printBedViewState.viewMode.modelGroup;
+    let moveAxisPos = moveAxisPositionFromPlanAndIncrement(layerPlan, modelGroup, state.printBedViewState.viewMode.trackIncrement);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                slicingStatus: SlicingStatus.InProgress,
+                track: null,
+                correctionTracks: null
+            }
+        }
+    }));
+    let result = await slicer.rasterizeTrack(modelGroup, state.printBedViewState.viewLayer, moveAxisPos);
+    updateState(oldState => ({
+        printState: {
+            ...oldState.printState,
+            slicingState: {
+                ...oldState.printState.slicingState,
+                track: result.track,
+                correctionTracks: result.correctionTracks,
+                slicingStatus: SlicingStatus.Done
+            }
+        }
+    }));
+}
+
 async function updateSlicerParams() {
     updateState(oldState => ({
         printState: {
@@ -184,34 +216,27 @@ async function updateSlicerParams() {
         console.error("Slicer not set");
         return;
     }
-    await slicer.setParams(state.printState.printerParams, state.printState.printingParams, state.models, state.printState.modelParams);
-    let completePlan = await slicer.getCompletePlan();
-    let currentLayerPlan = completePlan[state.printState.viewLayer];
+    await slicer.setParams(
+        state.printState.printerParams,
+        state.printState.printingParams,
+        state.models,
+        state.printState.modelParams,
+        state.printState.modelGroupPrintingParams
+    );
+    let completePlan = await slicer.getPrintPlan();
+
+
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
             slicingState: {
                 ...oldState.printState.slicingState,
-                slicingStatus: SlicingStatus.InProgress,
-                currentLayerPlan: currentLayerPlan // must be set here to synchronize with the MoveAndSliceNextTaskRunner
+                printPlan: completePlan,
             }
         }
     }));
-    let moveAxisPos = state.printState.slicingState.moveAxisPos;
-    let result = await slicer.rasterizeTrack(state.printState.viewLayer, moveAxisPos);
-    updateState(oldState => ({
-        printState: {
-            ...oldState.printState,
-            slicingState: {
-                ...oldState.printState.slicingState,
-                track: result.track,
-                correctionTracks: result.correctionTracks,
-                completePlan: completePlan,
-                slicingStatus: SlicingStatus.Done,
-                moveAxisPos: moveAxisPos
-            }
-        }
-    }));
+
+    await rasterizeTrack();
 }
 
 async function modelAdded(msg: ModelAdded) {
@@ -230,8 +255,8 @@ async function modelAdded(msg: ModelAdded) {
                 ...oldState.printState.modelParams,
                 [model.id]: {
                     position: [10, 10],
-                    skipNozzles: 0,
-                    iterativeOffset: 0
+                    iterativeOffset: 0,
+                    modelGroupId: null
                 }
             }
         }
@@ -243,59 +268,7 @@ async function reslice() {
     if (null == slicer) {
         return;
     }
-    updateState(oldState => ({
-        printState: {
-            ...oldState.printState,
-            slicingState: {
-                ...oldState.printState.slicingState,
-                slicingStatus: SlicingStatus.InProgress
-            }
-        }
-    }));
-    await slicer.setParams(state.printState.printerParams, state.printState.printingParams, state.models, state.printState.modelParams);
-    let result = await slicer.rasterizeTrack(state.printState.viewLayer, state.printState.slicingState.moveAxisPos);
-    updateState(oldState => ({
-        printState: {
-            ...oldState.printState,
-            slicingState: {
-                ...oldState.printState.slicingState,
-                track: result.track,
-                correctionTracks: result.correctionTracks,
-                slicingStatus: SlicingStatus.Done
-            }
-        }
-    }));
-}
-
-async function slicePositionIncrement(msg: SlicePositionIncrement) {
-    let layerPlan = state.printState.slicingState.currentLayerPlan;
-    updateState(oldState => ({
-        printState: {
-            ...oldState.printState,
-            slicingState: {
-                ...oldState.printState.slicingState,
-                moveAxisPos: oldState.printState.slicingState.moveAxisPos + (layerPlan.increment * msg.increment),
-                slicingStatus: SlicingStatus.None,
-                track: null
-            }
-        }
-    }));
-    await reslice();
-}
-
-async function slicePositionChanged(msg: SlicePositionChanged) {
-    updateState(oldState => ({
-        printState: {
-            ...oldState.printState,
-            slicingState: {
-                ...oldState.printState.slicingState,
-                moveAxisPos: msg.moveAxisPos,
-                slicingStatus: SlicingStatus.None,
-                track: null
-            }
-        }
-    }));
-    await reslice();
+    await rasterizeTrack();
 }
 
 interface SaveableTree {
@@ -401,14 +374,24 @@ async function handleMessage(msg: Actions) {
         case ActionType.ModelAdded:
             await modelAdded(msg);
             break;
-        case ActionType.ViewLayerChanged:
-            updateState(oldState => ({
-                printState: {
-                    ...oldState.printState,
-                    viewLayer: msg.layer
+        case ActionType.PrintBedViewStateChanged:
+
+            updateState(oldState => {
+                let viewLayerChanged = state.printBedViewState.viewLayer != msg.state.viewLayer;
+                let news = {
+                    printBedViewState: {
+                        ...oldState.printBedViewState,
+                        ...msg.state
+                    }
+                };
+                if (viewLayerChanged && news.printBedViewState.viewMode.mode == "rasterization") {
+                    news.printBedViewState.viewMode.trackIncrement = 0;
                 }
-            }));
-            await updateSlicerParams();
+                return news;
+            });
+            if (state.printBedViewState.viewMode.mode == "rasterization") {
+                await reslice();
+            }
             break;
         case ActionType.ModelPositionChanged:
             updateState(oldState => ({
@@ -424,12 +407,6 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             await updateSlicerParams();
-            break;
-        case ActionType.SlicePositionChanged:
-            await slicePositionChanged(msg);
-            break;
-        case ActionType.SlicePositionIncrement:
-            await slicePositionIncrement(msg);
             break;
         case ActionType.PrintingParamsChanged:
             updateState(oldState => ({
@@ -459,7 +436,10 @@ async function handleMessage(msg: Actions) {
             break;
         case ActionType.ModelSelected:
             updateState(oldState => ({
-                selectedModelId: msg.modelId
+                printBedViewState: {
+                    ...oldState.printBedViewState,
+                    selectedModelId: msg.modelId
+                }
             }));
             break;
         case ActionType.ModelParamsChanged:
@@ -484,14 +464,23 @@ async function handleMessage(msg: Actions) {
             updateState(oldState => ({
                 printState: {
                     ...oldState.printState,
-                    slicingState: {
-                        ...oldState.printState.slicingState,
+                    currentPrintingTrack: {
                         track: msg.trackRasterizationResult,
-                        moveAxisPos: msg.moveAxisPos
-                    },
-                    viewLayer: msg.layer
-                }
+                        moveAxisPosition: msg.moveAxisPos
+                    }
+                },
             }));
+            if (state.printBedViewState.viewMode.mode == "printingTrack") {
+                updateState(oldState => ({
+                    printBedViewState: {
+                        ...oldState.printBedViewState,
+                        viewMode: {
+                            mode: "printingTrack",
+                            moveAxisPosition: msg.moveAxisPos
+                        }
+                    }
+                }));
+            }
             break;
         case ActionType.SetCustomTracks:
             updateState(oldState => ({
@@ -501,8 +490,54 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             break;
+        case ActionType.ModelGroupParamsChanged:
+            updateState(oldState => {
+                let modelGroupParams: ModelGroupPrintingParams = {};
+                for (let key in msg.params) {
+                    let keyprop: keyof ModelGroupPrintingParams = <any>key;
+                    if (!deepEquals(msg.params[keyprop], state.printState.printingParams[keyprop])) {
+                        (<any>modelGroupParams[keyprop]) = msg.params[keyprop];
+                    }
+                }
+                return {
+                    printState: {
+                        ...oldState.printState,
+                        modelGroupPrintingParams: {
+                            ...oldState.printState.modelGroupPrintingParams,
+                            [msg.id]: modelGroupParams
+                        }
+                    }
+                };
+            });
+            await updateSlicerParams();
+            break;
     }
 }
+
+function deepEquals(o1: any, o2: any): boolean {
+    if (o1 === o2) {
+        return true;
+    }
+    if (o1 == null || o2 == null) {
+        return false;
+    }
+    if (typeof o1 != "object" || typeof o2 != "object") {
+        return false;
+    }
+    let keys1 = Object.keys(o1);
+    let keys2 = Object.keys(o2);
+    if (keys1.length != keys2.length) {
+        return false;
+    }
+    for (let key of keys1) {
+        if (!deepEquals(o1[key], o2[key])) {
+            return false;
+        }
+    }
+    return true;
+
+}
+
 self.addEventListener("message", ev => {
     let msg: Actions = ev.data;
     handleMessage(msg).catch(err => console.error(err));

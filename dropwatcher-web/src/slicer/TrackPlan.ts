@@ -1,9 +1,6 @@
 
 export interface TrackPlan {
-    printFirstLineAfterEncoderTick: number;
-    printLastLineAfterEncoderTick: number;
-    startMoveAxisPosition: number;
+    moveAxisPosition: number;
     startPrintAxisPosition: number;
     endPrintAxisPosition: number;
-    linesToPrint: number;
 }
