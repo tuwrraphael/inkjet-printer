@@ -10,7 +10,7 @@
 		(rev "1.0.0")
 	)
 	(lib_symbols
-		(symbol "Amplifier_Operational:TLC272"
+		(symbol "Amplifier_Operational:LM358"
 			(pin_names
 				(offset 0.127)
 			)
@@ -26,7 +26,7 @@
 					(justify left)
 				)
 			)
-			(property "Value" "TLC272"
+			(property "Value" "LM358"
 				(at 0 -5.08 0)
 				(effects
 					(font
@@ -44,7 +44,7 @@
 					(hide yes)
 				)
 			)
-			(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tlc272.pdf"
+			(property "Datasheet" "http://www.ti.com/lit/ds/symlink/lm2904-n.pdf"
 				(at 0 0 0)
 				(effects
 					(font
@@ -53,7 +53,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "Dual LinCMOS Precision Dual Operational Amplifiers, DIP-8/SOIC-8/SSOP-8"
+			(property "Description" "Low-Power, Dual Operational Amplifiers, DIP-8/SOIC-8/TO-99-8"
 				(at 0 0 0)
 				(effects
 					(font
@@ -88,7 +88,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "TLC272_1_1"
+			(symbol "LM358_1_1"
 				(polyline
 					(pts
 						(xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08)
@@ -156,7 +156,7 @@
 					)
 				)
 			)
-			(symbol "TLC272_2_1"
+			(symbol "LM358_2_1"
 				(polyline
 					(pts
 						(xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08)
@@ -224,7 +224,7 @@
 					)
 				)
 			)
-			(symbol "TLC272_3_1"
+			(symbol "LM358_3_1"
 				(pin power_in line
 					(at -2.54 -7.62 90)
 					(length 3.81)
@@ -4327,6 +4327,16 @@
 	)
 	(wire
 		(pts
+			(xy 130.81 80.01) (xy 138.43 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7a6abaec-4789-48c4-a6b3-7db2e9caf1ed")
+	)
+	(wire
+		(pts
 			(xy 158.75 33.02) (xy 161.29 33.02)
 		)
 		(stroke
@@ -4814,16 +4824,6 @@
 			(type default)
 		)
 		(uuid "dd9432ad-22c9-4e74-9d32-8c561f0aaa69")
-	)
-	(wire
-		(pts
-			(xy 130.81 80.01) (xy 138.43 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dd978d93-2328-40ec-aa57-62abe58d9e72")
 	)
 	(wire
 		(pts
@@ -5786,7 +5786,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Amplifier_Operational:TLC272")
+		(lib_id "Amplifier_Operational:LM358")
 		(at 125.73 80.01 0)
 		(unit 3)
 		(exclude_from_sim no)
@@ -5803,8 +5803,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "TLC272"
-			(at 124.46 73.66 0)
+		(property "Value" "LM358"
+			(at 125.73 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8904,7 +8904,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Amplifier_Operational:TLC272")
+		(lib_id "Amplifier_Operational:LM358")
 		(at 123.19 80.01 0)
 		(mirror x)
 		(unit 1)
@@ -8921,12 +8921,13 @@
 				)
 			)
 		)
-		(property "Value" "TLC272"
-			(at 129.54 83.82 0)
+		(property "Value" "LM358"
+			(at 123.19 74.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-8_W7.62mm"
@@ -9832,7 +9833,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Amplifier_Operational:TLC272")
+		(lib_id "Amplifier_Operational:LM358")
 		(at 129.54 102.87 0)
 		(unit 2)
 		(exclude_from_sim no)
@@ -9849,7 +9850,7 @@
 				)
 			)
 		)
-		(property "Value" "TLC272"
+		(property "Value" "LM358"
 			(at 129.54 95.25 0)
 			(effects
 				(font

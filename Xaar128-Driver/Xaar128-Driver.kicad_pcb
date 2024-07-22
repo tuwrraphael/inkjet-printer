@@ -7830,7 +7830,7 @@
 		)
 		(fp_arc
 			(start 36.273976 109.758869)
-			(mid 35.688183 111.173077)
+			(mid 35.688183 111.173081)
 			(end 34.273973 111.75887)
 			(stroke
 				(width 0.2)
@@ -7841,7 +7841,7 @@
 		)
 		(fp_arc
 			(start 34.273975 -21.58113)
-			(mid 35.68818 -20.995348)
+			(mid 35.688216 -20.995354)
 			(end 36.273976 -19.581129)
 			(stroke
 				(width 0.2)
@@ -7896,7 +7896,7 @@
 		)
 		(fp_arc
 			(start -10.953202 110.157502)
-			(mid -10.528202 109.732505)
+			(mid -10.528202 109.732506)
 			(end -10.103201 110.157502)
 			(stroke
 				(width 0.2)
@@ -21811,7 +21811,7 @@
 				)
 			)
 		)
-		(property "Value" "TLC272"
+		(property "Value" "LM358"
 			(at 3.81 9.95 90)
 			(layer "F.Fab")
 			(uuid "941add6d-2458-4723-affb-56d5a18ad1fe")
@@ -60282,7 +60282,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal with elongated pad for handsoldering. (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor handsolder")
 		(property "Reference" "R60"
-			(at 0 1.43 360)
+			(at 0 1.43 0)
 			(layer "B.SilkS")
 			(uuid "5d875e60-6b22-4d77-a7c0-d131386160dc")
 			(effects
@@ -60294,7 +60294,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 0 -1.43 360)
+			(at 0 -1.43 0)
 			(layer "B.Fab")
 			(uuid "ea15b3e8-89f9-4874-86fd-8ca0e5f9d753")
 			(effects
@@ -60481,7 +60481,7 @@
 			(uuid "169e4dd3-e291-4452-ab93-5e52d30634d3")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 360)
+			(at 0 0 0)
 			(layer "B.Fab")
 			(uuid "ee0a7be4-994b-4984-a87c-3f4361883d43")
 			(effects
