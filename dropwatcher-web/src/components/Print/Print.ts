@@ -33,6 +33,7 @@ import { setNozzleForRow } from "../../slicer/setNozzleDataView";
 import { ChangeWaveformControlSettingsRequest } from "../../proto/compiled";
 import { WavefromControlSettings } from "../../proto/compiled";
 import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
+import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions/ModelParamsChanged";
 
 let cameraOffset = {
     x: 165.4 - 13.14,
@@ -115,10 +116,10 @@ export class PrintComponent extends HTMLElement {
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
             encoderModeSettings.fireEveryTicks = this.store.state.printState.printingParams.fireEveryTicks;
-            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.slicingState.track.printFirstLineAfterEncoderTick
+            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.slicingState.currentRasterization[0].result.track.printFirstLineAfterEncoderTick
             encoderModeSettings.sequentialFires = this.store.state.printState.printingParams.sequentialFires;
             encoderModeSettings.startPaused = false;
-            encoderModeSettings.linesToPrint = this.store.state.printState.slicingState.track.linesToPrint;
+            encoderModeSettings.linesToPrint = this.store.state.printState.slicingState.currentRasterization[0].result.track.linesToPrint;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUsb.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
         }, this.abortController.signal);
@@ -153,10 +154,12 @@ export class PrintComponent extends HTMLElement {
                     mode: "rasterization",
                     trackIncrement: 0,
                     modelGroup: null,
+                    evenOddView: false,
                 } : {
                     mode: "rasterization",
                     trackIncrement: 0,
                     modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
+                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
                 }
             }));
         }, this.abortController.signal);
@@ -167,10 +170,12 @@ export class PrintComponent extends HTMLElement {
                     mode: "rasterization",
                     trackIncrement: 0,
                     modelGroup: null,
+                    evenOddView: false,
                 } : {
                     mode: "rasterization",
                     trackIncrement: this.store.state.printBedViewState.viewMode.trackIncrement + 1,
                     modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
+                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
                 }
             }));
         }, this.abortController.signal);
@@ -183,16 +188,16 @@ export class PrintComponent extends HTMLElement {
             let request = new ChangeWaveformControlSettingsRequest();
             let settings = new WavefromControlSettings();
             request.settings = settings;
-            settings.voltage = 34.8 * 1000;
-            await this.printerUsb.sendChangeWaveformControlSettingsRequest(request);
+            settings.voltageMv = 34.8 * 1000;
+            await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#write-data"), "click", async (ev) => {
             ev.preventDefault();
-            if (this.store.state.printState.slicingState.track == null) {
+            if (this.store.state.printState.slicingState.currentRasterization[0].result.track == null) {
                 console.error("No track data to write");
                 return;
             }
-            let data = this.store.state.printState.slicingState.track.data;
+            let data = this.store.state.printState.slicingState.currentRasterization[0].result.track.data;
             console.log("Writing track data", data);
             let chunkSize = 8;
             for (let i = 0; i < data.length; i += chunkSize) {
@@ -206,7 +211,65 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
             ev.preventDefault();
-            await this.printerUsb.sendNozzlePrimingRequest();
+            await this.printerUsb.sendNozzlePrimingRequestAndWait();
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
+            ev.preventDefault();
+            let from = 34.8;
+            let to = 16;
+            let step = 0.5;
+            let position = {
+                x: 2,
+                y: 6
+            };
+            let nr = 0;
+            for (let v = from; v > to; v -= step) {
+                let voltage = Math.round(v * 100) / 100;
+                let modelPosition = {
+                    x: Math.floor(nr / 6) * 25 + position.x,
+                    y: (nr % 6) * 23 + position.y - (nr % 3) * 10
+                };
+                let id = `square-${nr}V`;
+                let group = `${voltage}V`;
+                let model: NewModel = {
+                    layers: [{
+                        polygons: [{
+                            type: PolygonType.Contour,
+                            "points": [
+                                [
+                                    10,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    0
+                                ],
+                                [
+                                    10,
+                                    0
+                                ]
+                            ]
+                        }]
+                    }],
+                    fileName: `square-${nr}.svg`,
+                    id: id
+                };
+                this.store.postAction(new ModelAdded(model));
+                this.store.postAction(new ModelParamsChanged(id, {
+                    modelGroupId: group,
+                    position: [modelPosition.x, modelPosition.y]
+                }));
+                this.store.postAction(new ModelGroupParamsChanged(group, {
+                    waveform: {
+                        voltage: voltage
+                    }
+                }));
+                nr++;
+            }
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();
@@ -338,7 +401,7 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
             ev.preventDefault();
-            let code: any = bwipjs.raw("qrcode", "Hello World!", {});
+            let code: any = bwipjs.raw("qrcode", "30x30 square 50 layers 60°C 28V 144 dpi skip_n 0 offset 3", {});
             const dotsPerPixel = 16;
             const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams).x;
             const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
@@ -378,7 +441,7 @@ export class PrintComponent extends HTMLElement {
                     })
                 };
             });
-            let duplicateLayers = 2;
+            let duplicateLayers = 19;
             for (let i = 0; i < duplicateLayers; i++) {
                 model.layers = [...model.layers, model.layers[0]];
             }
@@ -392,7 +455,7 @@ export class PrintComponent extends HTMLElement {
         let steps: PrinterTasks[] = [
             {
                 type: PrinterTaskType.HeatBed,
-                temperature: 45
+                temperature: this.store.state.printState.printingParams.bedTemperature
             },
             {
                 type: PrinterTaskType.Home,
@@ -400,25 +463,13 @@ export class PrintComponent extends HTMLElement {
             {
                 type: PrinterTaskType.Move,
                 movement: {
-                    x: 0,
-                    y: this.store.state.printState.printerParams.buildPlate.height,
-                    z: height
-                },
-                feedRate: 10000
-            },
-            {
-                type: PrinterTaskType.PrimeNozzle
-            },
-            {
-                type: PrinterTaskType.Wait,
-                durationMs: 5000
-            },
-            {
-                type: PrinterTaskType.Move,
-                movement: {
                     x: 0, y: 0, z: height
                 },
                 feedRate: 10000
+            },
+            {
+                type: PrinterTaskType.Wait,
+                durationMs: 1000
             },
             {
                 type: PrinterTaskType.ZeroEncoder
@@ -429,11 +480,24 @@ export class PrintComponent extends HTMLElement {
         let maxLayersCustomTracks = this.store.state.printState.customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
         let maxLayers = Math.max(maxLayersModels, maxLayersCustomTracks);
         let printPlan = this.store.state.printState.slicingState.printPlan;
-        if (null == printPlan) {
-            return [];
-        }
         for (let i = 0; i < maxLayers; i++) {
-            let layerPlan = printPlan.layers[i];
+            steps.push({
+                type: PrinterTaskType.Move,
+                movement: {
+                    x: 0,
+                    y: this.store.state.printState.printerParams.buildPlate.height,
+                    z: height
+                },
+                feedRate: 10000
+            });
+            steps.push({
+                type: PrinterTaskType.SetTargetPressure,
+                targetPressure: -2
+            });
+            steps.push({
+                type: PrinterTaskType.PrimeNozzle
+            });
+            let layerPlan = printPlan?.layers[i];
             if (null != layerPlan) {
                 steps.push({
                     type: PrinterTaskType.PrintLayer,
@@ -441,8 +505,8 @@ export class PrintComponent extends HTMLElement {
                     layerPlan: layerPlan,
                     z: height,
                     dryingPosition: {
-                        x: 0,
-                        y: 175,
+                        x: 175,
+                        y: 0,
                         z: 25
                     }
                 });
@@ -452,44 +516,12 @@ export class PrintComponent extends HTMLElement {
                 steps.push({
                     type: PrinterTaskType.PrintCustomTracks,
                     customTracks: layerCustomTracks,
-                    fireEveryTicks: this.store.state.printState.printingParams.fireEveryTicks,
-                    sequentialFires: this.store.state.printState.printingParams.sequentialFires
-                });
-            }
-            if (i < maxLayers - 1) {
-                steps.push({
-                    type: PrinterTaskType.Move,
-                    movement: { z: 15 },
-                    feedRate: 500
-                });
-                steps.push({
-                    type: PrinterTaskType.Wait,
-                    durationMs: 30000
-                });
-                steps.push({
-                    type: PrinterTaskType.Move,
-                    movement: { z: height },
-                    feedRate: 500
-                });
-                steps.push({
-                    type: PrinterTaskType.Move,
-                    movement: {
-                        x: 0,
-                        y: this.store.state.printState.printerParams.buildPlate.height,
-                        z: height
-                    },
-                    feedRate: 10000
-                });
-                steps.push({
-                    type: PrinterTaskType.PrimeNozzle
-                });
-                steps.push({
-                    type: PrinterTaskType.Wait,
-                    durationMs: 5000
+                    z: height,
+                    printingParams: this.store.state.printState.printingParams
                 });
             }
         }
-        if (printPlan.layers.length > 0) {
+        if (printPlan && printPlan.layers.length > 0) {
             steps.push({
                 type: PrinterTaskType.Move,
                 movement: {

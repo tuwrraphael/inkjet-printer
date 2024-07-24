@@ -6,6 +6,6 @@ export class PrimeNozzleTaskRunner {
     ) {
     }
     async run() {
-        await this.printerUSB.sendNozzlePrimingRequest();
+        await this.printerUSB.sendNozzlePrimingRequestAndWait();
     }
 }

@@ -16,7 +16,8 @@ export const DefaultState: State =
     movementStageState: {
         connected: false,
         pos: null,
-        e: undefined
+        e: undefined,
+        bedTemperature: undefined
     },
     currentProgram: null,
     programRunnerState: {
@@ -51,7 +52,16 @@ export const DefaultState: State =
             printheadSwathePerpendicular: 17.417,
             printheadAngleRads: deg2Rad(90 - 63.75),
             //[2, 7, 8, 118, 119, 120, 121, 122, 123, 124, 125, 126, 55, 56]
-            blockedNozzles: [0, 1, 2, 3, 5, 6, 7, 8, 9, 33, 34, 35, 36, 37, 98, 99, 100, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 85, 86, 87, 55, 56]
+            // [0, 1, 2, 3, 5, 6, 7, 8, 9, 33, 34, 35, 36, 37, 98, 99, 100, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 85, 86, 87, 55, 56]
+            blockedNozzles: [
+                ...Array.from({ length: 47+1-32 }, (_, i) => i+32),
+                ...Array.from({ length: 47+1-32 }, (_, i) => i+32),
+                ...Array.from({ length: 79+1-64 }, (_, i) => i+64),
+                96,97,98,99,100,102,105,106,107,108,109,112,
+                ...Array.from({ length: 95+1-80 }, (_, i) => i+80),
+                ...Array.from({ length: 63+1-48 }, (_, i) => i+48),
+                ...Array.from({ length: 31+1-24 }, (_, i) => i+24),
+            ]
         },
         printingParams: {
             fireEveryTicks: 4,
@@ -74,8 +84,7 @@ export const DefaultState: State =
             }
         },
         slicingState: {
-            track: null,
-            correctionTracks: [],
+            currentRasterization: null,
             printPlan: null,
             slicingStatus: SlicingStatus.None
         },

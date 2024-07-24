@@ -352,10 +352,11 @@ static int set_printer_system_state_msg(pb_ostream_t *tx_stream)
 		break;
 	case 3:
 		response.has_waveform_control = true;
-		double voltage = 0;
-		bool read = regulator_get_voltage(&voltage);
-		response.waveform_control.has_voltage = read;
-		response.waveform_control.voltage = voltage;
+		regulator_info_t info;
+		regulator_get_info(&info);
+		response.waveform_control.has_voltage_mv = info.voltage_reading_available;
+		response.waveform_control.voltage_mv = info.voltage_mv;
+		response.waveform_control.set_voltage_mv = info.set_voltage_mv;
 	default:
 		break;
 	}
@@ -628,9 +629,9 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 		if (status)
 		{
 			waveform_settings_t settings;
-			settings.voltage = request.settings.voltage;
+			settings.voltage = request.settings.voltage_mv;
 			request_set_waveform_settings(&settings);
-			LOG_INF("ChangeWaveformControlSettingsRequest: voltage %f", request.settings.voltage);
+			LOG_INF("ChangeWaveformControlSettingsRequest: voltage %d", request.settings.voltage_mv);
 		}
 		else
 		{

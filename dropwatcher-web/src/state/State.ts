@@ -4,7 +4,7 @@ import { TrackRasterization } from "../slicer/TrackRasterization";
 import { PrintingParams } from "../slicer/PrintingParams";
 import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
-import { CorrectionTrack } from "../slicer/TrackRasterizer";
+import { CorrectionTrack, TrackRasterizationResult } from "../slicer/TrackRasterizer";
 import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
 
 export enum PrinterSystemState {
@@ -76,6 +76,7 @@ export interface NewModel {
         polygons: Polygon[];
     }[];
     fileName: string;
+    id?:string;
 }
 
 export interface Model {
@@ -127,17 +128,23 @@ export interface PressureControlState {
 
 export interface WaveformControl {
     voltageMv: number | null;
+    setVoltageMv: number | null;
 }
 
 export type PrintBedViewMode = {
     mode: "layerPlan"
-} | { mode: "rasterization", modelGroup: string, trackIncrement: number }
+} | { mode: "rasterization", modelGroup: string, trackIncrement: number, evenOddView: boolean }
     | { mode: "printingTrack", moveAxisPosition: number };
 
 export interface PrintBedViewState {
     selectedModelId: string | null;
     viewLayer: number;
     viewMode: PrintBedViewMode;
+}
+
+export interface TrackRasterizationPreview {
+    result: TrackRasterizationResult;
+    moveAxisPosition: number;
 }
 
 export interface State {
@@ -155,6 +162,10 @@ export interface State {
         connected: boolean;
         pos: StagePos;
         e: number;
+        bedTemperature: {
+            current: number;
+            target: number;
+        };
     }
     currentProgram: PrinterProgram,
     programRunnerState: ProgramRunnerState,
@@ -178,15 +189,14 @@ export interface State {
         printerParams: PrinterParams;
         printingParams: PrintingParams;
         slicingState: {
-            track: TrackRasterization;
-            correctionTracks: CorrectionTrack[];
+            currentRasterization: TrackRasterizationPreview[];
             printPlan: PrintPlan;
             slicingStatus: SlicingStatus;
         };
         currentPrintingTrack: {
             track: TrackRasterization;
             moveAxisPosition: number;
-        }
+        };
         modelParams: { [id: string]: ModelParams };
         modelGroupPrintingParams: {
             [id: string]: ModelGroupPrintingParams

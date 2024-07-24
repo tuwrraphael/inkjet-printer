@@ -1,4 +1,5 @@
 import { LayerPlan } from "../slicer/LayerPlan";
+import { PrintingParams } from "../slicer/PrintingParams";
 import { CustomTrack } from "../state/State";
 
 export const enum PrinterTaskType {
@@ -66,8 +67,8 @@ export interface PrintLayerTask extends PrinterTask {
 export interface PrinterTaskPrintCustomTracksTask extends PrinterTask {
     readonly type: PrinterTaskType.PrintCustomTracks;
     customTracks: CustomTrack[];
-    sequentialFires: number;
-    fireEveryTicks: number;
+    printingParams : PrintingParams;
+    z: number;
 }
 
 

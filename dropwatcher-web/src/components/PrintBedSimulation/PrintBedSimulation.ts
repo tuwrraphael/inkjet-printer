@@ -1,4 +1,4 @@
-import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, State, StateChanges } from "../../state/State";
+import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
@@ -10,7 +10,7 @@ import { PrinterParams } from "../../slicer/PrinterParams";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
-import { CorrectionTrack } from "../../slicer/TrackRasterizer";
+import { TrackRasterizationResult } from "../../slicer/TrackRasterizer";
 import { LayerPlan, PrintPlan } from "/home/raphael/inkjet-printer/dropwatcher-web/src/slicer/LayerPlan";
 import { moveAxisPositionFromPlanAndIncrement } from "../../utils/moveAxisPositionFromPlanAndIncrement";
 
@@ -62,7 +62,6 @@ export class PrintBedSimulation extends HTMLElement {
     private rangeInput: HTMLInputElement;
     private layerDisplay: HTMLSpanElement;
     private modelPositionMap: WeakMap<Model, { x: number, y: number }> = new WeakMap();
-    private track: TrackRasterization;
     private printerParams: PrinterParams;
     private printingParams: PrintingParams;
     private resizeObserver: ResizeObserver;
@@ -71,11 +70,11 @@ export class PrintBedSimulation extends HTMLElement {
     private nextRenderNeedsModelRedraw = false;
     private modelMoving: Model = null;
     private customTracks: CustomTrack[];
-    private correctionTracks: CorrectionTrack[];
     private printPlan: PrintPlan;
     private viewedLayerPlan: LayerPlan;
     private viewMode: PrintBedViewMode;
     private currentPrintingTrack: { track: TrackRasterization; moveAxisPosition: number; };
+    private currentRasterization: TrackRasterizationPreview[];
 
     constructor() {
         super();
@@ -269,11 +268,10 @@ export class PrintBedSimulation extends HTMLElement {
             }
             this.rangeInput.max = Math.max(this.viewLayer, (maxLayerNum - 1)).toString();
             this.initialized = true;
-            this.track = s.printState.slicingState.track;
             this.printerParams = s.printState.printerParams;
             this.printingParams = s.printState.printingParams;
             this.customTracks = s.printState.customTracks;
-            this.correctionTracks = s.printState.slicingState.correctionTracks;
+            this.currentRasterization = s.printState.slicingState.currentRasterization;
             this.printPlan = s.printState.slicingState.printPlan;
             this.viewedLayerPlan = this.printPlan ? this.printPlan.layers[this.viewLayer] : null;
             this.viewMode = s.printBedViewState.viewMode;
@@ -493,7 +491,7 @@ export class PrintBedSimulation extends HTMLElement {
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
                             this.ctx.beginPath();
-                            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.02), 0, 2 * Math.PI);
+                            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.1), 0, 2 * Math.PI);
                             this.ctx.fill();
                         }
                     }
@@ -573,17 +571,22 @@ export class PrintBedSimulation extends HTMLElement {
                     this.drawLayerPlan(this.viewedLayerPlan);
                 }
             } else if (this.viewMode.mode == "rasterization") {
-                if (null != this.viewedLayerPlan) {
-                    let moveAxisPos = moveAxisPositionFromPlanAndIncrement(this.viewedLayerPlan, this.viewMode.modelGroup, this.viewMode.trackIncrement);
-                    if (null != moveAxisPos) {
-                        if (this.track) {
-                            this.drawTrack(moveAxisPos, this.track, this.printerParams, this.printingParams);
+                if (null != this.viewedLayerPlan && null != this.currentRasterization) {
+                    let trackNr = 0;
+                    for (let r of this.currentRasterization) {
+                        if (this.viewMode.evenOddView && trackNr % 2 != 0) {
+                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(128, 128, 128, 0.8)", "rgba(255, 127, 80, 0.8)");
+                        } else {
+                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(0, 0, 0, 0.8)", "rgba(255, 127, 80, 0.8)");
                         }
-                        if (this.correctionTracks) {
-                            for (let { track, moveAxisPos } of this.correctionTracks) {
-                                this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams, "green", "green");
+                        for (let { track, moveAxisPos } of r.result.correctionTracks) {
+                            if (this.viewMode.evenOddView && trackNr % 2 != 0) {
+                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(144, 238, 144, 0.8)", "rgba(0, 128, 0, 0.8)");
+                            } else {
+                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(0, 128, 0, 0.8)", "rgba(0, 128, 0, 0.8)");
                             }
                         }
+                        trackNr++;
                     }
                 }
                 for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayer)) {

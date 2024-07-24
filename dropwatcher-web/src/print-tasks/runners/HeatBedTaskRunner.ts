@@ -7,6 +7,6 @@ export class HeatBedTaskRunner {
     }
     async run() {
 
-        await this.movementStage.movementExecutor.heatBed(this.task.temperature);
+        await this.movementStage.movementExecutor.heatBedAndWait(this.task.temperature);
     }
 }

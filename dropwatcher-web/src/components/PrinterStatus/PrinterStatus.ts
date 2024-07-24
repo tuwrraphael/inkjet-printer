@@ -38,6 +38,7 @@ export class PrinterStatus extends HTMLElement {
     private encoderMode: HTMLTableCellElement;
     private lostLinesBySlowData: HTMLTableCellElement;
     private voltage: HTMLSpanElement;
+    private stageTemp: HTMLSpanElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -52,33 +53,34 @@ export class PrinterStatus extends HTMLElement {
         if (!this.rendered) {
             this.rendered = true;
             this.innerHTML = template;
-            this.usbConnected = document.querySelector("#usb-connected");
-            this.state = document.querySelector("#state");
-            this.errorFlags = document.querySelector("#error-flags");
-            this.currentPressure = document.querySelector("#current-pressure");
-            this.pressureControlEnabled = document.querySelector("#pressure-control-enabled");
-            this.pressureControlDone = document.querySelector("#pressure-control-done");
-            this.connectUsbButton = document.querySelector("#connect-usb");
-            this.sequentialFires = document.querySelector("#sequential-fires");
-            this.fireEveryTicks = document.querySelector("#fire-every-ticks");
-            this.printFirstLineAfterEncoderTick = document.querySelector("#print-first-line-after-encoder-tick");
-            this.encoderValue = document.querySelector("#encoder-value");
-            this.expectedEncoderValue = document.querySelector("#expected-encoder-value");
-            this.lastPrintedLine = document.querySelector("#last-printed-line");
-            this.lostLinesCount = document.querySelector("#lost-lines-count");
-            this.printedLines = document.querySelector("#printed-lines");
-            this.nozzlePrimingActive = document.querySelector("#nozzle-priming-active");
-            this.encoderMode = document.querySelector("#encoder-mode");
-            this.lostLinesBySlowData = document.querySelector("#lost-lines-by-slow-data");
-            this.voltage = document.querySelector("#voltage");
+            this.usbConnected = this.querySelector("#usb-connected");
+            this.state = this.querySelector("#state");
+            this.errorFlags = this.querySelector("#error-flags");
+            this.currentPressure = this.querySelector("#current-pressure");
+            this.pressureControlEnabled = this.querySelector("#pressure-control-enabled");
+            this.pressureControlDone = this.querySelector("#pressure-control-done");
+            this.connectUsbButton = this.querySelector("#connect-usb");
+            this.sequentialFires = this.querySelector("#sequential-fires");
+            this.fireEveryTicks = this.querySelector("#fire-every-ticks");
+            this.printFirstLineAfterEncoderTick = this.querySelector("#print-first-line-after-encoder-tick");
+            this.encoderValue = this.querySelector("#encoder-value");
+            this.expectedEncoderValue = this.querySelector("#expected-encoder-value");
+            this.lastPrintedLine = this.querySelector("#last-printed-line");
+            this.lostLinesCount = this.querySelector("#lost-lines-count");
+            this.printedLines = this.querySelector("#printed-lines");
+            this.nozzlePrimingActive = this.querySelector("#nozzle-priming-active");
+            this.encoderMode = this.querySelector("#encoder-mode");
+            this.lostLinesBySlowData = this.querySelector("#lost-lines-by-slow-data");
+            this.voltage = this.querySelector("#voltage");
+            this.stageTemp = this.querySelector("#stage-temp");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
             }, this.abortController.signal);
 
-            this.stageConnected = document.querySelector("#stage-connected");
-            this.stagePosition = document.querySelector("#stage-position");
-            this.connectStageButton = document.querySelector("#connect-stage");
+            this.stageConnected = this.querySelector("#stage-connected");
+            this.stagePosition = this.querySelector("#stage-position");
+            this.connectStageButton = this.querySelector("#connect-stage");
             abortableEventListener(this.connectStageButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectStage();
@@ -182,7 +184,14 @@ export class PrinterStatus extends HTMLElement {
             this.nozzlePrimingActive.innerText = s.printerSystemState.printControl?.nozzlePrimingActive ? "Active" : "Inactive";
             this.encoderMode.innerText = this.formatEncoderMode(s.printerSystemState.printControl?.encoderMode);
             this.lostLinesBySlowData.innerText = this.formatNumber(s.printerSystemState.printControl?.lostLinesBySlowData);
-            this.voltage.innerText = s.printerSystemState.waveformControl?.voltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.voltageMv / 1000) : "-";
+            let actualVoltage = s.printerSystemState.waveformControl?.voltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.voltageMv / 1000) : "-";
+            let setVoltage = s.printerSystemState.waveformControl?.setVoltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.setVoltageMv / 1000) : "-";
+            this.voltage.innerText = `${actualVoltage} / ${setVoltage}`;
+
+            let setTemp = s.movementStageState.bedTemperature?.target ? this.formatNumber(s.movementStageState.bedTemperature?.target) : "-";
+            let currentTemp = s.movementStageState.bedTemperature?.current ? this.formatNumber(s.movementStageState.bedTemperature?.current) : "-";
+
+            this.stageTemp.innerText = `${currentTemp} / ${setTemp}`;
         }
         if (c.includes("movementStageState")) {
             this.stagePosition.innerText = this.formatStagePosition(s);

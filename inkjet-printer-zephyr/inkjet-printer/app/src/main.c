@@ -637,7 +637,7 @@ static int cmd_regulator_get_voltage(const struct shell *sh, size_t argc, char *
 {
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
-	double voltage;
+	uint32_t voltage;
 	bool read = regulator_get_voltage(&voltage);
 	if (!read)
 	{
@@ -646,7 +646,7 @@ static int cmd_regulator_get_voltage(const struct shell *sh, size_t argc, char *
 	}
 	else
 	{
-		shell_print(sh, "Voltage: %f", voltage);
+		shell_print(sh, "Voltage: %d", voltage);
 	}
 	return 0;
 }

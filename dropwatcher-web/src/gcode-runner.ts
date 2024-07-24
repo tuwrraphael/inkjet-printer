@@ -11,7 +11,7 @@ export class GCodeRunner {
     async moveRelativeAndWait(x: number, y: number, z: number, feedrate: number) {
         await this.movementStage.sendGcodeAndWaitForFinished(`G91\nG0 X${x} Y${y} Z${z} F${feedrate}\nG90`);
     }
-    
+
     async moveAbsoluteAndWait(x: number, y: number, z: number, feedrate: number) {
         await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} Y${y} Z${z} F${feedrate}`);
     }
@@ -32,11 +32,15 @@ export class GCodeRunner {
         await this.movementStage.sendGcodeAndWaitForFinished(`G90\nG0 X${x} Y${y} F${feedrate}`);
     }
 
-    async heatBed(temperature: number) {
-        await this.movementStage.sendGcode(`M140 S${temperature}`);
+    async heatBedAndWait(temperature: number) {
+        await this.movementStage.sendGcodeAndWaitForFinished(`M190 S${temperature}`);
     }
 
     async disableAxes() {
         await this.movementStage.sendGcode("M18");
+    }
+
+    async enableAutoTemperatureReporting() {
+        await this.movementStage.sendGcode("M155 S3");
     }
 }

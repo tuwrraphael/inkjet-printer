@@ -11,7 +11,7 @@ import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
 import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
 import { WaitTaskRunner } from "./runners/WaitTaskRunner";
 import { ZeroEncoderTaskRunner } from "./runners/ZeroEncoderTaskRunner";
-import { PrintCustomTracksTaskRunner, PrintLayerTaskRunner } from "./runners/PrintTrackTaskRunner";
+import { PrintCustomTracksTaskRunner, PrintLayerTaskRunner } from "./runners/PrintLayerTaskRunner";
 import { SlicerClient } from "../slicer/SlicerClient";
 import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
 import { PrinterTaskCancellationToken } from "./PrinterTaskCancellationToken";
@@ -76,9 +76,7 @@ export class PrintTaskRunner {
     }
 
     private get cancellationToken(): PrinterTaskCancellationToken {
-        return {
-            isCanceled: () => !this.canContinue()
-        };
+        return new PrinterTaskCancellationToken(() => !this.canContinue());
     }
 
     private async runTask(task: PrinterTasks) {
@@ -121,7 +119,7 @@ export class PrintTaskRunner {
                 break;
             case PrinterTaskType.PrintCustomTracks:
                 let printCustomTracksTaskRunner = new PrintCustomTracksTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
-                await printCustomTracksTaskRunner.run();
+                await printCustomTracksTaskRunner.run(this.cancellationToken);
                 break;
             case PrinterTaskType.HeatBed:
                 let heatBedTaskRunner = new HeatBedTaskRunner(task, this.movementStage);

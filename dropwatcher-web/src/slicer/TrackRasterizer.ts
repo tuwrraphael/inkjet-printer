@@ -6,6 +6,7 @@ import { PrintingParams } from "./PrintingParams";
 import { TrackRasterization } from "./TrackRasterization";
 import { SliceModelInfo } from "./SliceModelInfo";
 import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
+import { getPrintingParams } from "./getPrintingParams";
 
 type BlockedNozzleJets = Set<number>;
 
@@ -17,6 +18,7 @@ export interface CorrectionTrack {
 export interface TrackRasterizationResult {
     track: TrackRasterization;
     correctionTracks: CorrectionTrack[];
+    printingParams: PrintingParams;
 }
 
 export class TrackRasterizer {
@@ -30,10 +32,10 @@ export class TrackRasterizer {
     }
 
     private get printingParams(): PrintingParams {
-        return {
-            ...this.generalPrintingParams,
-            ...this.modelGroupParams
-        }
+        return getPrintingParams(
+            this.generalPrintingParams,
+            this.modelGroupParams
+        );
     }
 
     private findFirstTickInsideModel(moveAxisPos: number, nozzles: null | number[] = null) {
@@ -143,22 +145,23 @@ export class TrackRasterizer {
 
         let printAxisMovements = this.getPrintAxisMovements(printFirstLineAfterEncoderTick, res.printLastLineAfterEncoderTick);
 
-        let correctionTracks = Array.from(this.findCorrectionTracks(moveAxisPos, res.blockedNozzleJets));
+        let correctionTracks = Array.from(this.findCorrectionTracks(moveAxisPos, res.blockedNozzleJets, offsetThisLayer));
         let track = {
             data: res.data,
             linesToPrint: res.linesToPrint,
-            printFirstLineAfterEncoderTick: printFirstLineAfterEncoderTick + offsetThisLayer,
+            printFirstLineAfterEncoderTick: printFirstLineAfterEncoderTick,
             printLastLineAfterEncoderTick: res.printLastLineAfterEncoderTick,
             startPrintAxisPosition: printAxisMovements.startPrintAxisPosition,
             endPrintAxisPosition: printAxisMovements.endPrintAxisPosition
         }
         return {
             track: track,
-            correctionTracks: correctionTracks
+            correctionTracks: correctionTracks,
+            printingParams: this.printingParams
         };
     }
 
-    private * findCorrectionTracks(moveAxisPos: number, blockedNozzleJets: BlockedNozzleJets): Iterable<CorrectionTrack> {
+    private * findCorrectionTracks(moveAxisPos: number, blockedNozzleJets: BlockedNozzleJets, offsetThisLayer: number): Iterable<CorrectionTrack> {
         let correctedNozzles = this.findCorrectionMovements(moveAxisPos, blockedNozzleJets);
         let movements = this.selectCorrectionMovements(blockedNozzleJets, correctedNozzles);
         let nozzleDistance = getNozzleDistance(this.printerParams);
@@ -167,7 +170,7 @@ export class TrackRasterizer {
             let pos = movementByNozzles * nozzleDistance.x + moveAxisPos;
             let correctedNozzles = m[1];
             let correctingNoozzles = correctedNozzles.map(nozzle => nozzle + movementByNozzles);
-            let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(pos, correctingNoozzles);
+            let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(pos, correctingNoozzles)+offsetThisLayer;
             let res = this.rasterizeArea(pos, correctingNoozzles, printFirstLineAfterEncoderTick);
             let printAxisMovements = this.getPrintAxisMovements(printFirstLineAfterEncoderTick, res.printLastLineAfterEncoderTick);
             yield {

@@ -1,9 +1,10 @@
 syntax = "proto3";
 
 message WavefromControlSettings {
-    double voltage = 1;
+    uint32 voltage_mv = 1;
 }
 
 message WaveformControlState {
-    optional double voltage = 1;
+    optional uint32 voltage_mv = 1;
+    uint32 set_voltage_mv = 2;
 }

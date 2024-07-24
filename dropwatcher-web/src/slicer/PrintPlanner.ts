@@ -62,15 +62,21 @@ export class PrintPlanner {
             let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
             let printingParams = { ...this.printingParams, ...modelGroupParams };
             let modelMap = new Map(Array.from(modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-            yield {
-                modelGroupId: modelGroupId,
-                tracks: this.estimateModelGroupTracks(modelMap),
-                printingParams: printingParams
-            };
+            let tracks = this.estimateModelGroupTracks(modelMap);
+            if (tracks.length > 0) {
+                yield {
+                    modelGroupId: modelGroupId,
+                    tracks: tracks,
+                    printingParams: printingParams
+                };
+            }
         }
     }
 
     private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>): TrackPlan[] {
+        if (modelmap.size === 0) {
+            return [];
+        }
         let minY = this.printerParams.buildPlate.height;
         let minX = this.printerParams.buildPlate.width;
         let maxX = 0;
@@ -83,14 +89,16 @@ export class PrintPlanner {
         }
         minX = Math.floor(minX * 100) / 100;
         maxX = Math.ceil(maxX * 100) / 100;
-        let increment = getPrintheadSwathe(this.printerParams).x;
+        let swathe = getPrintheadSwathe(this.printerParams);
+        let increment = swathe.x;
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let tracks: TrackPlan[] = [];
+        minX = Math.max(0, minX);
         for (let moveAxisPosition = minX; moveAxisPosition < maxX; moveAxisPosition += increment) {
             // todo optimize minY, maxY
             let printFirstLineAfterEncoderTick = Math.max(1, Math.floor(minY / encoderMMperDot));
             let printLastLineAfterEncoderTick = Math.ceil(maxY / encoderMMperDot);
-            let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin);
+            let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin - swathe.y);
             let endPrintAxisPosition = Math.min(this.printerParams.buildPlate.height, (printLastLineAfterEncoderTick) * encoderMMperDot + this.printingParams.encoderMargin);
             tracks.push({
                 endPrintAxisPosition: endPrintAxisPosition,

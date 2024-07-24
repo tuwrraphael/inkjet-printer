@@ -14,6 +14,7 @@ static const struct device *printhead_voltage;
 static const struct device *hv_dac;
 
 static bool last_voltage_measurement_valid = false;
+static uint32_t last_voltage_mv = 0.0;
 
 #define MEASURE_MSEC (1000)
 
@@ -51,7 +52,7 @@ int regulator_initialize()
     return 0;
 }
 
-bool regulator_get_voltage(double *voltage_mv)
+bool regulator_get_voltage(uint32_t *voltage_mv)
 {
     if (!last_voltage_measurement_valid)
     {
@@ -64,13 +65,14 @@ bool regulator_get_voltage(double *voltage_mv)
         LOG_ERR("Failed to get voltage sensor data: %d", res);
         return res;
     }
-    *voltage_mv = 1000.0 * (voltage.val1 + (voltage.val2 / (1000.0 * 1000.0)));
+    double conv = 1000.0 * (voltage.val1 + (voltage.val2 / (1000.0 * 1000.0)));
+    *voltage_mv = (uint32_t)conv;
     return true;
 }
 
-int regulator_set_voltage(double voltage_mv)
+int regulator_set_voltage(uint32_t voltage_mv)
 {
-    double voltage = voltage_mv / 1000.0;
+    double voltage = ((double)voltage_mv) / 1000.0;
     if (voltage > 34.8 || voltage < 15.0)
     {
         return -EINVAL;
@@ -85,5 +87,12 @@ int regulator_set_voltage(double voltage_mv)
         LOG_ERR("dac_write_value() failed with code %d\n", ret);
         return 0;
     }
+    last_voltage_mv = voltage_mv;
     return 0;
+}
+
+void regulator_get_info(regulator_info_t *info)
+{
+    info->set_voltage_mv = last_voltage_mv;
+    info->voltage_reading_available = regulator_get_voltage(&info->voltage_mv);
 }
