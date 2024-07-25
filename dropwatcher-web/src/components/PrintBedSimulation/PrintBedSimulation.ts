@@ -11,8 +11,8 @@ import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
 import { TrackRasterizationResult } from "../../slicer/TrackRasterizer";
-import { LayerPlan, PrintPlan } from "/home/raphael/inkjet-printer/dropwatcher-web/src/slicer/LayerPlan";
 import { moveAxisPositionFromPlanAndIncrement } from "../../utils/moveAxisPositionFromPlanAndIncrement";
+import { LayerPlan, PrintPlan } from "../../slicer/LayerPlan";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
