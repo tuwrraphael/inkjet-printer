@@ -24,5 +24,7 @@ export const enum ActionType {
     PrintingTrack,
     SetCustomTracks,
     ModelGroupParamsChanged,
-    MovementStageTemperatureChanged
+    MovementStageTemperatureChanged,
+    InkControlActionChanged,
+    ValvePositionsChanged
 }

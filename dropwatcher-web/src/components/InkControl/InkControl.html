@@ -1,5 +1,37 @@
 <h1>Ink Control</h1>
+<div id="ink-control-illustration">
+</div>
+<h2>Perform Action</h2>
+<p>
+    Select which action to perform.
+</p>
+<form id="ink-control-action-form">
+    <label for="action">Action</label>
+    <div class="input-group">
+        <select id="action" name="action">
+            <option value=""></option>
+            <!-- <option value="fillflushtank">Fill pressure reservoir</option>
+            <option value="keepalive">Enter keepalive State</option>
+            <option value="fillflushtank">Load ink</option>
+            <option value="degassing">Supply tubing / filter power degassing</option>
+            <option value="pressurepurge">Mild pressure purge nozzles</option>
+            <option value="powerpressurepurge">Power pressure purge nozzles</option>
+            <option value="vacuumnozzles">Suction purge nozzles via capping station</option>
+            <option value="recirculate">Recirculate via capping station</option> -->
+        </select>
+    </div>
+    <button id="btn-action">Start</button>
+</form>
+<form id="ink-control-current-action-form">
+    <h3 id="current-action-name"></h3>
+    <p id="message"></p>
+    <div id="extra-component"></div>
+    <button id="btn-next-action">Next</button>
+</form>
+
+<h2>Ink pressure over time</h2>
 <app-chart class="ink-control__chart"></app-chart>
+<h2>Expert Mode</h2>
 <div>
     <form id="ink-control-form">
         <!-- <label for="action">Action</label>

@@ -39,6 +39,8 @@ import { moveAxisPositionFromPlanAndIncrement } from "../utils/moveAxisPositionF
 import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterProgramState } from "../print-tasks/printer-program";
 import { MovementStageTemperatureChanged } from "./actions/MovementStageTemperatureChanged";
+import { InkControlActionChanged } from "./actions/InkControlActionChanged";
+import { ValvePositionChanged } from "./actions/ValvePositionChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -64,6 +66,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | SetCustomTracks
     | ModelGroupParamsChanged
     | MovementStageTemperatureChanged
+    | InkControlActionChanged
+    | ValvePositionChanged
     ;
 let state: State;
 let initialized = false;
@@ -548,6 +552,25 @@ async function handleMessage(msg: Actions) {
                 };
             });
             await updateSlicerParams();
+            break;
+        case ActionType.InkControlActionChanged:
+            updateState(oldState => ({
+                inkControlAction: {
+                    ...oldState.inkControlAction,
+                    ...msg.state
+                }
+            }));
+            break;
+        case ActionType.ValvePositionsChanged:
+            updateState(oldState => ({
+                printerSystemState: {
+                    ...oldState.printerSystemState,
+                    valves: {
+                        ...oldState.printerSystemState.valves,
+                        ...msg.state
+                    }
+                }
+            }));
             break;
     }
 }

@@ -1,9 +1,91 @@
 ink-control {
-    display:block;
+    display: block;
 }
 
-.ink-control{
+.ink-control {
     &__chart {
         height: 20em;
+    }
+}
+
+.pump-moving-vacuum {
+    animation: spin 2s linear infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.pump-moving-pressure {
+    animation: spin 2s linear infinite reverse;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+.pump-moving-control {
+    animation: control 0.5s linear infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+@keyframes control {
+    50% {
+        transform: rotate(10deg);
+    }
+
+    100% {
+        transform: rotate(-10deg);
+    }
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.valve1,
+.valve2,
+.valve3 {
+    transform-origin: center;
+    transform-box: fill-box;
+    transition: transform 0.5s;
+}
+
+.valve-port1-port3 {
+    transform: rotate(180deg);
+}
+
+.valve-all-connected {
+    transform: rotate(0deg);
+}
+
+.valve-port2-port3 {
+    transform: rotate(90deg);
+}
+
+.valve-port1-port2 {
+    transform: rotate(270deg);
+}
+
+#ink-control-illustration svg {
+    width: 100%;
+}
+
+.cap-highlight,
+.capping-highlight,
+.valve-highlight {
+    animation: blink 1s linear infinite;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
     }
 }

@@ -76,7 +76,7 @@ export interface NewModel {
         polygons: Polygon[];
     }[];
     fileName: string;
-    id?:string;
+    id?: string;
 }
 
 export interface Model {
@@ -147,6 +147,26 @@ export interface TrackRasterizationPreview {
     moveAxisPosition: number;
 }
 
+export enum ValvePosition {
+    AllConnected = 0,
+    Port1Port2 = 1,
+    Port2Port3 = 2,
+    Port1Port3 = 3
+}
+
+export interface InkControlActionState {
+
+    currentAction: string;
+    currentStep: number;
+    actionsRunning : boolean;
+}
+
+export interface ValveState {
+    valve1: ValvePosition;
+    valve2: ValvePosition;
+    valve3: ValvePosition;
+}
+
 export interface State {
     printerSystemState: {
         usbConnected: boolean;
@@ -157,6 +177,7 @@ export interface State {
         pressureControl?: PressureControlState;
         printControl: PrintControlState;
         waveformControl: WaveformControl;
+        valves: ValveState;
     },
     movementStageState: {
         connected: boolean;
@@ -210,6 +231,7 @@ export interface State {
         lastSaved: Date | null
     } | null,
     printBedViewState: PrintBedViewState;
+    inkControlAction: InkControlActionState;
 }
 
 export type StateChanges = (keyof State)[];
