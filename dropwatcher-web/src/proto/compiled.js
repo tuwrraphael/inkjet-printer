@@ -5012,7 +5012,7 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
      * Properties of a WavefromControlSettings.
      * @exports IWavefromControlSettings
      * @interface IWavefromControlSettings
-     * @property {number|null} [voltage] WavefromControlSettings voltage
+     * @property {number|null} [voltageMv] WavefromControlSettings voltageMv
      */
 
     /**
@@ -5031,12 +5031,12 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
     }
 
     /**
-     * WavefromControlSettings voltage.
-     * @member {number} voltage
+     * WavefromControlSettings voltageMv.
+     * @member {number} voltageMv
      * @memberof WavefromControlSettings
      * @instance
      */
-    WavefromControlSettings.prototype.voltage = 0;
+    WavefromControlSettings.prototype.voltageMv = 0;
 
     /**
      * Creates a new WavefromControlSettings instance using the specified properties.
@@ -5062,8 +5062,8 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
     WavefromControlSettings.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.voltage != null && Object.hasOwnProperty.call(message, "voltage"))
-            writer.uint32(/* id 1, wireType 1 =*/9).double(message.voltage);
+        if (message.voltageMv != null && Object.hasOwnProperty.call(message, "voltageMv"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.voltageMv);
         return writer;
     };
 
@@ -5099,7 +5099,7 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
-                    message.voltage = reader.double();
+                    message.voltageMv = reader.uint32();
                     break;
                 }
             default:
@@ -5137,9 +5137,9 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
     WavefromControlSettings.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.voltage != null && message.hasOwnProperty("voltage"))
-            if (typeof message.voltage !== "number")
-                return "voltage: number expected";
+        if (message.voltageMv != null && message.hasOwnProperty("voltageMv"))
+            if (!$util.isInteger(message.voltageMv))
+                return "voltageMv: integer expected";
         return null;
     };
 
@@ -5155,8 +5155,8 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
         if (object instanceof $root.WavefromControlSettings)
             return object;
         let message = new $root.WavefromControlSettings();
-        if (object.voltage != null)
-            message.voltage = Number(object.voltage);
+        if (object.voltageMv != null)
+            message.voltageMv = object.voltageMv >>> 0;
         return message;
     };
 
@@ -5174,9 +5174,9 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
             options = {};
         let object = {};
         if (options.defaults)
-            object.voltage = 0;
-        if (message.voltage != null && message.hasOwnProperty("voltage"))
-            object.voltage = options.json && !isFinite(message.voltage) ? String(message.voltage) : message.voltage;
+            object.voltageMv = 0;
+        if (message.voltageMv != null && message.hasOwnProperty("voltageMv"))
+            object.voltageMv = message.voltageMv;
         return object;
     };
 
@@ -5215,7 +5215,8 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
      * Properties of a WaveformControlState.
      * @exports IWaveformControlState
      * @interface IWaveformControlState
-     * @property {number|null} [voltage] WaveformControlState voltage
+     * @property {number|null} [voltageMv] WaveformControlState voltageMv
+     * @property {number|null} [setVoltageMv] WaveformControlState setVoltageMv
      */
 
     /**
@@ -5234,24 +5235,32 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
     }
 
     /**
-     * WaveformControlState voltage.
-     * @member {number|null|undefined} voltage
+     * WaveformControlState voltageMv.
+     * @member {number|null|undefined} voltageMv
      * @memberof WaveformControlState
      * @instance
      */
-    WaveformControlState.prototype.voltage = null;
+    WaveformControlState.prototype.voltageMv = null;
+
+    /**
+     * WaveformControlState setVoltageMv.
+     * @member {number} setVoltageMv
+     * @memberof WaveformControlState
+     * @instance
+     */
+    WaveformControlState.prototype.setVoltageMv = 0;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
 
     /**
-     * WaveformControlState _voltage.
-     * @member {"voltage"|undefined} _voltage
+     * WaveformControlState _voltageMv.
+     * @member {"voltageMv"|undefined} _voltageMv
      * @memberof WaveformControlState
      * @instance
      */
-    Object.defineProperty(WaveformControlState.prototype, "_voltage", {
-        get: $util.oneOfGetter($oneOfFields = ["voltage"]),
+    Object.defineProperty(WaveformControlState.prototype, "_voltageMv", {
+        get: $util.oneOfGetter($oneOfFields = ["voltageMv"]),
         set: $util.oneOfSetter($oneOfFields)
     });
 
@@ -5279,8 +5288,10 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
     WaveformControlState.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.voltage != null && Object.hasOwnProperty.call(message, "voltage"))
-            writer.uint32(/* id 1, wireType 1 =*/9).double(message.voltage);
+        if (message.voltageMv != null && Object.hasOwnProperty.call(message, "voltageMv"))
+            writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.voltageMv);
+        if (message.setVoltageMv != null && Object.hasOwnProperty.call(message, "setVoltageMv"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.setVoltageMv);
         return writer;
     };
 
@@ -5316,7 +5327,11 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
             let tag = reader.uint32();
             switch (tag >>> 3) {
             case 1: {
-                    message.voltage = reader.double();
+                    message.voltageMv = reader.uint32();
+                    break;
+                }
+            case 2: {
+                    message.setVoltageMv = reader.uint32();
                     break;
                 }
             default:
@@ -5355,11 +5370,14 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         if (typeof message !== "object" || message === null)
             return "object expected";
         let properties = {};
-        if (message.voltage != null && message.hasOwnProperty("voltage")) {
-            properties._voltage = 1;
-            if (typeof message.voltage !== "number")
-                return "voltage: number expected";
+        if (message.voltageMv != null && message.hasOwnProperty("voltageMv")) {
+            properties._voltageMv = 1;
+            if (!$util.isInteger(message.voltageMv))
+                return "voltageMv: integer expected";
         }
+        if (message.setVoltageMv != null && message.hasOwnProperty("setVoltageMv"))
+            if (!$util.isInteger(message.setVoltageMv))
+                return "setVoltageMv: integer expected";
         return null;
     };
 
@@ -5375,8 +5393,10 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         if (object instanceof $root.WaveformControlState)
             return object;
         let message = new $root.WaveformControlState();
-        if (object.voltage != null)
-            message.voltage = Number(object.voltage);
+        if (object.voltageMv != null)
+            message.voltageMv = object.voltageMv >>> 0;
+        if (object.setVoltageMv != null)
+            message.setVoltageMv = object.setVoltageMv >>> 0;
         return message;
     };
 
@@ -5393,11 +5413,15 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         if (!options)
             options = {};
         let object = {};
-        if (message.voltage != null && message.hasOwnProperty("voltage")) {
-            object.voltage = options.json && !isFinite(message.voltage) ? String(message.voltage) : message.voltage;
+        if (options.defaults)
+            object.setVoltageMv = 0;
+        if (message.voltageMv != null && message.hasOwnProperty("voltageMv")) {
+            object.voltageMv = message.voltageMv;
             if (options.oneofs)
-                object._voltage = "voltage";
+                object._voltageMv = "voltageMv";
         }
+        if (message.setVoltageMv != null && message.hasOwnProperty("setVoltageMv"))
+            object.setVoltageMv = message.setVoltageMv;
         return object;
     };
 

@@ -13,6 +13,23 @@ ol {
     font-family: 'Roboto', sans-serif;
 }
 
+h1 {
+    font-size: 1.5em;
+}
+
+h2 {
+    font-size: 1.2em;
+}
+
+h3 {
+    font-size: 1em;
+}
+
+p {
+    margin-bottom: 0.5em;
+    margin-top: 0;
+}
+
 body {
     padding-left: 0;
     padding-right: 0;
@@ -21,7 +38,7 @@ body {
     margin: 0;
 }
 
-form {
+form:not(.inline) {
 
     max-width: 25em;
 

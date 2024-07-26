@@ -4,22 +4,23 @@ import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
 import { MoveTaskRunner } from "./runners/MoveTaskRunner";
-import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "./printer-program";
+import { PrinterProgram, PrinterProgramState, PrinterTaskPrintCustomTracksTask, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
 import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
 import { RequestFireTaskRunner } from "./runners/RequestFireTaskRunner";
 import { WaitTaskRunner } from "./runners/WaitTaskRunner";
 import { ZeroEncoderTaskRunner } from "./runners/ZeroEncoderTaskRunner";
-import { PrintCustomTracksTaskRunner, PrintTrackTaskRunner } from "./runners/PrintTrackTaskRunner";
+import { PrintCustomTracksTaskRunner, PrintLayerTaskRunner } from "./runners/PrintLayerTaskRunner";
 import { SlicerClient } from "../slicer/SlicerClient";
 import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
+import { PrinterTaskCancellationToken } from "./PrinterTaskCancellationToken";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
     private movementStage: MovementStage;
     private store: Store;
-    private programRunnerState: any;
+    private programRunnerState: ProgramRunnerState;
     private canceled = false;
     private slicerClient: SlicerClient;
 
@@ -74,6 +75,10 @@ export class PrintTaskRunner {
         this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
     }
 
+    private get cancellationToken(): PrinterTaskCancellationToken {
+        return new PrinterTaskCancellationToken(() => !this.canContinue());
+    }
+
     private async runTask(task: PrinterTasks) {
         switch (task.type) {
             case PrinterTaskType.Home:
@@ -100,9 +105,9 @@ export class PrintTaskRunner {
                 let moveTaskRunner = new MoveTaskRunner(task, this.movementStage);
                 await moveTaskRunner.run();
                 break;
-            case PrinterTaskType.PrintTrack:
-                let moveAndSliceNextTaskRunner = new PrintTrackTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
-                await moveAndSliceNextTaskRunner.run();
+            case PrinterTaskType.PrintLayer:
+                let moveAndSliceNextTaskRunner = new PrintLayerTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
+                await moveAndSliceNextTaskRunner.run(this.cancellationToken);
                 break;
             case PrinterTaskType.Wait:
                 let waitTaskRunner = new WaitTaskRunner(task);
@@ -114,7 +119,7 @@ export class PrintTaskRunner {
                 break;
             case PrinterTaskType.PrintCustomTracks:
                 let printCustomTracksTaskRunner = new PrintCustomTracksTaskRunner(task, this.movementStage, this.slicerClient, this.printerUsb, this.store);
-                await printCustomTracksTaskRunner.run();
+                await printCustomTracksTaskRunner.run(this.cancellationToken);
                 break;
             case PrinterTaskType.HeatBed:
                 let heatBedTaskRunner = new HeatBedTaskRunner(task, this.movementStage);

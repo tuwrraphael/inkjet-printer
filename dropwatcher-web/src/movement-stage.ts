@@ -2,10 +2,11 @@ import { GCodeRunner } from "./gcode-runner";
 import { Store } from "./state/Store";
 import { MovementStageConnectionChanged } from "./state/actions/MovementStageConnectionChanged";
 import { MovementStagePositionChanged } from "./state/actions/MovementStagePositionChanged";
+import { MovementStageTemperatureChanged } from "./state/actions/MovementStageTemperatureChanged";
 import { WebSerialWrapper } from "./webserial";
 
 
-class NewLineDelimitingStream extends TransformStream<string, string>{
+class NewLineDelimitingStream extends TransformStream<string, string> {
     private buffer: string;
     constructor() {
         super({
@@ -28,7 +29,7 @@ export class MovementStage {
     private static instance: MovementStage;
     private webSerialWrapper: WebSerialWrapper<string>;
     private store: Store;
-    private waiting : () => void;
+    private waiting: () => void;
     movementExecutor = new GCodeRunner(this);
     static getInstance() {
         if (null == this.instance) {
@@ -44,13 +45,13 @@ export class MovementStage {
                 .pipeThrough(new TextDecoderStream())
                 .pipeThrough(new NewLineDelimitingStream())
         );
-        this.webSerialWrapper.addEventListener("connected", () => {
+        this.webSerialWrapper.addEventListener("connected", async () => {
             this.store.postAction(new MovementStageConnectionChanged(true));
         });
         this.webSerialWrapper.addEventListener("disconnected", () => {
             this.store.postAction(new MovementStageConnectionChanged(false));
         });
-        this.webSerialWrapper.addEventListener("data", (e: CustomEvent) => {
+        this.webSerialWrapper.addEventListener("data", async (e: CustomEvent) => {
             // let received: Uint8Array = e.detail;
             // let decoded = new TextDecoder().decode(received);
             if (this.parsePositionMessage(e.detail, (pos) => {
@@ -59,6 +60,12 @@ export class MovementStage {
                     this.waiting();
                     this.waiting = undefined;
                 }
+            })) {
+                return;
+            } else if (this.parseResetMessage(e.detail)) {
+                await this.movementExecutor.enableAutoTemperatureReporting();
+            } else if (this.parseTemperatureMessage(e.detail, (temps) => {
+                this.store.postAction(new MovementStageTemperatureChanged(temps));
             })) {
                 return;
             }
@@ -76,6 +83,28 @@ export class MovementStage {
                 z: parseFloat(match[3]),
                 e: parseFloat(match[4])
             });
+            return true;
+        }
+        return false;
+    }
+
+    private parseTemperatureMessage(msg: string, res: (temps: { current: number, target: number }) => void): boolean {
+        let regex = /T:([0-9.]+) \/([0-9.]+) B:([0-9.]+) \/([0-9.]+)/;
+        let match = regex.exec(msg);
+        if (match) {
+            res({
+                current: parseFloat(match[3]),
+                target: parseFloat(match[4])
+            });
+            return true;
+        }
+        return false;
+    }
+
+    private parseResetMessage(msg: string) {
+        let regex = /^Marlin/;
+        let match = regex.exec(msg);
+        if (match) {
             return true;
         }
         return false;

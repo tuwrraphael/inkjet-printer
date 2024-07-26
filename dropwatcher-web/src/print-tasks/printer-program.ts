@@ -1,3 +1,5 @@
+import { LayerPlan } from "../slicer/LayerPlan";
+import { PrintingParams } from "../slicer/PrintingParams";
 import { CustomTrack } from "../state/State";
 
 export const enum PrinterTaskType {
@@ -9,7 +11,7 @@ export const enum PrinterTaskType {
     Move,
     ZeroEncoder,
     Wait,
-    PrintTrack,
+    PrintLayer,
     PrintCustomTracks,
     HeatBed
 }
@@ -50,19 +52,23 @@ export interface PrinterTaskHeadBed extends PrinterTask {
     temperature: number;
 }
 
-export interface PrintTrackTask extends PrinterTask {
-    readonly type: PrinterTaskType.PrintTrack;
-    moveAxisPos: number;
-    layer: number;
-    sequentialFires: number;
-    fireEveryTicks: number;
+export interface PrintLayerTask extends PrinterTask {
+    readonly type: PrinterTaskType.PrintLayer;
+    layerPlan: LayerPlan;
+    layerNr: number;
+    dryingPosition: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    z: number;
 }
 
 export interface PrinterTaskPrintCustomTracksTask extends PrinterTask {
     readonly type: PrinterTaskType.PrintCustomTracks;
     customTracks: CustomTrack[];
-    sequentialFires: number;
-    fireEveryTicks: number;
+    printingParams : PrintingParams;
+    z: number;
 }
 
 
@@ -82,7 +88,7 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskRequestFire
     | PrinterTaskMove
     | PrinterTaskHome
-    | PrintTrackTask
+    | PrintLayerTask
     | PrinterTaskZeroEncoder
     | PrinterTaskWait
     | PrinterTaskPrintCustomTracksTask

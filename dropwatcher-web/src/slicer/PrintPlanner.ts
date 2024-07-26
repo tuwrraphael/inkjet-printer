@@ -4,11 +4,10 @@ import { getPrintheadSwathe } from "./getPrintheadSwathe";
 import { TrackRasterizer } from "./TrackRasterizer";
 import { SliceModelInfo } from "./SliceModelInfo";
 import { TrackPlan } from "./TrackPlan";
-import { LayerPlan } from "./LayerPlan";
+import { LayerPlan, ModelGroupPlan, PrintPlan } from "./LayerPlan";
 import { PrintingParams } from "./PrintingParams";
 import { PrinterParams } from "./PrinterParams";
-
-
+import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
 
 export class PrintPlanner {
 
@@ -20,7 +19,8 @@ export class PrintPlanner {
     constructor(private models: Model[],
         private modelParamsDict: { [id: string]: ModelParams; },
         private printerParams: PrinterParams,
-        private printingParams: PrintingParams) {
+        private printingParams: PrintingParams,
+        private modelGroupParamsDict: { [id: string]: ModelGroupPrintingParams; }) {
         this.maxLayers = Math.max(...models.map(m => m.layers.length));
     }
 
@@ -45,13 +45,38 @@ export class PrintPlanner {
                 };
             });
             let contourBoundingBoxes = polygons.filter(p => p.polygon.type === PolygonType.Contour).map(p => p.boundingBox);
-            modelmap.set(model.id, { polygons, contourBoundingBoxes });
+            let modelParams = this.modelParamsDict[model.id];
+            modelmap.set(model.id, { polygons, contourBoundingBoxes, modelGroupId: modelParams.modelGroupId });
         }
-        this.layerMap.set(layer, { modelmap, plan: this.createPlan(modelmap) });
+        this.layerMap.set(layer, {
+            modelmap, plan: {
+                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap)),
+            }
+        });
         return this.layerMap.get(layer);
     }
 
-    private createPlan(modelmap: Map<string, SliceModelInfo>): LayerPlan {
+    private *estimateModelGroupPlans(modelmap: Map<string, SliceModelInfo>): IterableIterator<ModelGroupPlan> {
+        let modelGroupIds = new Set(Array.from(modelmap.values()).map(m => m.modelGroupId));
+        for (let modelGroupId of modelGroupIds) {
+            let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
+            let printingParams = { ...this.printingParams, ...modelGroupParams };
+            let modelMap = new Map(Array.from(modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
+            let tracks = this.estimateModelGroupTracks(modelMap);
+            if (tracks.length > 0) {
+                yield {
+                    modelGroupId: modelGroupId,
+                    tracks: tracks,
+                    printingParams: printingParams
+                };
+            }
+        }
+    }
+
+    private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>): TrackPlan[] {
+        if (modelmap.size === 0) {
+            return [];
+        }
         let minY = this.printerParams.buildPlate.height;
         let minX = this.printerParams.buildPlate.width;
         let maxX = 0;
@@ -64,55 +89,45 @@ export class PrintPlanner {
         }
         minX = Math.floor(minX * 100) / 100;
         maxX = Math.ceil(maxX * 100) / 100;
-        let increment = getPrintheadSwathe(this.printerParams).x;
+        let swathe = getPrintheadSwathe(this.printerParams);
+        let increment = swathe.x;
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let tracks: TrackPlan[] = [];
+        minX = Math.max(0, minX);
         for (let moveAxisPosition = minX; moveAxisPosition < maxX; moveAxisPosition += increment) {
             // todo optimize minY, maxY
             let printFirstLineAfterEncoderTick = Math.max(1, Math.floor(minY / encoderMMperDot));
             let printLastLineAfterEncoderTick = Math.ceil(maxY / encoderMMperDot);
-            let numLines = Math.ceil((printLastLineAfterEncoderTick - printFirstLineAfterEncoderTick) / this.printingParams.fireEveryTicks) * this.printingParams.sequentialFires;
-            let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin);
+            let startPrintAxisPosition = Math.max(0, (printFirstLineAfterEncoderTick) * encoderMMperDot - this.printingParams.encoderMargin - swathe.y);
             let endPrintAxisPosition = Math.min(this.printerParams.buildPlate.height, (printLastLineAfterEncoderTick) * encoderMMperDot + this.printingParams.encoderMargin);
             tracks.push({
                 endPrintAxisPosition: endPrintAxisPosition,
-                linesToPrint: numLines,
-                printFirstLineAfterEncoderTick: printFirstLineAfterEncoderTick,
-                printLastLineAfterEncoderTick: printLastLineAfterEncoderTick,
-                startMoveAxisPosition: moveAxisPosition,
+                moveAxisPosition: moveAxisPosition,
                 startPrintAxisPosition: startPrintAxisPosition,
             });
         }
-        return {
-            increment: increment,
-            tracks: tracks
-        };
+        return tracks;
     }
 
-    getTrackRasterizer(layerNr: number): TrackRasterizer {
+    getTrackRasterizer(modelGroupId: string, layerNr: number): TrackRasterizer {
         let layer = this.getLayer(layerNr);
-        return new TrackRasterizer(layer.modelmap, this.modelParamsDict, this.printerParams, this.printingParams, layerNr);
+        let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
+        let modelMap = new Map(Array.from(layer.modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
+        return new TrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
     }
 
-    getCompletePlan(): LayerPlan[] {
-        let plans = [];
+    getPrintPlan(): PrintPlan {
+        let layerPlans = [];
         for (let i = 0; i < this.maxLayers; i++) {
             let layer = this.getLayer(i);
-            plans.push(layer.plan);
+            layerPlans.push(layer.plan);
         }
-        console.log(plans);
-        return plans;
+        return {
+            layers: layerPlans
+        };
     }
 
     getLayerPlan(layerNr: number): LayerPlan {
         return this.getLayer(layerNr).plan;
     }
-}
-
-console.log("Hi 67")
-
-if (module.hot) {
-    module.hot.accept("./PrintPlanner", () => {
-        console.log("PrintPlanner hot reload");
-    });
 }

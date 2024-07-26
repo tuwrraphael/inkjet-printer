@@ -140,7 +140,14 @@ export default (env, argv) => {
                 {
                     test: /\.wasm/,
                     type: "asset/resource"
-                }
+                },
+                {
+                    test: /\.(svg)$/,
+                    type: 'asset/source',
+                    generator: {
+                      filename: 'img/[hash][ext]'
+                    }
+                  }
             ],
         },
         resolve: {

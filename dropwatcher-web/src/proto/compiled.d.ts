@@ -1807,8 +1807,8 @@ export class WavefromControlSettings implements IWavefromControlSettings {
      */
     constructor(properties?: IWavefromControlSettings);
 
-    /** WavefromControlSettings voltage. */
-    public voltage: number;
+    /** WavefromControlSettings voltageMv. */
+    public voltageMv: number;
 
     /**
      * Creates a new WavefromControlSettings instance using the specified properties.
@@ -1897,11 +1897,14 @@ export class WaveformControlState implements IWaveformControlState {
      */
     constructor(properties?: IWaveformControlState);
 
-    /** WaveformControlState voltage. */
-    public voltage?: (number|null);
+    /** WaveformControlState voltageMv. */
+    public voltageMv?: (number|null);
 
-    /** WaveformControlState _voltage. */
-    public _voltage?: "voltage";
+    /** WaveformControlState setVoltageMv. */
+    public setVoltageMv: number;
+
+    /** WaveformControlState _voltageMv. */
+    public _voltageMv?: "voltageMv";
 
     /**
      * Creates a new WaveformControlState instance using the specified properties.

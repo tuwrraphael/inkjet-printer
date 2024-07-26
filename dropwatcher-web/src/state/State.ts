@@ -1,9 +1,11 @@
 import { PrinterProgram, PrinterTask, ProgramRunnerState } from "../print-tasks/printer-program";
-import { LayerPlan } from "../slicer/LayerPlan";
+import { LayerPlan, PrintPlan } from "../slicer/LayerPlan";
 import { TrackRasterization } from "../slicer/TrackRasterization";
 import { PrintingParams } from "../slicer/PrintingParams";
+import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
-import { CorrectionTrack } from "../slicer/TrackRasterizer";
+import { CorrectionTrack, TrackRasterizationResult } from "../slicer/TrackRasterizer";
+import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -74,6 +76,7 @@ export interface NewModel {
         polygons: Polygon[];
     }[];
     fileName: string;
+    id?: string;
 }
 
 export interface Model {
@@ -90,8 +93,7 @@ export interface Model {
 
 export interface ModelParams {
     position: Point;
-    skipNozzles: number;
-    iterativeOffset: number | null;
+    modelGroupId: string;
 }
 
 export enum SlicingStatus {
@@ -126,6 +128,43 @@ export interface PressureControlState {
 
 export interface WaveformControl {
     voltageMv: number | null;
+    setVoltageMv: number | null;
+}
+
+export type PrintBedViewMode = {
+    mode: "layerPlan"
+} | { mode: "rasterization", modelGroup: string, trackIncrement: number, evenOddView: boolean }
+    | { mode: "printingTrack", moveAxisPosition: number };
+
+export interface PrintBedViewState {
+    selectedModelId: string | null;
+    viewLayer: number;
+    viewMode: PrintBedViewMode;
+}
+
+export interface TrackRasterizationPreview {
+    result: TrackRasterizationResult;
+    moveAxisPosition: number;
+}
+
+export enum ValvePosition {
+    AllConnected = 0,
+    Port1Port2 = 1,
+    Port2Port3 = 2,
+    Port1Port3 = 3
+}
+
+export interface InkControlActionState {
+
+    currentAction: string;
+    currentStep: number;
+    actionsRunning : boolean;
+}
+
+export interface ValveState {
+    valve1: ValvePosition;
+    valve2: ValvePosition;
+    valve3: ValvePosition;
 }
 
 export interface State {
@@ -138,11 +177,16 @@ export interface State {
         pressureControl?: PressureControlState;
         printControl: PrintControlState;
         waveformControl: WaveformControl;
+        valves: ValveState;
     },
     movementStageState: {
         connected: boolean;
         pos: StagePos;
         e: number;
+        bedTemperature: {
+            current: number;
+            target: number;
+        };
     }
     currentProgram: PrinterProgram,
     programRunnerState: ProgramRunnerState,
@@ -163,19 +207,22 @@ export interface State {
         }
     },
     printState: {
-        printerParams: PrinterParams,
-        printingParams: PrintingParams,
+        printerParams: PrinterParams;
+        printingParams: PrintingParams;
         slicingState: {
-            moveAxisPos: number;
-            track: TrackRasterization;
-            correctionTracks: CorrectionTrack[];
-            currentLayerPlan: LayerPlan;
-            completePlan: LayerPlan[];
+            currentRasterization: TrackRasterizationPreview[];
+            printPlan: PrintPlan;
             slicingStatus: SlicingStatus;
-        }
-        viewLayer: number,
-        modelParams: { [id: string]: ModelParams },
-        customTracks: CustomTrack[]
+        };
+        currentPrintingTrack: {
+            track: TrackRasterization;
+            moveAxisPosition: number;
+        };
+        modelParams: { [id: string]: ModelParams };
+        modelGroupPrintingParams: {
+            [id: string]: ModelGroupPrintingParams
+        };
+        customTracks: CustomTrack[];
     },
     models: Model[],
     currentFileState: {
@@ -183,7 +230,8 @@ export interface State {
         saving: boolean,
         lastSaved: Date | null
     } | null,
-    selectedModelId: string | null
+    printBedViewState: PrintBedViewState;
+    inkControlAction: InkControlActionState;
 }
 
 export type StateChanges = (keyof State)[];

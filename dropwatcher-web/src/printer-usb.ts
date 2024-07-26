@@ -1,4 +1,4 @@
-import { ChangeEncoderModeRequest, ChangeWaveformControlSettingsRequest, NozzlePrimingRequest } from "./proto/compiled";
+import { ChangeEncoderModeRequest, ChangeWaveformControlSettingsRequest, NozzlePrimingRequest, PrintControlState, PrinterSystemState } from "./proto/compiled";
 import {
     CameraFrameRequest,
     ChangeDropwatcherParametersRequest,
@@ -25,6 +25,9 @@ export class PrinterUSB {
     private store: Store;
     private webUsbWrapper: WebUSBWrapper;
     private pressureControlWaiting: (v: any) => void;
+    private nozzlePrimingWaiting: () => void;
+    private systemStateWaiting: { for: PrinterSystemState, resolve: () => void };
+    private voltageWaiting: { for: number, resolve: () => void };
     constructor() {
         this.store = Store.getInstance();
         this.webUsbWrapper = new WebUSBWrapper();
@@ -37,9 +40,25 @@ export class PrinterUSB {
         this.webUsbWrapper.addEventListener("data", (e: CustomEvent) => {
             let received: DataView = e.detail;
             let response = PrinterSystemStateResponse.decode(new Uint8Array(received.buffer));
-            if (this.pressureControlWaiting && response.pressureControl.done) {
+            if (this.pressureControlWaiting && response.pressureControl && response.pressureControl.done) {
                 this.pressureControlWaiting(response.pressureControl);
                 this.pressureControlWaiting = undefined;
+            }
+            if (this.systemStateWaiting && response.state == this.systemStateWaiting.for) {
+                this.systemStateWaiting.resolve();
+                this.systemStateWaiting = undefined;
+            }
+            if (this.voltageWaiting && response.waveformControl != null && response.waveformControl.setVoltageMv == this.voltageWaiting.for) {
+                this.voltageWaiting.resolve();
+                this.voltageWaiting = undefined;
+            }
+
+            if (this.nozzlePrimingWaiting && response.printControl != null) {
+                let printCotnrolMsg: PrintControlState = response.printControl;
+                if (printCotnrolMsg.nozzlePrimingActive == false) {
+                    this.nozzlePrimingWaiting();
+                    this.nozzlePrimingWaiting = undefined;
+                }
             }
             this.store.postAction(new PrinterSystemStateResponseReceived(response));
         });
@@ -109,6 +128,28 @@ export class PrinterUSB {
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 
+    async sendChangeSystemStateRequestAndWait(request: ChangePrinterSystemStateRequest) {
+        if (this.systemStateWaiting) {
+            throw new Error("Already waiting for system state change request");
+        }
+        let printerRequest = new PrinterRequest();
+        printerRequest.changePrinterSystemStateRequest = request;
+        await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+        await new Promise<void>((resolve, reject) => {
+            let token = setTimeout(() => {
+                reject("Timeout waiting for system state change request");
+                this.systemStateWaiting = undefined;
+            }, 5000);
+            this.systemStateWaiting = {
+                for: request.state,
+                resolve: () => {
+                    clearTimeout(token);
+                    resolve();
+                }
+            };
+        });
+    }
+
     async sendChangeEncoderModeSettingsRequest(request: ChangeEncoderModeSettingsRequest) {
         let printerRequest = new PrinterRequest();
         printerRequest.changeEncoderModeSettingsRequest = request;
@@ -128,10 +169,25 @@ export class PrinterUSB {
         await this.webUsbWrapper.send(encoded);
     }
 
-    async sendNozzlePrimingRequest() {
+    async sendNozzlePrimingRequestAndWait() {
+        if (this.nozzlePrimingWaiting) {
+            throw new Error("Already waiting for nozzle priming request");
+        }
         let printerRequest = new PrinterRequest();
         printerRequest.nozzlePrimingRequest = new NozzlePrimingRequest();
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+        await new Promise<void>((resolve, reject) => {
+            let token = setTimeout(() => {
+                if (this.nozzlePrimingWaiting) {
+                    reject("Timeout waiting for nozzle priming request");
+                    this.nozzlePrimingWaiting = undefined;
+                }
+            }, 10000);
+            this.nozzlePrimingWaiting = () => {
+                clearTimeout(token);
+                resolve();
+            };
+        });
     }
 
     async sendChangeEncoderModeRequest(request: ChangeEncoderModeRequest) {
@@ -140,10 +196,30 @@ export class PrinterUSB {
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
     }
 
-    async sendChangeWaveformControlSettingsRequest(request: ChangeWaveformControlSettingsRequest) {
+    async sendChangeWaveformControlSettingsRequestAndWait(request: ChangeWaveformControlSettingsRequest) {
+        if (this.voltageWaiting) {
+            throw new Error("Already waiting for voltage change request");
+        }
         let printerRequest = new PrinterRequest();
         printerRequest.changeWaveformControlSettingsRequest = request;
         await this.webUsbWrapper.send(PrinterRequest.encode(printerRequest).finish());
+        await new Promise<void>((resolve, reject) => {
+
+            let token = setTimeout(() => {
+
+                if (this.voltageWaiting) {
+                    reject("Timeout waiting for voltage change request");
+                    this.voltageWaiting = undefined;
+                }
+            }, 5000);
+            this.voltageWaiting = {
+                for: request.settings.voltageMv,
+                resolve: () => {
+                    clearTimeout(token);
+                    resolve();
+                }
+            };
+        });
     }
 
 }

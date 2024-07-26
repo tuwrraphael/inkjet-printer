@@ -1,17 +1,18 @@
-import { CustomTrack, Model, ModelParams, Point, PolygonType, State, StateChanges } from "../../state/State";
+import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
 import "./PrintBedSimulation.scss";
-import { ViewLayerChanged } from "../../state/actions/ViewLayerChanged";
-import { LayerPlan } from "../../slicer/LayerPlan";
+import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 import { TrackRasterization } from "../../slicer/TrackRasterization";
 import { PrintingParams } from "../../slicer/PrintingParams";
 import { PrinterParams } from "../../slicer/PrinterParams";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
-import { CorrectionTrack } from "../../slicer/TrackRasterizer";
+import { TrackRasterizationResult } from "../../slicer/TrackRasterizer";
+import { moveAxisPositionFromPlanAndIncrement } from "../../utils/moveAxisPositionFromPlanAndIncrement";
+import { LayerPlan, PrintPlan } from "../../slicer/LayerPlan";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
@@ -27,6 +28,14 @@ let modelColors = [
     "#FFB3BA", // pastel pink
     "#FFFFBA", // pastel yellow
     "#BAFFC9", // pastel green
+];
+
+let printPlanTrackColors = [
+    "#780000",
+    "#bc6c25",
+    "#283618",
+    "#023047",
+    "#00f5d4",
 ];
 
 const zoomLevels = [1.0, 1.10, 1.25, 1.50, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0];
@@ -53,17 +62,19 @@ export class PrintBedSimulation extends HTMLElement {
     private rangeInput: HTMLInputElement;
     private layerDisplay: HTMLSpanElement;
     private modelPositionMap: WeakMap<Model, { x: number, y: number }> = new WeakMap();
-    private track: TrackRasterization;
     private printerParams: PrinterParams;
     private printingParams: PrintingParams;
     private resizeObserver: ResizeObserver;
-    private moveAxisPos: number;
     private modelParams: { [id: string]: ModelParams; };
     private printCanvasDevicePixelContentBoxSize: { inlineSize: number; blockSize: number; };
     private nextRenderNeedsModelRedraw = false;
     private modelMoving: Model = null;
     private customTracks: CustomTrack[];
-    private correctionTracks: CorrectionTrack[];
+    private printPlan: PrintPlan;
+    private viewedLayerPlan: LayerPlan;
+    private viewMode: PrintBedViewMode;
+    private currentPrintingTrack: { track: TrackRasterization; moveAxisPosition: number; };
+    private currentRasterization: TrackRasterizationPreview[];
 
     constructor() {
         super();
@@ -186,7 +197,9 @@ export class PrintBedSimulation extends HTMLElement {
             this.layerDisplay.innerText = `${parseInt(this.rangeInput.value) + 1}`;
         }, this.abortController.signal);
         abortableEventListener(this.rangeInput, "change", (ev) => {
-            this.store.postAction(new ViewLayerChanged(parseInt(this.rangeInput.value)));
+            this.store.postAction(new PrintBedViewStateChanged({
+                viewLayer: parseInt(this.rangeInput.value)
+            }));
         }, this.abortController.signal);
         this.resizeObserver.observe(this.printCanvas, { box: "device-pixel-content-box" });
     }
@@ -234,7 +247,8 @@ export class PrintBedSimulation extends HTMLElement {
 
 
     private update(s: State, c: StateChanges) {
-        if (s && (!c || c.includes("printState") || c.includes("models"))) {
+        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState"];
+        if (s && (null == c || keysOfInterest.some(k => c.includes(k)))) {
             this.bedWidth = s.printState.printerParams.buildPlate.width;
             this.bedHeight = s.printState.printerParams.buildPlate.height;
             this.encoderPrintAxis = s.printState.printerParams.encoder.printAxis;
@@ -244,8 +258,8 @@ export class PrintBedSimulation extends HTMLElement {
                 let modelParams = s.printState.modelParams[model.id];
                 this.modelPositionMap.set(model, { x: modelParams.position[0], y: modelParams.position[1] });
             }
-            let layerChanged = this.viewLayer != s.printState.viewLayer;
-            this.viewLayer = s.printState.viewLayer;
+            let layerChanged = this.viewLayer != s.printBedViewState.viewLayer;
+            this.viewLayer = s.printBedViewState.viewLayer;
             this.layerDisplay.innerText = `${1 + this.viewLayer}`;
             this.rangeInput.value = this.viewLayer.toString();
             let maxLayerNum = 0;
@@ -254,12 +268,14 @@ export class PrintBedSimulation extends HTMLElement {
             }
             this.rangeInput.max = Math.max(this.viewLayer, (maxLayerNum - 1)).toString();
             this.initialized = true;
-            this.track = s.printState.slicingState.track;
             this.printerParams = s.printState.printerParams;
             this.printingParams = s.printState.printingParams;
-            this.moveAxisPos = s.printState.slicingState.moveAxisPos;
             this.customTracks = s.printState.customTracks;
-            this.correctionTracks = s.printState.slicingState.correctionTracks;
+            this.currentRasterization = s.printState.slicingState.currentRasterization;
+            this.printPlan = s.printState.slicingState.printPlan;
+            this.viewedLayerPlan = this.printPlan ? this.printPlan.layers[this.viewLayer] : null;
+            this.viewMode = s.printBedViewState.viewMode;
+            this.currentPrintingTrack = s.printState.currentPrintingTrack;
             if (layerChanged || c.includes("models")) {
                 this.nextRenderNeedsModelRedraw = true;
             }
@@ -475,7 +491,7 @@ export class PrintBedSimulation extends HTMLElement {
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
                             this.ctx.beginPath();
-                            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.02), 0, 2 * Math.PI);
+                            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.1), 0, 2 * Math.PI);
                             this.ctx.fill();
                         }
                     }
@@ -487,7 +503,11 @@ export class PrintBedSimulation extends HTMLElement {
     }
 
     private drawTrackOutline(moveAxisPos: number,
-        track: TrackRasterization, color = "coral") {
+        track: {
+            startPrintAxisPosition: number,
+            endPrintAxisPosition: number
+        },
+        color = "coral") {
         let nozzleDistance = getNozzleDistance(this.printerParams);
 
         let firstNozzlePos = this.buildPlatePositionToCanvasPosition(
@@ -520,45 +540,12 @@ export class PrintBedSimulation extends HTMLElement {
         this.ctx.setLineDash([0, 0]);
     }
 
-    private drawTestNozzlePattern() {
-
-        let startEncoderTick = 100;
-        let moveAxisPos = 0;
-        let nozzleDistance = getNozzleDistance(this.printerParams);
-
-        let spacing = 16;
-        let groups = this.printerParams.numNozzles / (this.printerParams.numNozzles / spacing);
-
-        let rows = 8;
-        let spacingRows = 3 * rows;
-
-        let colSpacing = 0.1;
-        let numColumns = 8;
-
-        let boxWidth = (numColumns - 1) * colSpacing;
-        let boxHeight = (rows - 1) * this.printingParams.fireEveryTicks * 25.4 / this.encoderPrintAxis.dpi;
-
-        let boxPadding = 0.2;
-
-        for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
-            let nozzleX = moveAxisPos + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
-            let nozzleYEncoderTick = startEncoderTick + nozzle % spacing * (rows + spacingRows) * this.printingParams.fireEveryTicks;
-            let nozzleYBase = nozzleYEncoderTick * 25.4 / this.encoderPrintAxis.dpi;
-            let nozzleY = nozzleYBase + ((this.printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
-            let pos = this.buildPlatePositionToCanvasPosition(nozzleX -boxPadding, nozzleY + boxHeight + boxPadding);
-
-            let textPos = this.buildPlatePositionToCanvasPosition(nozzleX - boxPadding, nozzleY-1);
-
-            this.ctx.fillStyle = "fuchsia";
-            this.ctx.beginPath();
-            this.ctx.strokeRect(pos.x, pos.y, this.mmToDots(boxWidth + 2*boxPadding), this.mmToDots(boxHeight+2*boxPadding));
-            this.ctx.font = "12px Arial";
-            this.ctx.fillText(`${nozzle}`, textPos.x, textPos.y);
+    private drawLayerPlan(layerPlan: LayerPlan) {
+        for (let o of layerPlan.modelGroupPlans) {
+            for (let track of o.tracks) {
+                this.drawTrackOutline(track.moveAxisPosition, track, printPlanTrackColors[layerPlan.modelGroupPlans.indexOf(o) % printPlanTrackColors.length]);
+            }
         }
-    }
-
-    private getNozzleTestPatternSvg() {
-      
     }
 
     private render() {
@@ -574,23 +561,43 @@ export class PrintBedSimulation extends HTMLElement {
             this.fillBuildPlateWithBackgroundLines();
             this.drawBuildPlateOutline();
             this.drawEncoderTicks();
-            // this.drawTestNozzlePattern();
             for (let model of this.models) {
                 let color = modelColors[this.models.indexOf(model) % modelColors.length];
                 this.drawModel(model, color, redrawModels);
             }
             this.drawOrigin();
-            if (this.track) {
-                this.drawTrack(this.moveAxisPos, this.track, this.printerParams, this.printingParams);
-                // this.drawPrintPlan();
-            }
-            for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayer)) {
-                this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams);
-            }
-            if (this.correctionTracks) {
-                for (let { track, moveAxisPos } of this.correctionTracks) {
-                    this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams, "green", "green");
+            if (this.viewMode.mode == "layerPlan") {
+                if (this.viewedLayerPlan) {
+                    this.drawLayerPlan(this.viewedLayerPlan);
                 }
+            } else if (this.viewMode.mode == "rasterization") {
+                if (null != this.viewedLayerPlan && null != this.currentRasterization) {
+                    let trackNr = 0;
+                    for (let r of this.currentRasterization) {
+                        if (this.viewMode.evenOddView && trackNr % 2 != 0) {
+                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(128, 128, 128, 0.8)", "rgba(255, 127, 80, 0.8)");
+                        } else {
+                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(0, 0, 0, 0.8)", "rgba(255, 127, 80, 0.8)");
+                        }
+                        for (let { track, moveAxisPos } of r.result.correctionTracks) {
+                            if (this.viewMode.evenOddView && trackNr % 2 != 0) {
+                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(144, 238, 144, 0.8)", "rgba(0, 128, 0, 0.8)");
+                            } else {
+                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(0, 128, 0, 0.8)", "rgba(0, 128, 0, 0.8)");
+                            }
+                        }
+                        trackNr++;
+                    }
+                }
+                for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayer)) {
+                    this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams);
+                }
+            } else if (this.viewMode.mode == "printingTrack") {
+                if (this.currentPrintingTrack) {
+                    this.drawTrack(this.currentPrintingTrack.moveAxisPosition, this.currentPrintingTrack.track, this.printerParams, this.printingParams, "black", "black");
+                }
+            } else {
+                throw new Error("Unknown view mode");
             }
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;
