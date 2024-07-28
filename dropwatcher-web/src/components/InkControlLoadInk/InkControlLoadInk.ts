@@ -23,7 +23,7 @@ export class InkControlLoadInk extends HTMLElement {
         abortableEventListener(this.querySelector("button"), "click", async ev => {
             this.querySelector("button").disabled = true;
             ev.preventDefault();
-            let time = parseInt((<HTMLInputElement>this.querySelector("input")).value);
+            let time = parseFloat((<HTMLInputElement>this.querySelector("input")).value);
             let changeParametersRequest = new ChangePressureControlParametersRequest();
             let parameters = new PressureControlParameters();
             changeParametersRequest.parameters = parameters;

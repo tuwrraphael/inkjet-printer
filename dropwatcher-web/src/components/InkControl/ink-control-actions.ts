@@ -291,6 +291,15 @@ The syringes plunger is removed and it acts as an ink tank.`,
             message: `The installed syringe is filled with 2.5 ml of ink.`,
         },
         {
+            message: `Valve 1 can now be switched to connect the ink supply port to the printhead.`,
+            highlight: {
+                valve1: true
+            },
+            valvePositionChanges: {
+                valve1: ValvePosition.Port1Port3
+            }
+        },
+        {
             message: `Ink is loaded by vacuum purging the nozzles using pump 2. On this way,
 The ink enters the printhead in a slow and controlled manner without causing turbulence to air bubbles that
 may have setteled at a top surface inside the printhead.
@@ -366,6 +375,15 @@ This can be repeated a few times to ensure that all nozzles are purged.`,
                     turnOffPumps: true
                 }
             }
+        },
+        {
+            message: `Valve 1 is switched back to connect the pressure reservoir to the printhead.`,
+            highlight: {
+                valve1: true
+            },
+            valvePositionChanges: {
+                valve1: ValvePosition.Port1Port2
+            }
         }
     ]
 };
@@ -391,7 +409,7 @@ const SuctionPurge: InkControlAction = {
             },
         },
         {
-            message: `The capping pump purges the nozzles by vacuuming for 5 seconds.`,
+            message: `The capping pump purges the nozzles by vacuuming for 5 seconds, while the ink pump is keeping the pressure at 0mbar.`,
             pumpactions: () => {
                 let cappingPump = new PressureControlPumpParameters();
                 cappingPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
@@ -400,18 +418,11 @@ const SuctionPurge: InkControlAction = {
                 cappingPump.feedPwm = 0.8;
                 cappingPump.maxPressureLimit = 100;
                 cappingPump.minPressureLimit = -100;
-                return {
-                    cappingPump
-                }
-            }
-        },
-        {
-            message: `The ink pump regulates the pressure back to 0mbar.`,
-            pumpactions: () => {
                 let inkPump = new PressureControlPumpParameters();
                 inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
                 inkPump.targetPressure = 0;
                 return {
+                    cappingPump,
                     inkPump,
                     turnOffPumps: true
                 }
@@ -429,7 +440,7 @@ const SuctionPurge: InkControlAction = {
     ]
 };
 
-const Reciculate : InkControlAction = {
+const Reciculate: InkControlAction = {
     name: "Recirculate",
     steps: [
         {
