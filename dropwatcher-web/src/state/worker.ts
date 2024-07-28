@@ -418,7 +418,7 @@ async function handleMessage(msg: Actions) {
         case ActionType.PrintBedViewStateChanged:
 
             updateState(oldState => {
-                let viewLayerChanged = state.printBedViewState.viewLayer != msg.state.viewLayer;
+                let viewLayerChanged = msg.state.viewLayer !== undefined && state.printBedViewState.viewLayer != msg.state.viewLayer;
                 let news = {
                     printBedViewState: {
                         ...oldState.printBedViewState,
