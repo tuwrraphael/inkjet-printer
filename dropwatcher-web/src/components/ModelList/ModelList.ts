@@ -20,6 +20,7 @@ export class ModelList extends HTMLElement {
     private renderer: ArrayToElementRenderer<ModelListData, ModelListEntry, string>;
     private abortController: AbortController;
     private store: Store;
+    private selectedElement: ModelListEntry;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -55,6 +56,11 @@ export class ModelList extends HTMLElement {
             }), (e, m) => {
                 e.setData(m);
             });
+            let selectedElement = this.container.querySelector(`${ModelListEntryTagName}.model-list-entry--selected`);
+            if (selectedElement && selectedElement !== this.selectedElement) {
+                this.selectedElement = selectedElement as ModelListEntry;
+                this.selectedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+            }
         }
     }
 

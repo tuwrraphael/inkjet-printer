@@ -10,8 +10,6 @@ import { PrinterParams } from "../../slicer/PrinterParams";
 import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
-import { TrackRasterizationResult } from "../../slicer/TrackRasterizer";
-import { moveAxisPositionFromPlanAndIncrement } from "../../utils/moveAxisPositionFromPlanAndIncrement";
 import { LayerPlan, PrintPlan } from "../../slicer/LayerPlan";
 
 let maxCanvasSize = 4096;

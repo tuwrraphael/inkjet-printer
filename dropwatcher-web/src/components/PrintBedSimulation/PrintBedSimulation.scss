@@ -1,9 +1,10 @@
 #canvas-container {
-    height: 75vh;
     width: 100%;
     border: 1px solid black;
     display: flex;
     box-sizing: border-box;
+    flex-grow: 1;
+    overflow: hidden;
 }
 
 #print-canvas {
@@ -12,11 +13,15 @@
 
 print-bed-simulation {
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .print-bed-simulation {
     &__controls {
         display: flex;
+
         input[type="range"] {
             flex-grow: 1;
         }
