@@ -16,8 +16,16 @@ export class SetTargetPressureTaskRunner {
         inkPumpParameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
         let cappingPumpParameters = new PressureControlPumpParameters();
         cappingPumpParameters.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_NONE;
+        parameters.cappingPump = cappingPumpParameters;
+        parameters.enable = false;
+        await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
+        parameters = new PressureControlParameters();
+        changeParametersRequest.parameters = parameters;
+        parameters.inkPump = inkPumpParameters;        
         parameters.enable = true;
         await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
+        parameters = new PressureControlParameters();
+        changeParametersRequest.parameters = parameters;
         parameters.enable = false;
         await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
     }

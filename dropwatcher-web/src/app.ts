@@ -5,6 +5,7 @@ import { Store } from "./state/Store";
 import { MovementStage } from "./movement-stage";
 import { TaskRunnerSynchronization } from "./print-tasks/TaskRunnerSynchronization";
 import { CameraAccess } from "./camera-access";
+import { CameraType } from "./CameraType";
 import { SlicerClient } from "./slicer/SlicerClient";
 
 // if ("serviceWorker" in navigator) {
@@ -76,7 +77,7 @@ let slicerClient = SlicerClient.getInstance();
 slicerClient.sendToStore().catch(console.error);
 
 TaskRunnerSynchronization.getInstance();
-CameraAccess.getInstance();
+CameraAccess.getInstance(CameraType.Dropwatcher);
 
 setInterval(async () => {
     if (store.state?.printerSystemState.usbConnected) {

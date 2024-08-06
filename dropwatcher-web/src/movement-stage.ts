@@ -25,13 +25,154 @@ class NewLineDelimitingStream extends TransformStream<string, string> {
     }
 }
 
+
+function createRefreshableTimeout(seconds: number, createError: () => Error) {
+    let cancel: () => void;
+    let promise = new Promise<void>((resolve, reject) => {
+        cancel = () => {
+            reject(createError());
+        }
+    });
+    let timeoutId = setTimeout(() => {
+        cancel();
+    }, seconds * 1000);
+    return {
+        promise,
+        cancel() {
+            clearTimeout(timeoutId);
+        },
+        refresh() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                cancel();
+            }, seconds * 1000);
+        }
+    };
+}
+
+
+interface GCodeQueueItem {
+    gcode: string;
+    waitForTest?: (data: string) => boolean;
+    resolve: () => void;
+    reject: (err: Error) => void;
+    timeout?: number;
+}
+
+class GCodeQueue {
+    private queue: GCodeQueueItem[] = [];
+
+    private processing = false;
+
+    private waitFor: (data: string) => void;
+    timeout: { promise: Promise<void>; cancel(): void; refresh(): void; };
+
+    constructor(
+        private send: (data: string) => Promise<void>,
+    ) {
+    }
+
+    async enqueue(gcode: string, waitForTest?: (data: string) => boolean, timeout = 5) {
+        let lines = gcode.split("\n").filter(l => l.trim().length > 0);
+        if (lines.length === 0) {
+            throw new Error("No gcode to send");
+        }
+        for (let line of lines.slice(0, -1)) {
+            this.enqueueSingle(line);
+        }
+        await this.enqueueSingle(lines[lines.length - 1], waitForTest, timeout);
+    }
+
+    private async enqueueSingle(gcode: string, waitForTest?: (data: string) => boolean, timeout = 5) {
+        if (!gcode.endsWith("\n")) {
+            gcode += "\n";
+        }
+        let promise = new Promise<void>((resolve, reject) => {
+            this.queue.push({
+                gcode,
+                waitForTest,
+                resolve,
+                reject,
+                timeout
+            });
+        });
+        this.triggerQueue();
+        await promise.finally(() => { console.log("Promise resolved", gcode); });
+    }
+
+    private triggerQueue() {
+        if (this.processing) {
+            return;
+        }
+        this.processing = true;
+        this.processQueue().finally(() => {
+            this.processing = false;
+        });
+    }
+
+    private async processQueue() {
+        while (true) {
+
+            let item = this.queue.shift();
+            if (!item) {
+                console.log("Queue finished");
+                break;
+            }
+            console.log("Processing queue item", item);
+            await this.processItem(item);
+        }
+    }
+
+    private async processItem(item: GCodeQueueItem) {
+        await this.send(item.gcode);
+        this.timeout = createRefreshableTimeout(item.timeout || 5, () => new Error(`Timeout after sending ${item.gcode}`));
+        let waitForPromise = new Promise<void>((resolve, reject) => {
+            this.waitFor = (data) => {
+                if (item.waitForTest) {
+                    if (item.waitForTest(data)) {
+                        resolve();
+                    }
+                } else if (data.startsWith("ok")) {
+                    resolve();
+                }
+            };
+        });
+        try {
+            await Promise.race([
+                this.timeout.promise,
+                waitForPromise
+            ]).finally(() => {
+                this.timeout.cancel();
+                this.waitFor = undefined;
+                this.timeout = undefined;
+            });
+        } catch (e) {
+            item.reject(e);
+            throw e;
+        }
+        item.resolve();
+    }
+
+    async incomingData(data: string) {
+        if (this.waitFor) {
+            this.waitFor(data);
+        }
+        if (this.timeout && data.startsWith("echo:busy:")) {
+            this.timeout.refresh();
+        }
+    }
+}
+
 export class MovementStage {
+
     private static instance: MovementStage;
     private webSerialWrapper: WebSerialWrapper<string>;
     private store: Store;
-    private waiting: () => void;
-    movementExecutor = new GCodeRunner(this);
-    static getInstance() {
+    private textEncoder = new TextEncoder();
+    private gcodeQueue = new GCodeQueue((data) => this.webSerialWrapper.send(this.textEncoder.encode(data)));
+    currentUser: { name: string } = null;
+
+    static getInstance(): MovementStage {
         if (null == this.instance) {
             this.instance = new MovementStage();
         }
@@ -52,25 +193,22 @@ export class MovementStage {
             this.store.postAction(new MovementStageConnectionChanged(false));
         });
         this.webSerialWrapper.addEventListener("data", async (e: CustomEvent) => {
-            // let received: Uint8Array = e.detail;
-            // let decoded = new TextDecoder().decode(received);
+            this.gcodeQueue.incomingData(e.detail);
             if (this.parsePositionMessage(e.detail, (pos) => {
                 this.store.postAction(new MovementStagePositionChanged(true, pos));
-                if (this.waiting) {
-                    this.waiting();
-                    this.waiting = undefined;
-                }
             })) {
-                return;
             } else if (this.parseResetMessage(e.detail)) {
-                await this.movementExecutor.enableAutoTemperatureReporting();
+                await this.enableAutoTemperatureReporting();
             } else if (this.parseTemperatureMessage(e.detail, (temps) => {
                 this.store.postAction(new MovementStageTemperatureChanged(temps));
             })) {
-                return;
             }
             console.log(e.detail);
         });
+    }
+
+    private async enableAutoTemperatureReporting() {
+        await this._sendGcode("M155 S3");
     }
 
     private parsePositionMessage(msg: string, res: (pos: { x: number, y: number, z: number, e: number }) => void): boolean {
@@ -110,31 +248,21 @@ export class MovementStage {
         return false;
     }
 
-    async sendGcode(gcode: string) {
-        if (!gcode.endsWith("\n")) {
-            gcode += "\n";
-        }
-        let data = new TextEncoder().encode(gcode);
-        await this.webSerialWrapper.send(data);
+    async _sendGcode(gcode: string) {
+        await this.gcodeQueue.enqueue(gcode);
     }
 
-    async sendGcodeAndWaitForFinished(gcode: string): Promise<void> {
-        if (this.waiting) {
-            throw new Error("Already waiting");
-        }
+    async _sendGcodeAndWaitForMovementFinished(gcode: string): Promise<void> {
         if (gcode.indexOf("M114") > 0) {
-            throw new Error("M114 is not allowed in sendGcodeAndWaitForFinished");
+            throw new Error("M114 is not allowed in sendGcodeAndWaitForMovementFinished");
         }
         if (!gcode.endsWith("\n")) {
             gcode += "\n";
         }
         gcode += "M400\nM114\n";
-        let data = new TextEncoder().encode(gcode);
-        // console.log(`Sending\n${gcode}`, gcode);  
-        await this.webSerialWrapper.send(data);
-        await new Promise<void>((resolve) => {
-            this.waiting = resolve;
-        });
+        await this.gcodeQueue.enqueue(gcode, (data) => {
+            return this.parsePositionMessage(data, (pos) => { });
+        }, 15);
     }
 
     async start() {
@@ -144,11 +272,25 @@ export class MovementStage {
     async connectNew() {
         await this.webSerialWrapper.connectNew();
     }
+
+    executorReleased(user: { name: string; }) {
+        if (user != this.currentUser) {
+            throw new Error(`MovementStage is not in use by ${user}`);
+        }
+        this.currentUser = null;
+    }
+
+    getMovementExecutor(user: string): GCodeRunner {
+        if (this.currentUser != null) {
+            throw new Error(`MovementStage is already in use by ${this.currentUser.name}`);
+        }
+        this.currentUser = { name: user };
+        return new GCodeRunner(this, this.currentUser);
+    }
 }
 
 if (module.hot) {
     module.hot.accept("./gcode-runner", () => {
-        let instance = MovementStage.getInstance();
-        instance.movementExecutor = new GCodeRunner(instance);
+
     });
 }

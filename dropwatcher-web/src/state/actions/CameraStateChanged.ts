@@ -1,3 +1,4 @@
+import { CameraType } from "../../CameraType";
 import { Action } from "./Action";
 import { ActionType } from "./ActionType";
 
@@ -10,7 +11,7 @@ export class CameraStateChanged implements Action {
             max: number;
             step: number;
         };
-    }) { }
+    }, public cameraType: CameraType) { }
     readonly type = ActionType.CameraStateChanged;
 }
 

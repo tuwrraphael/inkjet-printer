@@ -6,6 +6,7 @@ import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
 import { CorrectionTrack, TrackRasterizationResult } from "../slicer/TrackRasterizer";
 import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
+import { CameraType } from "../CameraType";
 
 export enum PrinterSystemState {
     Unspecified = 0,
@@ -190,17 +191,25 @@ export interface State {
     }
     currentProgram: PrinterProgram,
     programRunnerState: ProgramRunnerState,
+    cameras: {
+        [type: string]: {
+            cameraOn: boolean;
+            exposureTime: number;
+            canChangeExposure: {
+                min: number;
+                max: number;
+                step: number;
+            };
+            image: {
+                width: number;
+                height: number;
+            }
+        }
+    }
     dropwatcherState: {
         nozzleData: Uint32Array;
         delayNanos: number;
         flashOnTimeNanos: number;
-        cameraOn: boolean;
-        exposureTime: number;
-        canChangeExposure: {
-            min: number;
-            max: number;
-            step: number;
-        };
         nozzlePos: {
             first: StagePos,
             last: StagePos
@@ -230,6 +239,9 @@ export interface State {
         saving: boolean,
         lastSaved: Date | null
     } | null,
+    inspect: {
+        outputFolder: FileSystemDirectoryHandle
+    }
     printBedViewState: PrintBedViewState;
     inkControlAction: InkControlActionState;
 }

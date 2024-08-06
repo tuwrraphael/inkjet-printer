@@ -14,4 +14,14 @@ export interface PrinterParams {
         };
     };
     blockedNozzles: number[];
+    printBedToCamera: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    movementRange: {
+        x: number;
+        y: number;
+        z: number;
+    }
 }

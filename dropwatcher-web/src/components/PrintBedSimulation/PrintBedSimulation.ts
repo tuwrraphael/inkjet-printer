@@ -1,4 +1,4 @@
-import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
+import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, StagePos, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
@@ -11,6 +11,11 @@ import { ModelPositionChanged } from "../../state/actions/ModelPositionChanged";
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { ModelSelected } from "../../state/actions/ModelSelected";
 import { LayerPlan, PrintPlan } from "../../slicer/LayerPlan";
+import { ModelGroupParamsChanged } from "../../state/actions/ModelParamsChanged";
+import { getPrintheadSwathe } from "../../slicer/getPrintheadSwathe";
+import { getMicroscopePosition } from "../../utils/getMicroscopePosition";
+import { MovementStage } from "../../movement-stage";
+import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
@@ -37,6 +42,12 @@ let printPlanTrackColors = [
 ];
 
 const zoomLevels = [1.0, 1.10, 1.25, 1.50, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0];
+
+export enum PrintBedClickAction {
+    None,
+    PlacePhotoPoint,
+    MoveCamera
+}
 
 export class PrintBedSimulation extends HTMLElement {
 
@@ -73,10 +84,16 @@ export class PrintBedSimulation extends HTMLElement {
     private viewMode: PrintBedViewMode;
     private currentPrintingTrack: { track: TrackRasterization; moveAxisPosition: number; };
     private currentRasterization: TrackRasterizationPreview[];
+    private printbedClickAction: PrintBedClickAction = PrintBedClickAction.None;
+    private feasiblePhotoArea: { min: [number, number]; max: [number, number]; };
+    private stagePos: StagePos;
+    private printbedToCamera: { x: number; y: number; z: number; };
+    private movementStage: MovementStage;
 
     constructor() {
         super();
         this.store = Store.getInstance();
+        this.movementStage = MovementStage.getInstance();
         this.zoom = 1.0;
         this.pan = { x: 0, y: 0 };
     }
@@ -96,61 +113,82 @@ export class PrintBedSimulation extends HTMLElement {
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
         this.update(this.store.state, null);
         abortableEventListener(this.printCanvas, "mousedown", (ev) => {
-
             ev.preventDefault();
-            let rect = this.printCanvas.getBoundingClientRect();
-            let canvasFactor = rect.width / this.printCanvas.width;
-            let mouseDownX = ev.clientX;
-            let mouseDownY = ev.clientY;
-            let mouseDownBedPos = this.bedPositionFromMouseEvent(ev);
-            let middleButton = ev.button === 1;
-            let model = this.bedPositionOnModel(mouseDownBedPos);
-            let modelParams: ModelParams;
-            let modelOrigin: { x: number, y: number };
-            if (model) {
-                this.modelMoving = model;
-                modelParams = this.modelParams[model.id];
-                modelOrigin = { x: modelParams.position[0], y: modelParams.position[1] };
-                this.store.postAction(new ModelSelected(model.id));
-            }
-            let mouseMove = (ev: MouseEvent) => {
-                if (this.modelMoving && !middleButton) {
-                    let snapToGrid = ev.shiftKey;
-                    let movedPos = this.bedPositionFromMouseEvent(ev);
-                    let newModelPos = { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) };
-                    if (snapToGrid) {
-                        newModelPos.x = Math.round(newModelPos.x);
-                        newModelPos.y = Math.round(newModelPos.y);
+            if (this.printbedClickAction != PrintBedClickAction.None) {
+                let mouseUp = (ev: MouseEvent) => {
+                    document.removeEventListener("mouseup", mouseUp);
+                    let { x, y } = this.bedPositionFromMouseEvent(ev);
+                    if (this.printbedClickAction == PrintBedClickAction.MoveCamera) {
+                        let pos = printBedPositionToMicroscope({ x: x, y: y }, 0, this.printbedToCamera, this.store.state.printState.printerParams.movementRange);
+                        if (pos.feasible) {
+                            using movementExecutor = this.movementStage.getMovementExecutor("printbed");
+                            movementExecutor.moveAbsoluteAndWait(pos.microscopePos.x, pos.microscopePos.y, pos.microscopePos.z, 10000);
+                        }
                     }
-                    this.modelPositionMap.set(model, newModelPos);
+                    else if (!(x < this.feasiblePhotoArea.min[0] || x > this.feasiblePhotoArea.max[0] || y < this.feasiblePhotoArea.min[1] || y > this.feasiblePhotoArea.max[1])) {
+                        this.store.postAction(new ModelGroupParamsChanged(this.store.state.printState.modelParams[this.store.state.printBedViewState.selectedModelId].modelGroupId, {
+                            photoPoints: [{ x, y }]
+                        }));
+                    }
+                    this.printbedClickAction = PrintBedClickAction.None;
                     this.render();
-                    this.printCanvasInfo.innerText = `Move Model to X: ${newModelPos.x.toFixed(2)} mm, Y: ${newModelPos.y.toFixed(2)} mm`;
-                    return;
+                };
+                document.addEventListener("mouseup", mouseUp);
+            } else {
+                let rect = this.printCanvas.getBoundingClientRect();
+                let canvasFactor = rect.width / this.printCanvas.width;
+                let mouseDownX = ev.clientX;
+                let mouseDownY = ev.clientY;
+                let mouseDownBedPos = this.bedPositionFromMouseEvent(ev);
+                let middleButton = ev.button === 1;
+                let model = this.bedPositionOnModel(mouseDownBedPos);
+                let modelParams: ModelParams;
+                let modelOrigin: { x: number, y: number };
+                if (model) {
+                    this.modelMoving = model;
+                    modelParams = this.modelParams[model.id];
+                    modelOrigin = { x: modelParams.position[0], y: modelParams.position[1] };
+                    this.store.postAction(new ModelSelected(model.id));
                 }
-                if (Math.abs(this.zoom - 1.0) < 0.01) {
-                    return;
-                }
-                this.pan.x += (ev.clientX - mouseDownX) / canvasFactor;
-                this.pan.y += (ev.clientY - mouseDownY) / canvasFactor;
-
-                mouseDownX = ev.clientX;
-                mouseDownY = ev.clientY;
-                this.render();
-            };
-            let mouseUp = (ev: MouseEvent) => {
-                document.removeEventListener("mousemove", mouseMove);
-                document.removeEventListener("mouseup", mouseUp);
-                if (this.modelMoving) {
-                    this.modelMoving = null;
-                    let updatedPos = this.modelPositionMap.get(model);
-                    const minimumMovement = 0.1;
-                    if (Math.abs(updatedPos.x - modelParams.position[0]) > minimumMovement || Math.abs(updatedPos.y - modelParams.position[1]) > minimumMovement) {
-                        this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
+                let mouseMove = (ev: MouseEvent) => {
+                    if (this.modelMoving && !middleButton) {
+                        let snapToGrid = ev.shiftKey;
+                        let movedPos = this.bedPositionFromMouseEvent(ev);
+                        let newModelPos = { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) };
+                        if (snapToGrid) {
+                            newModelPos.x = Math.round(newModelPos.x);
+                            newModelPos.y = Math.round(newModelPos.y);
+                        }
+                        this.modelPositionMap.set(model, newModelPos);
+                        this.render();
+                        this.printCanvasInfo.innerText = `Move Model to X: ${newModelPos.x.toFixed(2)} mm, Y: ${newModelPos.y.toFixed(2)} mm`;
+                        return;
                     }
-                }
-            };
-            document.addEventListener("mousemove", mouseMove);
-            document.addEventListener("mouseup", mouseUp);
+                    if (Math.abs(this.zoom - 1.0) < 0.01) {
+                        return;
+                    }
+                    this.pan.x += (ev.clientX - mouseDownX) / canvasFactor;
+                    this.pan.y += (ev.clientY - mouseDownY) / canvasFactor;
+
+                    mouseDownX = ev.clientX;
+                    mouseDownY = ev.clientY;
+                    this.render();
+                };
+                let mouseUp = (ev: MouseEvent) => {
+                    document.removeEventListener("mousemove", mouseMove);
+                    document.removeEventListener("mouseup", mouseUp);
+                    if (this.modelMoving) {
+                        this.modelMoving = null;
+                        let updatedPos = this.modelPositionMap.get(model);
+                        const minimumMovement = 0.1;
+                        if (Math.abs(updatedPos.x - modelParams.position[0]) > minimumMovement || Math.abs(updatedPos.y - modelParams.position[1]) > minimumMovement) {
+                            this.store.postAction(new ModelPositionChanged(model.id, [updatedPos.x, updatedPos.y]));
+                        }
+                    }
+                };
+                document.addEventListener("mousemove", mouseMove);
+                document.addEventListener("mouseup", mouseUp);
+            }
         }, this.abortController.signal);
         abortableEventListener(this.printCanvas, "mousemove", (ev) => {
             let { x, y } = this.bedPositionFromMouseEvent(ev);
@@ -242,10 +280,24 @@ export class PrintBedSimulation extends HTMLElement {
         return null;
     }
 
+    private getFeasiblePhotoPointArea(s: State): { min: [number, number], max: [number, number] } {
+        let minX = 0;
+        let maxX = s.printState.printerParams.buildPlate.width - this.store.state.printState.printerParams.printBedToCamera.x;
+        let minY = 0;
+        let maxY = s.printState.printerParams.buildPlate.height - this.store.state.printState.printerParams.printBedToCamera.y;
+        console.log({ min: [minX, minY], max: [maxX, maxY] });
+        return { min: [minX, minY], max: [maxX, maxY] };
 
+
+    }
+
+    setClickAction(action: PrintBedClickAction) {
+        this.printbedClickAction = action;
+        this.render();
+    }
 
     private update(s: State, c: StateChanges) {
-        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState"];
+        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState", "movementStageState"];
         if (s && (null == c || keysOfInterest.some(k => c.includes(k)))) {
             this.bedWidth = s.printState.printerParams.buildPlate.width;
             this.bedHeight = s.printState.printerParams.buildPlate.height;
@@ -277,6 +329,9 @@ export class PrintBedSimulation extends HTMLElement {
             if (layerChanged || c.includes("models")) {
                 this.nextRenderNeedsModelRedraw = true;
             }
+            this.feasiblePhotoArea = this.getFeasiblePhotoPointArea(s);
+            this.stagePos = s.movementStageState.pos;
+            this.printbedToCamera = s.printState.printerParams.printBedToCamera;
             this.render();
         }
     }
@@ -546,6 +601,65 @@ export class PrintBedSimulation extends HTMLElement {
         }
     }
 
+    private drawPhotoPoints(layerPlan: LayerPlan) {
+        for (let o of layerPlan.modelGroupPlans) {
+            for (let p of o.printingParams.photoPoints) {
+                let center = this.buildPlatePositionToCanvasPosition(p.x, p.y);
+                let width = 2.975780963;
+                let height = 1080 / 1920 * width;
+                let x = center.x - this.mmToDots(width / 2);
+                let y = center.y - this.mmToDots(height / 2);
+                this.ctx.strokeStyle = "black";
+                this.ctx.lineWidth = this.mmToDots(0.1);
+                this.ctx.strokeRect(x, y, this.mmToDots(width), this.mmToDots(height));
+            }
+        }
+    }
+
+    private drawFeasiblePhotoArea() {
+        let { min, max } = this.feasiblePhotoArea;
+        let minPos = this.buildPlatePositionToCanvasPosition(min[0], min[1]);
+        let maxPos = this.buildPlatePositionToCanvasPosition(max[0], max[1]);
+        this.ctx.strokeStyle = "green";
+        this.ctx.lineWidth = this.mmToDots(0.2);
+        this.ctx.strokeRect(minPos.x, minPos.y, maxPos.x - minPos.x, maxPos.y - minPos.y);
+    }
+
+    private drawPrinthead() {
+        let swathe = getPrintheadSwathe(this.printerParams);
+        let nozzleDistance = getNozzleDistance(this.printerParams);
+        let nozzlePos = this.buildPlatePositionToCanvasPosition(this.stagePos.x + swathe.x, this.stagePos.y + swathe.y);
+        this.ctx.strokeStyle = "black";
+        this.ctx.lineWidth = this.mmToDots(0.2);
+        this.ctx.beginPath();
+        this.ctx.arc(nozzlePos.x, nozzlePos.y, this.mmToDots(0.5), 0, 2 * Math.PI);
+        this.ctx.stroke();
+        for (let nozzle = 0; nozzle < this.printerParams.numNozzles; nozzle++) {
+            let nozzleX = this.stagePos.x + (this.printerParams.numNozzles - 1 - nozzle) * nozzleDistance.x;
+            let nozzleY = this.stagePos.y + (this.printerParams.numNozzles - 1 - nozzle) * nozzleDistance.y;
+            let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
+            this.ctx.fillStyle = "black";
+            this.ctx.beginPath();
+            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.05), 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+    }
+
+    private drawCamera() {
+        let pos = getMicroscopePosition(this.stagePos, this.printbedToCamera);
+        console.log(pos);
+        let center = this.buildPlatePositionToCanvasPosition(pos.x, pos.y);
+        let width = 2.975780963;
+        let height = 1080 / 1920 * width;
+        let x = center.x - this.mmToDots(width / 2);
+        let y = center.y - this.mmToDots(height / 2);
+        this.ctx.strokeStyle = "blue";
+        this.ctx.lineWidth = this.mmToDots(0.1);
+        this.ctx.strokeRect(x, y, this.mmToDots(width), this.mmToDots(height));
+    }
+
+
+
     private render() {
         if (!this.initialized) {
             return;
@@ -567,6 +681,7 @@ export class PrintBedSimulation extends HTMLElement {
             if (this.viewMode.mode == "layerPlan") {
                 if (this.viewedLayerPlan) {
                     this.drawLayerPlan(this.viewedLayerPlan);
+                    this.drawPhotoPoints(this.viewedLayerPlan);
                 }
             } else if (this.viewMode.mode == "rasterization") {
                 if (null != this.viewedLayerPlan && null != this.currentRasterization) {
@@ -599,6 +714,13 @@ export class PrintBedSimulation extends HTMLElement {
             }
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;
+            }
+            if (this.printbedClickAction == PrintBedClickAction.PlacePhotoPoint) {
+                this.drawFeasiblePhotoArea();
+            }
+            if (null != this.stagePos) {
+                this.drawPrinthead();
+                this.drawCamera();
             }
         });
     }

@@ -1,3 +1,4 @@
+import { CameraType } from "../CameraType";
 import { deg2Rad } from "../utils/deg2Rad";
 import { PrinterSystemState, SlicingStatus, State, ValvePosition } from "./State";
 
@@ -33,9 +34,6 @@ export const DefaultState: State =
         nozzleData: undefined,
         delayNanos: undefined,
         flashOnTimeNanos: undefined,
-        cameraOn: false,
-        exposureTime: undefined,
-        canChangeExposure: undefined,
         nozzlePos: {
             first: null,
             last: null
@@ -58,15 +56,26 @@ export const DefaultState: State =
             printheadAngleRads: deg2Rad(90 - 63.75),
             //[2, 7, 8, 118, 119, 120, 121, 122, 123, 124, 125, 126, 55, 56]
             // [0, 1, 2, 3, 5, 6, 7, 8, 9, 33, 34, 35, 36, 37, 98, 99, 100, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 85, 86, 87, 55, 56]
-            blockedNozzles: [
-                ...Array.from({ length: 47 + 1 - 32 }, (_, i) => i + 32),
-                ...Array.from({ length: 47 + 1 - 32 }, (_, i) => i + 32),
-                ...Array.from({ length: 79 + 1 - 64 }, (_, i) => i + 64),
-                96, 97, 98, 99, 100, 102, 105, 106, 107, 108, 109, 112,
-                ...Array.from({ length: 95 + 1 - 80 }, (_, i) => i + 80),
-                ...Array.from({ length: 63 + 1 - 48 }, (_, i) => i + 48),
-                ...Array.from({ length: 31 + 1 - 24 }, (_, i) => i + 24),
-            ]
+            //[
+            //     ...Array.from({ length: 47 + 1 - 32 }, (_, i) => i + 32),
+            //     ...Array.from({ length: 47 + 1 - 32 }, (_, i) => i + 32),
+            //     ...Array.from({ length: 79 + 1 - 64 }, (_, i) => i + 64),
+            //     96, 97, 98, 99, 100, 102, 105, 106, 107, 108, 109, 112,
+            //     ...Array.from({ length: 95 + 1 - 80 }, (_, i) => i + 80),
+            //     ...Array.from({ length: 63 + 1 - 48 }, (_, i) => i + 48),
+            //     ...Array.from({ length: 31 + 1 - 24 }, (_, i) => i + 24),
+            // ]
+            blockedNozzles: [],
+            printBedToCamera: {
+                x: 149.29,
+                y: 8.26,
+                z: 15.19,
+            },
+            movementRange: {
+                x: 200,
+                y: 175,
+                z: 50,
+            }
         },
         printingParams: {
             fireEveryTicks: 4,
@@ -86,7 +95,8 @@ export const DefaultState: State =
                 moveAxis: {
                     everyOtherLayerByNozzles: 1
                 }
-            }
+            },
+            photoPoints: []
         },
         slicingState: {
             currentRasterization: null,
@@ -110,7 +120,12 @@ export const DefaultState: State =
     },
     inkControlAction: {
         currentAction: null,
-        currentStep : null,
+        currentStep: null,
         actionsRunning: false
+    },
+    inspect: {
+        outputFolder: null
+    },
+    cameras: {
     }
 };

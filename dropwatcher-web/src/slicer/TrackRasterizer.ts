@@ -170,7 +170,7 @@ export class TrackRasterizer {
             let pos = movementByNozzles * nozzleDistance.x + moveAxisPos;
             let correctedNozzles = m[1];
             let correctingNoozzles = correctedNozzles.map(nozzle => nozzle + movementByNozzles);
-            let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(pos, correctingNoozzles)+offsetThisLayer;
+            let printFirstLineAfterEncoderTick = this.findFirstTickInsideModel(pos, correctingNoozzles) + offsetThisLayer;
             let res = this.rasterizeArea(pos, correctingNoozzles, printFirstLineAfterEncoderTick);
             let printAxisMovements = this.getPrintAxisMovements(printFirstLineAfterEncoderTick, res.printLastLineAfterEncoderTick);
             yield {

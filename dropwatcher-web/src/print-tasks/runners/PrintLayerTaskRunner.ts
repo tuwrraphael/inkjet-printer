@@ -9,17 +9,20 @@ import { PrinterTaskPrintCustomTracksTask, PrintLayerTask } from "../printer-pro
 import { CanceledError, PrinterTaskCancellationToken } from "../PrinterTaskCancellationToken";
 import { add } from "date-fns";
 import { WavefromControlSettings } from "../../proto/compiled";
+import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
+import { CameraAccess } from "../../camera-access";
+import { CameraType } from "../../CameraType";
+import { GCodeRunner } from "../../gcode-runner";
 
 export class PrintLayerTaskRunner {
     constructor(private task: PrintLayerTask,
-        private movementStage: MovementStage,
+        private movementExecutor: GCodeRunner,
         private slicerClient: SlicerClient,
         private printerUSB: PrinterUSB,
         private store: Store) {
     }
     async run(cancellationToken: PrinterTaskCancellationToken) {
         try {
-            await this.movementStage.movementExecutor.moveAbsoluteZAndWait(this.task.z, 150);
             cancellationToken.throwIfCanceled();
             let dryUntil: Date = new Date();
             let setVoltage = this.store.state.printerSystemState.waveformControl.setVoltageMv;
@@ -37,6 +40,7 @@ export class PrintLayerTaskRunner {
             });
 
             for (let group of orderedGroups) {
+                await this.movementExecutor.moveAbsoluteZAndWait(this.task.z, 500);
                 await this.changeVoltageIfNeeded(group.printingParams.waveform.voltage, cancellationToken);
                 for (let track of group.tracks) {
                     await this.printTrack(track, { layerNr: this.task.layerNr, modelGroupId: group.modelGroupId },
@@ -47,11 +51,26 @@ export class PrintLayerTaskRunner {
                         dryUntil = dryGroupUntil;
                     }
                 }
-                cancellationToken.throwIfCanceled();
+
+                if (group.printingParams.photoPoints.length > 0) {
+                    for (let photoPoint of group.printingParams.photoPoints) {
+                        let microscopePos = printBedPositionToMicroscope(photoPoint, this.task.z, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
+                        if (microscopePos.feasible) {
+                            await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, microscopePos.microscopePos.z, 15000);
+                            let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
+                            await cameraAccess.performAutoFocus(0.5, 0.5, this.movementExecutor);
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            await cameraAccess.saveImage(`${this.task.layerNr}_${group.modelGroupId || 'no-group'}`);
+                        } else {
+                            console.log("Skipping camera move, out of range");
+                        } cancellationToken.throwIfCanceled();
+                    }
+                }
             }
             let dryForMs = Math.max(0, (+dryUntil - +new Date()));
             if (dryForMs > 0) {
-                await this.movementStage.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 10000);
+                await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
+                cancellationToken.throwIfCanceled();
                 dryForMs = Math.max(0, (+dryUntil - +new Date()));
                 if (dryForMs > 0) {
                     console.log("Drying for " + dryForMs + "ms");
@@ -102,7 +121,7 @@ export class PrintLayerTaskRunner {
             modelGroupId: string,
         },
         cancellationToken: PrinterTaskCancellationToken) {
-        await this.movementStage.movementExecutor.moveAbsoluteXAndWait(trackPlan.moveAxisPosition, 10000);
+        await this.movementExecutor.moveAbsoluteXAndWait(trackPlan.moveAxisPosition, 10000);
         cancellationToken.throwIfCanceled();
         let track = await this.slicerClient.slicer.rasterizeTrack(sliceInfo.modelGroupId, sliceInfo.layerNr, trackPlan.moveAxisPosition);
         for (let t of [{ pos: trackPlan.moveAxisPosition, track: track.track }, ...track.correctionTracks.map((t) => { return { pos: t.moveAxisPos, track: t.track } })]) {
@@ -119,7 +138,7 @@ export class PrintLayerTaskRunner {
                 printMemoryRequest.offset = i;
                 await this.printerUSB.sendChangePrintMemoryRequest(printMemoryRequest);
             }
-            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.startPrintAxisPosition, 10000);
+            await this.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.startPrintAxisPosition, 10000);
             cancellationToken.throwIfCanceled();
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
@@ -130,7 +149,7 @@ export class PrintLayerTaskRunner {
             encoderModeSettings.startPaused = false;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
-            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.endPrintAxisPosition, 2000);
+            await this.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.endPrintAxisPosition, 2000);
             let changeEncoderModeRequest = new ChangeEncoderModeRequest();
             changeEncoderModeRequest.paused = true;
             await this.printerUSB.sendChangeEncoderModeRequest(changeEncoderModeRequest);
@@ -142,17 +161,17 @@ export class PrintLayerTaskRunner {
 
 export class PrintCustomTracksTaskRunner {
     constructor(private task: PrinterTaskPrintCustomTracksTask,
-        private movementStage: MovementStage,
+        private movementExecutor: GCodeRunner,
         private slicerClient: SlicerClient,
         private printerUSB: PrinterUSB,
         private store: Store) {
     }
     async run(cancellationToken: PrinterTaskCancellationToken) {
-        await this.movementStage.movementExecutor.moveAbsoluteZAndWait(this.task.z, 150);
+        await this.movementExecutor.moveAbsoluteZAndWait(this.task.z, 150);
         cancellationToken.throwIfCanceled();
         for (let customTrack of this.task.customTracks) {
             await this.changeVoltageIfNeeded(this.task.printingParams.waveform.voltage, cancellationToken);
-            await this.movementStage.movementExecutor.moveAbsoluteXAndWait(customTrack.moveAxisPos, 10000);
+            await this.movementExecutor.moveAbsoluteXAndWait(customTrack.moveAxisPos, 10000);
             cancellationToken.throwIfCanceled();
             if (customTrack.track.linesToPrint == 0) {
                 return;
@@ -166,7 +185,7 @@ export class PrintCustomTracksTaskRunner {
                 printMemoryRequest.offset = i;
                 await this.printerUSB.sendChangePrintMemoryRequest(printMemoryRequest);
             }
-            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.startPrintAxisPosition, 10000);
+            await this.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.startPrintAxisPosition, 10000);
             cancellationToken.throwIfCanceled();
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
@@ -177,7 +196,7 @@ export class PrintCustomTracksTaskRunner {
             encoderModeSettings.startPaused = false;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
-            await this.movementStage.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.endPrintAxisPosition, 3000);
+            await this.movementExecutor.moveAbsoluteXYAndWait(customTrack.moveAxisPos, customTrack.track.endPrintAxisPosition, 3000);
             cancellationToken.throwIfCanceled();
             let changeEncoderModeRequest = new ChangeEncoderModeRequest();
             changeEncoderModeRequest.paused = true;

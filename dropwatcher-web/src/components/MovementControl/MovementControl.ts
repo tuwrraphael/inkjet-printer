@@ -6,11 +6,11 @@ import "./MovementControl.scss";
 export class MovementControl extends HTMLElement {
 
     private rendered = false;
-    private movmentStage: MovementStage;
+    private movementStage: MovementStage;
     private abortController: AbortController;
     constructor() {
         super();
-        this.movmentStage = MovementStage.getInstance();
+        this.movementStage = MovementStage.getInstance();
     }
 
     connectedCallback() {
@@ -19,21 +19,27 @@ export class MovementControl extends HTMLElement {
             this.rendered = true;
             this.innerHTML = template;
 
-            abortableEventListener(this.querySelector("#btn-send"), "click", async () => {
-                await this.movmentStage.sendGcode((this.querySelector("#gcode") as HTMLTextAreaElement).value);
+            abortableEventListener(this.querySelector("#btn-send"), "click", async (event) => {
+                event.preventDefault();
+                using executor = this.movementStage.getMovementExecutor("movement-control");
+                await executor.sendRaw((this.querySelector("#gcode") as HTMLTextAreaElement).value);
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#btn-home"), "click", async (event) => {
                 event.preventDefault();
-                await this.movmentStage.movementExecutor.home();
+                using executor = this.movementStage.getMovementExecutor("movement-control");
+                await executor.home();
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#btn-dock-capping-station"), "click", async (event) => {
                 event.preventDefault();
-                await this.movmentStage.movementExecutor.home();
-                await this.movmentStage.movementExecutor.moveAbsoluteAndWait(100, 100, 0, 400);
+                using executor = this.movementStage.getMovementExecutor("movement-control");
+                await executor.home();
+                await executor.moveAbsoluteAndWait(100, 100, 0, 400);
             }, this.abortController.signal);
             abortableEventListener(this.querySelector("#btn-undock-capping-station"), "click", async (event) => {
                 event.preventDefault();
-                await this.movmentStage.movementExecutor.moveAbsoluteAndWait(100, 100, 30, 400);
+                using executor = this.movementStage.getMovementExecutor("movement-control");
+                await executor.moveAbsoluteAndWait(100, 100, 30, 400);
+                console.log("undocked");
             }, this.abortController.signal);
 
         }

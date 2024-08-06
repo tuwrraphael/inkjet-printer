@@ -4,6 +4,7 @@ import { PrinterUSB } from "../../printer-usb";
 import { State, StateChanges, PrinterSystemState, PressureControlAlgorithm, PressureControlDirection, PrintControlEncoderMode } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
+import { getMicroscopePosition } from "../../utils/getMicroscopePosition";
 import template from "./PrinterStatus.html";
 import "./PrinterStatus.scss";
 
@@ -39,6 +40,7 @@ export class PrinterStatus extends HTMLElement {
     private lostLinesBySlowData: HTMLTableCellElement;
     private voltage: HTMLSpanElement;
     private stageTemp: HTMLSpanElement;
+    private microscopePosition: HTMLTableCellElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -73,6 +75,7 @@ export class PrinterStatus extends HTMLElement {
             this.lostLinesBySlowData = this.querySelector("#lost-lines-by-slow-data");
             this.voltage = this.querySelector("#voltage");
             this.stageTemp = this.querySelector("#stage-temp");
+            this.microscopePosition = this.querySelector("#microscope-position");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -97,8 +100,8 @@ export class PrinterStatus extends HTMLElement {
         this.movementStage.connectNew();
     }
 
-    formatStagePosition(s: State) {
-        return `X: ${this.formatNumber(s.movementStageState.pos?.x)} Y: ${this.formatNumber(s.movementStageState.pos?.y)} Z: ${this.formatNumber(s.movementStageState.pos?.z)} E: ${this.formatNumber(s.movementStageState.e)}`;
+    formatStagePosition(pos: { x: number, y: number, z: number }) {
+        return `X: ${this.formatNumber(pos.x)} Y: ${this.formatNumber(pos.y)} Z: ${this.formatNumber(pos.z)}`;
     }
 
     formatState(state: PrinterSystemState) {
@@ -194,9 +197,14 @@ export class PrinterStatus extends HTMLElement {
             this.stageTemp.innerText = `${currentTemp} / ${setTemp}`;
         }
         if (c.includes("movementStageState")) {
-            this.stagePosition.innerText = this.formatStagePosition(s);
+
             this.stageConnected.innerText = s.movementStageState.connected ? "Connected" : "Disconnected";
             this.connectStageButton.style.display = s.movementStageState.connected ? "none" : "";
+            this.stagePosition.innerText = this.formatStagePosition(s.movementStageState.pos || { x: NaN, y: NaN, z: NaN });
+            const microscopePosition = getMicroscopePosition(s.movementStageState.pos
+                || { x: NaN, y: NaN, z: NaN }
+                , s.printState.printerParams.printBedToCamera);
+            this.microscopePosition.innerText = this.formatStagePosition(microscopePosition);
         }
     }
 

@@ -11,7 +11,7 @@ import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./Print.html";
 import "./Print.scss";
 import "../PrintBedSimulation/PrintBedSimulation";
-import { PrintBedSimulation, PrintBedSimulationTagName } from "../PrintBedSimulation/PrintBedSimulation";
+import { PrintBedClickAction, PrintBedSimulation, PrintBedSimulationTagName } from "../PrintBedSimulation/PrintBedSimulation";
 import { ModelAdded } from "../../state/actions/ModelAdded";
 import { parseSvgFile } from "../../utils/parseSvgFile";
 import { svgToModel } from "../../utils/svgToModel";
@@ -34,6 +34,11 @@ import { ChangeWaveformControlSettingsRequest } from "../../proto/compiled";
 import { WavefromControlSettings } from "../../proto/compiled";
 import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions/ModelParamsChanged";
+import { OutputFolderChanged } from "../../state/actions/OutputFolderChanged";
+import { CameraAccess } from "../../camera-access";
+import { CameraType } from "../../CameraType";
+import { getMicroscopeFeasibleRange } from "../../utils/getMicroscopeFeasibleRange";
+import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
 
 let cameraOffset = {
     x: 165.4 - 13.14,
@@ -46,7 +51,6 @@ let lowestZoomCameraOffset = {
     y: 13.3 - 5.41,
     z: 36
 };
-
 
 export class PrintComponent extends HTMLElement {
 
@@ -137,15 +141,18 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#home"), "click", async (ev) => {
             ev.preventDefault();
-            await this.movementStage.movementExecutor.home();
+            using movementExecutor = this.movementStage.getMovementExecutor("print");
+            await movementExecutor.home();
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#go-start"), "click", async (ev) => {
             ev.preventDefault();
-            await this.movementStage.sendGcodeAndWaitForFinished("G0 Y175 F4000");
+            using movementExecutor = this.movementStage.getMovementExecutor("print");
+            await movementExecutor.moveAbsoluteYAndWait(175, 4000);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#go-end"), "click", async (ev) => {
             ev.preventDefault();
-            await this.movementStage.sendGcodeAndWaitForFinished("G1 Y0 F4000");
+            using movementExecutor = this.movementStage.getMovementExecutor("print");
+            await movementExecutor.moveAbsoluteYAndWait(0, 4000);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#slice-first-track"), "click", async (ev) => {
             ev.preventDefault();
@@ -178,6 +185,14 @@ export class PrintComponent extends HTMLElement {
                     evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
                 }
             }));
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#move-camera-nozzle0"), "click", async (ev) => {
+            ev.preventDefault();
+            let cameraOffset = this.store.state.printState.printerParams.printBedToCamera;
+            let movementRange = this.store.state.printState.printerParams.movementRange;
+            let pos = printBedPositionToMicroscope({ x: 0, y: 0 }, 0, cameraOffset, movementRange);
+            using movementExecutor = this.movementStage.getMovementExecutor("print");
+            await movementExecutor.moveAbsoluteAndWait(pos.microscopePos.x, pos.microscopePos.y, pos.microscopePos.z, 2000);
         }, this.abortController.signal);
         // abortableEventListener(this.querySelector("#move-stage-to"), "click", async (ev) => {
         //     ev.preventDefault();
@@ -212,6 +227,22 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
             ev.preventDefault();
             await this.printerUsb.sendNozzlePrimingRequestAndWait();
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#select-output-folder"), "click", async (ev) => {
+            ev.preventDefault();
+            try {
+                let outputFolder = await window.showDirectoryPicker({
+                    mode: "readwrite",
+                    startIn: "documents"
+                });
+                this.store.postAction(new OutputFolderChanged(outputFolder));
+                // let c = CameraAccess.getInstance(CameraType.Microscope);
+                // await c.performAutoFocus(0.5, 0.5);
+                // await CameraAccess.getInstance(CameraType.Microscope).saveImage("test");
+
+            } catch (e) {
+                console.error(e);
+            }
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
             ev.preventDefault();
@@ -399,6 +430,14 @@ export class PrintComponent extends HTMLElement {
             link.click();
 
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#place-photo-point"), "click", async (ev) => {
+            ev.preventDefault();
+            (this.querySelector(PrintBedSimulationTagName) as PrintBedSimulation).setClickAction(PrintBedClickAction.PlacePhotoPoint);
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#move-camera-to"), "click", async (ev) => {
+            ev.preventDefault();
+            (this.querySelector(PrintBedSimulationTagName) as PrintBedSimulation).setClickAction(PrintBedClickAction.MoveCamera);
+        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
             ev.preventDefault();
             let code: any = bwipjs.raw("qrcode", "30x30 square 50 layers 60°C 28V 144 dpi skip_n 0 offset 3", {});
@@ -463,7 +502,7 @@ export class PrintComponent extends HTMLElement {
             {
                 type: PrinterTaskType.Move,
                 movement: {
-                    x: 0, y: 0, z: height
+                    x: 0, y: 0
                 },
                 feedRate: 10000
             },
@@ -520,17 +559,29 @@ export class PrintComponent extends HTMLElement {
                     printingParams: this.store.state.printState.printingParams
                 });
             }
-        }
-        if (printPlan && printPlan.layers.length > 0) {
             steps.push({
                 type: PrinterTaskType.Move,
                 movement: {
-                    x: printPlan.layers[0].modelGroupPlans[0].tracks[0].moveAxisPosition + lowestZoomCameraOffset.x,
-                    y: printPlan.layers[0].modelGroupPlans[0].tracks[0].startPrintAxisPosition + lowestZoomCameraOffset.y,
-                    z: lowestZoomCameraOffset.z,
+                    z: 25
                 },
-                feedRate: 10000
+                feedRate: 500
             });
+        }
+        if (printPlan && printPlan.layers.length > 0) {
+            let x = printPlan.layers[0].modelGroupPlans[0].tracks[0].moveAxisPosition;
+            let y = printPlan.layers[0].modelGroupPlans[0].tracks[0].startPrintAxisPosition;
+            let pos = printBedPositionToMicroscope({ x: x, y: y }, height, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
+            if (pos.feasible) {
+                steps.push({
+                    type: PrinterTaskType.Move,
+                    movement: {
+                        x: pos.microscopePos.x,
+                        y: pos.microscopePos.y,
+                        z: pos.microscopePos.z
+                    },
+                    feedRate: 10000
+                });
+            }
         }
         return steps;
 

@@ -26,5 +26,8 @@ export const enum ActionType {
     ModelGroupParamsChanged,
     MovementStageTemperatureChanged,
     InkControlActionChanged,
-    ValvePositionsChanged
+    ValvePositionsChanged,
+    OutputFolderChanged,
+    SaveImage,
+    PlacePhotoPoint
 }

@@ -6,6 +6,7 @@ export interface ModelGroupPrintingParams extends Partial<Pick<PrintingParams, "
     "fireEveryTicks" |
     "sequentialFires" |
     "waveform" |
-    "skipNozzles"
+    "skipNozzles" | 
+    "photoPoints"
 >> {
 }

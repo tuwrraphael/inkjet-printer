@@ -1,4 +1,5 @@
 import { CameraAccess } from "../../camera-access";
+import { CameraType } from "../../CameraType";
 import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
 import { ChangeDropwatcherParametersRequest } from "../../proto/compiled";
@@ -35,15 +36,16 @@ export class DropwatcherComponent extends HTMLElement {
     private canvas: HTMLCanvasElement;
     private doCaptureContiniuous: boolean;
     private movementStage: MovementStage;
-    private nextVideoClick: "autofocus" | null;
+    private nextVideoClick: "autofocus" | "measure1" | "measure2" | null;
     private nextVideoClickMessage: HTMLSpanElement;
     private toggleDropwatcherBtn: HTMLButtonElement;
     private moveToForm: HTMLFormElement;
+    measurementPoint1: { x: number; y: number; };
     constructor() {
         super();
         this.printerUsb = PrinterUSB.getInstance();
         this.store = Store.getInstance();
-        this.cameraAccess = CameraAccess.getInstance();
+        this.cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
         this.movementStage = MovementStage.getInstance();
     }
 
@@ -103,15 +105,24 @@ export class DropwatcherComponent extends HTMLElement {
                 this.nextVideoClick = "autofocus";
                 this.setNextVideoClickMessage();
             }, this.abortController.signal);
+            abortableEventListener(this.querySelector("#measure"!), "click", (e) => {
+                e.preventDefault();
+                this.nextVideoClick = "measure1";
+                this.setNextVideoClickMessage();
+            }, this.abortController.signal);
             abortableEventListener(this.videoElement, "click", (ev: MouseEvent) => {
                 switch (this.nextVideoClick) {
                     case "autofocus":
                         this.performAutoFocus(ev);
                         break;
+                    case "measure1":
+                        this.selectMeasurementPoint1(ev);
+                        break;
+                    case "measure2":
+                        this.performMeasurement(ev);
+                        break;
                     default: break;
                 }
-                this.nextVideoClick = null;
-                this.setNextVideoClickMessage();
             }, this.abortController.signal);
             this.toggleDropwatcherBtn = this.querySelector("#toggle-dropwatcher");
             abortableEventListener(this.toggleDropwatcherBtn, "click", (e) => {
@@ -132,7 +143,7 @@ export class DropwatcherComponent extends HTMLElement {
                 e.preventDefault();
                 let data = new FormData(this.moveToForm);
                 let id = parseInt(data.get("nozzle-pos") as string);
-                this.moveToNozzle(id-1).catch(console.error);
+                this.moveToNozzle(id - 1).catch(console.error);
             }, this.abortController.signal);
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
@@ -145,13 +156,14 @@ export class DropwatcherComponent extends HTMLElement {
     }
 
     async moveToNozzle(id: number) {
+        using movementExecutor = this.movementStage.getMovementExecutor("dropwatcher");
         let dx = this.store.state.dropwatcherState.nozzlePos.last.x - this.store.state.dropwatcherState.nozzlePos.first.x;
         let dy = this.store.state.dropwatcherState.nozzlePos.last.y - this.store.state.dropwatcherState.nozzlePos.first.y;
         let dz = this.store.state.dropwatcherState.nozzlePos.last.z - this.store.state.dropwatcherState.nozzlePos.first.z;
         let x = this.store.state.dropwatcherState.nozzlePos.first.x + dx / (NumNozzles - 1) * id;
         let y = this.store.state.dropwatcherState.nozzlePos.first.y + dy / (NumNozzles - 1) * id;
         let z = this.store.state.dropwatcherState.nozzlePos.first.z + dz / (NumNozzles - 1) * id;
-        await this.movementStage.movementExecutor.moveAbsoluteAndWait(x, y, z, 100);
+        await movementExecutor.moveAbsoluteAndWait(x, y, z, 100);
     }
 
     async toggleDropwatcher() {
@@ -171,132 +183,66 @@ export class DropwatcherComponent extends HTMLElement {
             case "autofocus":
                 this.nextVideoClickMessage.innerText = "Click the video to set focus";
                 break;
+            case "measure1":
+                this.nextVideoClickMessage.innerText = "Click the video to select the first measurement point";
+                break;
+            case "measure2":
+                this.nextVideoClickMessage.innerText = "Click the video to select the second measurement point";
+                break;
             default:
+
                 break;
         }
         this.nextVideoClickMessage.style.display = this.nextVideoClick ? "" : "none";
     }
 
     private async toggleCamera() {
-        if (this.store.state.dropwatcherState.cameraOn) {
+        if (this.store.state.cameras[CameraType.Microscope]?.cameraOn) {
             await this.cameraAccess.stop();
         } else {
             await this.cameraAccess.start();
         }
     }
 
-
-
-
-    private async autofocusAlg(step: number, range: number, videoElementX: number, videoElementY: number) {
-
-        let direction = new cv.Mat(3, 1, cv.CV_64F);
-        direction.data64F[0] = 0;
-        direction.data64F[1] = 1;
-        direction.data64F[2] = 0;
-        let relativeMovement = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), -range / 2);
-        await this.movementStage.movementExecutor.moveRelativeAndWait(relativeMovement.data64F[0], relativeMovement.data64F[1], relativeMovement.data64F[2], 100);
-        let bestDistance = 0;
-        let bestScore = 0;
-        let best: ImageData = null;
-        // let bestArea: ImageData = null;
-        await this.waitForNextVideoFrame();
-        let frame = await createImageBitmap(this.videoElement);
-        let areaSize = frame.height / 2.5;
-        let x = Math.floor((videoElementX / this.videoElement.clientWidth) * frame.width);
-        let y = Math.floor((videoElementY / this.videoElement.clientHeight) * frame.height);
-
-        let minX = Math.max(0, x - areaSize / 2);
-        let minY = Math.max(y - areaSize / 2, 0);
-        let maxX = Math.min(frame.width, x + areaSize / 2);
-        let maxY = Math.min(frame.height, y + areaSize / 2);
-        // console.log(y, x, minX, minY, maxX - minX, maxY - minY);
+    private async performAutoFocus(args: MouseEvent) {
+        using movementExecutor = this.movementStage.getMovementExecutor("dropwatcher");
+        let videoElementX = args.offsetX;
+        let videoElementY = args.offsetY;
+        let x = (videoElementX / this.videoElement.clientWidth);
+        let y = (videoElementY / this.videoElement.clientHeight);
+        let res = await this.cameraAccess.performAutoFocus(x, y, movementExecutor);
+        this.canvas.width = res.best.width;
+        this.canvas.height = res.best.height;
         let ctx = this.canvas.getContext("2d");
-        for (let i = 0; i < range; i += step) {
-            relativeMovement = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), step);
-            await this.movementStage.movementExecutor.moveRelativeAndWait(relativeMovement.data64F[0], relativeMovement.data64F[1], relativeMovement.data64F[2], 100);
-            await this.waitForNextVideoFrame();
-            frame = await createImageBitmap(this.videoElement);
-            this.canvas.width = frame.width;
-            this.canvas.height = frame.height;
-
-            ctx.drawImage(frame, 0, 0);
-
-
-            let imageData: ImageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);
-            // let imageData: ImageData = ctx.getImageData(0, 0, frame.width, frame.height);
-            // console.log(imageData);
-            // ctx.putImageData(imageData,0,0);
-            // return;
-            let srcMat = cv.matFromImageData(imageData);
-
-
-
-
-            let blurred = new cv.Mat();
-            let dstMat = new cv.Mat();
-            cv.cvtColor(srcMat, dstMat, cv.COLOR_RGBA2GRAY);
-
-
-            let resized = new cv.Mat();
-            let targetSize = Math.floor(0.15 * areaSize);
-            let dsize = new cv.Size(targetSize, targetSize);
-            cv.resize(dstMat, resized, dsize, 0, 0, cv.INTER_AREA);
-
-            // cv.GaussianBlur(resized, blurred, { width: 5, height: 5 }, 0.9, 0.9, cv.BORDER_DEFAULT);
-            cv.medianBlur(resized, blurred, 5);
-
-            let laplacian = new cv.Mat();
-            cv.Laplacian(blurred, laplacian, cv.CV_64F);
-            let mean = new cv.Mat();
-            let stddev = new cv.Mat();
-            cv.meanStdDev(laplacian, mean, stddev);
-            let focusScore = stddev.data64F[0] * stddev.data64F[0];
-            // console.log("focus score", focusScore, i);
-
-            if (focusScore > bestScore) {
-
-                bestScore = focusScore;
-                bestDistance = i;
-                best = ctx.getImageData(0, 0, frame.width, frame.height);
-                // bestArea = imageData;
-            }
-
-            // let imshowMat = new cv.Mat();
-            // cv.convertScaleAbs(laplacian, imshowMat, 5);
-
-            // cv.imshow(this.canvas, imshowMat);
-
-
-
-
-            dstMat.delete();
-            srcMat.delete();
-            blurred.delete();
-            laplacian.delete();
-            mean.delete();
-            stddev.delete();
-            resized.delete();
-        }
-        ctx.putImageData(best, 0, 0);
+        ctx.drawImage(res.best, 0, 0);
         ctx.strokeStyle = "green";
         ctx.lineWidth = 4;
-        ctx.rect(minX, minY, maxX - minX, maxY - minY);
+        ctx.rect(res.area.x, res.area.y, res.area.width, res.area.height);
         ctx.stroke();
-        // ctx.putImageData(bestArea, 0, 0);
-        console.log("best distance", bestDistance);
-        console.log("best score", bestScore);
-        let relativeMovementToBestDistance = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), -range + bestDistance);
-        await this.movementStage.movementExecutor.moveRelativeAndWait(relativeMovementToBestDistance.data64F[0], relativeMovementToBestDistance.data64F[1], relativeMovementToBestDistance.data64F[2], 100);
-        await this.movementStage.movementExecutor.disableAxes();
-        direction.delete();
+        this.nextVideoClick = null;
+        this.setNextVideoClickMessage();
     }
 
-    private async performAutoFocus(args: MouseEvent) {
+    private selectMeasurementPoint1(args: MouseEvent) {
+        this.measurementPoint1 = { x: args.offsetX, y: args.offsetY };
+        this.nextVideoClick = "measure2";
+        this.setNextVideoClickMessage();
+    }
+
+    private performMeasurement(args: MouseEvent) {
         let x = args.offsetX;
         let y = args.offsetY;
-        await this.autofocusAlg(0.25, 2, x, y);
-        await this.autofocusAlg(0.02, 0.5, x, y);
+        let x1 = this.measurementPoint1.x;
+        let y1 = this.measurementPoint1.y;
+        let dx = x - x1;
+        let dy = y - y1;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        let mm = (distance / (this.videoElement.clientWidth)) * 2.975780963;
+
+        console.log(distance, mm);
+        this.nextVideoClick = null;
+        this.setNextVideoClickMessage();
     }
 
     private async changeDropwatcherParameters() {
@@ -314,7 +260,7 @@ export class DropwatcherComponent extends HTMLElement {
             this.toggleDropwatcherBtn.innerText = state.printerSystemState?.state == PrinterSystemState.Dropwatcher ? "Stop Dropwatcher" : "Start Dropwatcher";
         }
         this.setNozzlesButton.disabled = !state.printerSystemState?.usbConnected || state.printerSystemState?.state != PrinterSystemState.Dropwatcher;
-        if (changed.includes("dropwatcherState")) {
+        if (changed.includes("dropwatcherState") || changed.includes("cameras")) {
             let nozzleData = state.dropwatcherState?.nozzleData;
             if (nozzleData) {
                 for (let i = 0; i < NumNozzles; i++) {
@@ -322,22 +268,29 @@ export class DropwatcherComponent extends HTMLElement {
                     checkBox.value = (nozzleData[Math.floor(i / 32)] & (1 << (i % 32))) != 0;
                 }
             }
-            this.cameraStartStopBtn.innerText = state.dropwatcherState.cameraOn ? "Stop Camera" : "Start Camera";
-            if (!this.videoActive && state.dropwatcherState.cameraOn) {
+
+            let cameraState = state.cameras[CameraType.Microscope];
+
+            let cameraOn = cameraState?.cameraOn;
+
+            this.cameraStartStopBtn.innerText = cameraOn ? "Stop Camera" : "Start Camera";
+            if (!this.videoActive && cameraOn) {
                 this.videoElement.srcObject = this.cameraAccess.getStream();
                 this.videoActive = true;
-            } else if (this.videoActive && !state.dropwatcherState.cameraOn) {
+            } else if (this.videoActive && !cameraOn) {
                 this.videoElement.srcObject = null;
                 this.videoActive = false;
             }
-            this.exposureTimeDisplay.innerText = (state.dropwatcherState.exposureTime ? (state.dropwatcherState.exposureTime / 10).toString() : "-");
-            if (state.dropwatcherState.canChangeExposure) {
-                this.exposureInput.min = (state.dropwatcherState.canChangeExposure.min).toString();
-                this.exposureInput.max = (state.dropwatcherState.canChangeExposure.max).toString();
-                this.exposureInput.step = state.dropwatcherState.canChangeExposure.step.toString();
-                this.exposureInput.value = state.dropwatcherState.exposureTime?.toString() || "0";
+            if (cameraState) {
+                this.exposureTimeDisplay.innerText = (cameraState.exposureTime ? (cameraState.exposureTime / 10).toString() : "-");
+                if (cameraState.canChangeExposure) {
+                    this.exposureInput.min = (cameraState.canChangeExposure.min).toString();
+                    this.exposureInput.max = (cameraState.canChangeExposure.max).toString();
+                    this.exposureInput.step = cameraState.canChangeExposure.step.toString();
+                    this.exposureInput.value = cameraState.exposureTime?.toString() || "0";
+                }
+                this.exposureInput.disabled = !cameraState.cameraOn || !cameraState.canChangeExposure;
             }
-            this.exposureInput.disabled = !state.dropwatcherState.cameraOn || !state.dropwatcherState.canChangeExposure;
         }
     }
 

@@ -16,5 +16,6 @@ export interface PrintingParams {
         moveAxis: {
             everyOtherLayerByNozzles: number | null
         }
-    }
+    },
+    photoPoints: { x: number, y: number }[];
 }

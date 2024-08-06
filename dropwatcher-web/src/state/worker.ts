@@ -41,6 +41,9 @@ import { PrinterProgramState } from "../print-tasks/printer-program";
 import { MovementStageTemperatureChanged } from "./actions/MovementStageTemperatureChanged";
 import { InkControlActionChanged } from "./actions/InkControlActionChanged";
 import { ValvePositionChanged } from "./actions/ValvePositionChanged";
+import { OutputFolderChanged } from "./actions/OutputFolderChanged";
+import { SaveImage } from "./actions/SaveImage";
+import { CameraType } from "../CameraType";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -68,6 +71,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | MovementStageTemperatureChanged
     | InkControlActionChanged
     | ValvePositionChanged
+    | OutputFolderChanged
+    | SaveImage
     ;
 let state: State;
 let initialized = false;
@@ -395,9 +400,12 @@ async function handleMessage(msg: Actions) {
             break;
         case ActionType.CameraStateChanged:
             updateState(oldState => ({
-                dropwatcherState: {
-                    ...oldState.dropwatcherState,
-                    ...msg.state
+                cameras: {
+                    ...oldState.cameras,
+                    [msg.cameraType]: {
+                        ...oldState.cameras[msg.cameraType],
+                        ...msg.state
+                    }
                 }
             }));
             break;
@@ -572,6 +580,17 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             break;
+        case ActionType.OutputFolderChanged:
+            updateState(oldState => ({
+                inspect: {
+                    ...oldState.inspect,
+                    outputFolder: msg.folder
+                }
+            }));
+            break;
+        case ActionType.SaveImage:
+            await saveImage(msg);
+            break;
     }
 }
 
@@ -711,4 +730,42 @@ async function saveToFile(handle: FileSystemFileHandle) {
             lastSaved: new Date()
         }
     }));
+}
+
+async function saveImage(saveImgMsg: SaveImage) {
+    if (!state.inspect.outputFolder) {
+        console.error("No output folder set");
+        return;
+    }
+    let fileNameBase: string = saveImgMsg.fileName;
+    if (!fileNameBase) {
+        switch (saveImgMsg.camera) {
+            case CameraType.Dropwatcher:
+                fileNameBase = "dropwatcher";
+                break;
+            case CameraType.Microscope:
+                fileNameBase = "microscope";
+                break;
+        }
+    }
+    let lastNr = -1;
+    for await (let entry of state.inspect.outputFolder.values()) {
+        if (entry.name.startsWith(fileNameBase)) {
+            let withoutExt = entry.name.split(".")[0];
+            let splitted = withoutExt.split("_");
+            if (splitted && splitted.length > 1 && !isNaN(Number(splitted[splitted.length - 1]))) {
+                let nr = Number(splitted[splitted.length - 1]);
+                if (nr > lastNr) {
+                    lastNr = nr;
+                }
+            } else if (lastNr == -1) {
+                lastNr = 0;
+            }
+        }
+    }
+    let fileName = lastNr >= 0 ? `${fileNameBase}_${lastNr + 1}.png` : `${fileNameBase}.png`;
+    let file = await state.inspect.outputFolder.getFileHandle(fileName, { create: true });
+    let writable = await file.createWritable();
+    writable.write(saveImgMsg.image);
+    writable.close();
 }

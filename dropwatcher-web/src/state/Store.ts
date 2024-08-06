@@ -1,4 +1,3 @@
-import { PrinterSystemState } from "./State";
 import { Action } from "./actions/Action";
 import { InitializeWorker } from "./actions/InitializeWorker";
 import { State } from "./State";
