@@ -10,7 +10,7 @@ export class GCodeRunner implements Disposable {
     }
 
     async home() {
-        await this.movementStage._sendGcode("G0 Z10\nG28");
+        await this.movementStage._sendGcode("G91\nG0 Z10\nG90\nG28");
     }
 
     async moveRelativeAndWait(x: number, y: number, z: number, feedrate: number) {
