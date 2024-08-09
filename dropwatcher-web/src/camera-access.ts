@@ -34,11 +34,11 @@ const autofocusParams = {
             {
                 step: 0.25,
                 range: 2,
-                feedRate: 150
+                feedRate: 500
             }, {
-                step: 0.02,
-                range: 0.5,
-                feedRate: 100
+                step: 0.05,
+                range: 0.25,
+                feedRate: 500
             }],
     }
 }
