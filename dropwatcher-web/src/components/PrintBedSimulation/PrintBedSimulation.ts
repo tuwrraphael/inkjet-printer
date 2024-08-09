@@ -544,7 +544,8 @@ export class PrintBedSimulation extends HTMLElement {
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
                             this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
                             this.ctx.beginPath();
-                            this.ctx.arc(pos.x, pos.y, this.mmToDots(0.1), 0, 2 * Math.PI);
+                            let dotDiameter = 0.120;
+                            this.ctx.arc(pos.x, pos.y, this.mmToDots(dotDiameter/2), 0, 2 * Math.PI);
                             this.ctx.fill();
                         }
                     }
