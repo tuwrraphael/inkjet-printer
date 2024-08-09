@@ -247,18 +247,18 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
             ev.preventDefault();
             let from = 34.8;
-            let to = 16;
-            let step = 0.5;
+            let to = 28;
+            let step = 0.3;
             let position = {
                 x: 2,
-                y: 6
+                y: 12
             };
             let nr = 0;
             for (let v = from; v > to; v -= step) {
                 let voltage = Math.round(v * 100) / 100;
                 let modelPosition = {
-                    x: Math.floor(nr / 6) * 25 + position.x,
-                    y: (nr % 6) * 23 + position.y - (nr % 3) * 10
+                    x: (nr % 3) * 10 + position.x,
+                    y: Math.floor(nr / 3) * 5 + position.y
                 };
                 let id = `square-${nr}V`;
                 let group = `${voltage}V`;
@@ -268,19 +268,19 @@ export class PrintComponent extends HTMLElement {
                             type: PolygonType.Contour,
                             "points": [
                                 [
-                                    10,
-                                    10
+                                    3,
+                                    3
                                 ],
                                 [
                                     0,
-                                    10
+                                    3
                                 ],
                                 [
                                     0,
                                     0
                                 ],
                                 [
-                                    10,
+                                    3,
                                     0
                                 ]
                             ]
@@ -288,6 +288,10 @@ export class PrintComponent extends HTMLElement {
                     }],
                     fileName: `square-${nr}.svg`,
                     id: id
+                };
+                let photoPoint = {
+                    x : modelPosition.x+1.5,
+                    y : modelPosition.y+1.5
                 };
                 this.store.postAction(new ModelAdded(model));
                 this.store.postAction(new ModelParamsChanged(id, {
@@ -297,7 +301,8 @@ export class PrintComponent extends HTMLElement {
                 this.store.postAction(new ModelGroupParamsChanged(group, {
                     waveform: {
                         voltage: voltage
-                    }
+                    },
+                    photoPoints: [photoPoint]
                 }));
                 nr++;
             }
@@ -524,7 +529,7 @@ export class PrintComponent extends HTMLElement {
                 type: PrinterTaskType.Move,
                 movement: {
                     x: 0,
-                    y: this.store.state.printState.printerParams.buildPlate.height,
+                    y: 0,
                     z: height
                 },
                 feedRate: 10000
@@ -533,9 +538,9 @@ export class PrintComponent extends HTMLElement {
                 type: PrinterTaskType.SetTargetPressure,
                 targetPressure: -2
             });
-            steps.push({
-                type: PrinterTaskType.PrimeNozzle
-            });
+            // steps.push({
+            //     type: PrinterTaskType.PrimeNozzle
+            // });
             let layerPlan = printPlan?.layers[i];
             if (null != layerPlan) {
                 steps.push({
@@ -559,13 +564,13 @@ export class PrintComponent extends HTMLElement {
                     printingParams: this.store.state.printState.printingParams
                 });
             }
-            steps.push({
-                type: PrinterTaskType.Move,
-                movement: {
-                    z: 25
-                },
-                feedRate: 500
-            });
+            // steps.push({
+            //     type: PrinterTaskType.Move,
+            //     movement: {
+            //         z: 25
+            //     },
+            //     feedRate: 500
+            // });
         }
         if (printPlan && printPlan.layers.length > 0) {
             let x = printPlan.layers[0].modelGroupPlans[0].tracks[0].moveAxisPosition;
