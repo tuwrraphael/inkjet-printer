@@ -16,6 +16,7 @@ import { SlicerClient } from "../slicer/SlicerClient";
 import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
 import { PrinterTaskCancellationToken } from "./PrinterTaskCancellationToken";
 import { GCodeRunner } from "../gcode-runner";
+import { AutofocusCache } from "./AutofocusCache";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -57,6 +58,7 @@ export class PrintTaskRunner {
     }
 
     async run() {
+        let autofocusCache = new AutofocusCache();
         using movementExecutor = this.movementStage.getMovementExecutor("print-task-runner");
         this.programRunnerState = {
             state: PrinterProgramState.Running,
@@ -65,7 +67,7 @@ export class PrintTaskRunner {
         this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
         while (this.canContinue() && !this.isDone()) {
             let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
-            await this.runTask(nextTask, movementExecutor);
+            await this.runTask(nextTask, movementExecutor, autofocusCache);
             this.programRunnerState.currentTaskIndex++;
             this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
         }
@@ -81,7 +83,7 @@ export class PrintTaskRunner {
         return new PrinterTaskCancellationToken(() => !this.canContinue());
     }
 
-    private async runTask(task: PrinterTasks, movementExecutor: GCodeRunner) {
+    private async runTask(task: PrinterTasks, movementExecutor: GCodeRunner, autofocusCache: AutofocusCache) {
         switch (task.type) {
             case PrinterTaskType.Home:
                 let homeTaskRunner = new HomeTaskRunner(task, movementExecutor);
@@ -108,7 +110,7 @@ export class PrintTaskRunner {
                 await moveTaskRunner.run();
                 break;
             case PrinterTaskType.PrintLayer:
-                let moveAndSliceNextTaskRunner = new PrintLayerTaskRunner(task, movementExecutor, this.slicerClient, this.printerUsb, this.store);
+                let moveAndSliceNextTaskRunner = new PrintLayerTaskRunner(task, movementExecutor, this.slicerClient, this.printerUsb, this.store, autofocusCache);
                 await moveAndSliceNextTaskRunner.run(this.cancellationToken);
                 break;
             case PrinterTaskType.Wait:
