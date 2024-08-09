@@ -50,9 +50,10 @@ export class InkControl extends HTMLElement {
     private currentActionName: HTMLHeadingElement;
     private message: HTMLHeadingElement;
     private capping: SVGGElement;
-    private btnNextAction : HTMLButtonElement;
-    private extraComponentSpace : HTMLDivElement;
+    private btnNextAction: HTMLButtonElement;
+    private extraComponentSpace: HTMLDivElement;
     private loadedExtraComponent: () => Element;
+    private bntAbortAction : HTMLButtonElement;
 
     constructor() {
         super();
@@ -87,6 +88,7 @@ export class InkControl extends HTMLElement {
             this.capping = this.querySelector(".capping");
 
             this.btnNextAction = this.querySelector("#btn-next-action");
+            this.bntAbortAction = this.querySelector("#btn-abort-action");
 
             for (let possibleaction of inkControlActions) {
                 this.action.add(new Option(possibleaction.name, possibleaction.name));
@@ -129,6 +131,15 @@ export class InkControl extends HTMLElement {
             ev.preventDefault();
             this.next();
         }, this.abortController.signal);
+        abortableEventListener(this.bntAbortAction, "click", (ev) => {
+            ev.preventDefault();
+            this.store.postAction(new InkControlActionChanged({
+                currentAction: null,
+                currentStep: 0,
+                actionsRunning: false
+            }));
+            this.stop().catch(console.error);
+        }, this.abortController.signal);
 
         // this.actionChanged();
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
@@ -141,32 +152,38 @@ export class InkControl extends HTMLElement {
         let currentStep = this.currentAction.steps[this.store.state.inkControlAction.currentStep];
         if (currentStep.pumpactions) {
             let actions = currentStep.pumpactions();
-            let changeParametersRequest = new ChangePressureControlParametersRequest();
-            let parameters = new PressureControlParameters();
-            changeParametersRequest.parameters = parameters;
-            if (actions.inkPump) {
-                parameters.inkPump = actions.inkPump;
-            } else {
-                parameters.inkPump = new PressureControlPumpParameters();
-                parameters.inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_NONE;
-            }
-            parameters.enable = false;
-            await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
-            parameters = new PressureControlParameters();
-            changeParametersRequest.parameters = parameters;
-            if (actions.cappingPump) {
-                parameters.cappingPump = actions.cappingPump;
-            } else {
-                parameters.cappingPump = new PressureControlPumpParameters();
-                parameters.cappingPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_NONE;
-            }
-            parameters.enable = true;
-            await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
-            if (actions.turnOffPumps) {
-                parameters = new PressureControlParameters();
+            for (let i = 0; i < (actions.repetitions?.count || 1); i++) {
+
+                let changeParametersRequest = new ChangePressureControlParametersRequest();
+                let parameters = new PressureControlParameters();
                 changeParametersRequest.parameters = parameters;
+                if (actions.inkPump) {
+                    parameters.inkPump = actions.inkPump;
+                } else {
+                    parameters.inkPump = new PressureControlPumpParameters();
+                    parameters.inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_NONE;
+                }
                 parameters.enable = false;
                 await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
+                parameters = new PressureControlParameters();
+                changeParametersRequest.parameters = parameters;
+                if (actions.cappingPump) {
+                    parameters.cappingPump = actions.cappingPump;
+                } else {
+                    parameters.cappingPump = new PressureControlPumpParameters();
+                    parameters.cappingPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_NONE;
+                }
+                parameters.enable = true;
+                await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
+                if (actions.turnOffPumps) {
+                    parameters = new PressureControlParameters();
+                    changeParametersRequest.parameters = parameters;
+                    parameters.enable = false;
+                    await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
+                }
+                if (actions.repetitions?.pause) {
+                    await new Promise((resolve) => setTimeout(resolve, actions.repetitions.pause));
+                }
             }
         }
         if (currentStep.goToState) {

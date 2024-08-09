@@ -4,7 +4,13 @@ import { InkControlLoadInk, InkControlLoadInkTagName } from "../InkControlLoadIn
 
 interface InkControlActionStep {
     message: string;
-    pumpactions?: () => { inkPump?: PressureControlPumpParameters, cappingPump?: PressureControlPumpParameters, turnOffPumps?: boolean };
+    pumpactions?: () => {
+        inkPump?: PressureControlPumpParameters, cappingPump?: PressureControlPumpParameters, turnOffPumps?: boolean,
+        repetitions?: {
+            count: number,
+            pause: number
+        }
+    };
     highlight?: {
         valve1?: boolean,
         valve2?: boolean,
@@ -242,7 +248,7 @@ Any loaded ink fluids will be purged and lost.`,
                 let inkPump = new PressureControlPumpParameters();
                 inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
                 inkPump.direction = PressureControlDirection.PressureControlDirection_PRESSURE;
-                inkPump.maxPressureLimit = 30;
+                inkPump.maxPressureLimit = 40;
                 inkPump.minPressureLimit = -30;
                 inkPump.feedTime = 5;
                 inkPump.feedPwm = 100;
@@ -273,6 +279,15 @@ const LoadInk: InkControlAction = {
             message: `To load ink the capping station is used.`,
             highlight: {
                 capprinthead: true
+            }
+        },
+        {
+            message: `Valve 3 directs the purged cleaning fluid/ink to the waste container.`,
+            highlight: {
+                valve3: true
+            },
+            valvePositionChanges: {
+                valve3: ValvePosition.Port1Port3,
             }
         },
         {
@@ -344,11 +359,11 @@ Any purged ink is collected by a towel placed under the printhead.`,
             },
         },
         {
-            message: `The ink pump builds up pressure of 200mbar in the system.`,
+            message: `The ink pump builds up pressure of 350mbar in the system.`,
             pumpactions: () => {
                 let inkPump = new PressureControlPumpParameters();
                 inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
-                inkPump.targetPressure = 200;
+                inkPump.targetPressure = 350;
                 return {
                     inkPump
                 }
@@ -409,12 +424,12 @@ const SuctionPurge: InkControlAction = {
             },
         },
         {
-            message: `The capping pump purges the nozzles by vacuuming for 5 seconds, while the ink pump is keeping the pressure at 0mbar.`,
+            message: `The capping pump purges the nozzles by vacuuming for 15 seconds, while the ink pump is keeping the pressure at 0mbar.`,
             pumpactions: () => {
                 let cappingPump = new PressureControlPumpParameters();
                 cappingPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
                 cappingPump.direction = PressureControlDirection.PressureControlDirection_VACUUM;
-                cappingPump.feedTime = 5;
+                cappingPump.feedTime = 15;
                 cappingPump.feedPwm = 0.8;
                 cappingPump.maxPressureLimit = 100;
                 cappingPump.minPressureLimit = -100;
@@ -487,10 +502,79 @@ otherwise the supply side will be contaminated. The capping station must be inst
     ]
 };
 
+const ReciculateSuctionPurge: InkControlAction = {
+    name: "Recirculate Vacuum Purge",
+    steps: [
+        {
+            message: "Only use this method if you are sure there is a good seal between the printhead and the capping station.",
+        },
+        {
+            message: `Valve 3 directs the purged cleaning fluid back to the pressure reservoir.
+There must be no ink remaining in the tubing from capping station to the waste container,
+otherwise the supply side will be contaminated. The capping station must be installed.`,
+            highlight: {
+                valve3: true,
+                capprinthead: true
+            },
+            valvePositionChanges: {
+                valve3: ValvePosition.Port2Port3,
+                valve1: ValvePosition.Port1Port2,
+                valve2: ValvePosition.Port1Port3
+            }
+        },
+        {
+            message: `The capping pump is used to recirculate the cleaning fluid for 5 seconds, followed by a pause of 5 seconds.
+This is repeated 10 times.`,
+            pumpactions: () => {
+                let cappingPump = new PressureControlPumpParameters();
+                cappingPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_FEED_WITH_LIMIT;
+                cappingPump.direction = PressureControlDirection.PressureControlDirection_VACUUM;
+                cappingPump.feedTime = 5;
+                cappingPump.feedPwm = 1;
+                cappingPump.maxPressureLimit = 30;
+                cappingPump.minPressureLimit = -30;
+                return {
+                    cappingPump,
+                    repetitions: {
+                        count: 10,
+                        pause: 5000
+                    }
+                }
+            }
+        },
+        {
+            message: `The pressure is regulated back to 0mbar by the ink pump.`,
+            pumpactions: () => {
+                let inkPump = new PressureControlPumpParameters();
+                inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
+                inkPump.targetPressure = 0;
+                return {
+                    inkPump,
+                    turnOffPumps: true
+                }
+            }
+        }
+    ]
+};
 
 
-
-
+export const ZeroInkPressure: InkControlAction = {
+    name: "Zero ink pressure",
+    steps: [
+        {
+            message: `The ink pump is used to set the pressure to 0mbar.`,
+            pumpactions: () => {
+                let inkPump = new PressureControlPumpParameters();
+                inkPump.algorithm = PressureControlAlgorithm.PressureControlAlgorithm_TARGET_PRESSURE;
+                inkPump.targetPressure = 0;
+                return {
+                    inkPump,
+                    turnOffPumps: true
+                }
+            },
+        }
+    ]
+};
 
 
 export const inkControlActions: InkControlAction[] = [
@@ -501,5 +585,7 @@ export const inkControlActions: InkControlAction[] = [
     LoadInk,
     PowerPressurePurge,
     SuctionPurge,
-    Reciculate
+    Reciculate,
+    ReciculateSuctionPurge,
+    ZeroInkPressure
 ];
