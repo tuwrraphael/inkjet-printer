@@ -73,7 +73,7 @@ bool regulator_get_voltage(uint32_t *voltage_mv)
 int regulator_set_voltage(uint32_t voltage_mv)
 {
     double voltage = ((double)voltage_mv) / 1000.0;
-    if (voltage > 34.8 || voltage < 15.0)
+    if (voltage > 35.6 || voltage < 15.0)
     {
         return -EINVAL;
     }

@@ -203,7 +203,7 @@ export class PrintComponent extends HTMLElement {
             let request = new ChangeWaveformControlSettingsRequest();
             let settings = new WavefromControlSettings();
             request.settings = settings;
-            settings.voltageMv = 34.8 * 1000;
+            settings.voltageMv = 35.6 * 1000;
             await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#write-data"), "click", async (ev) => {
@@ -246,7 +246,7 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
             ev.preventDefault();
-            let from = 34.8;
+            let from = 35.6;
             let to = 28;
             let step = 0.3;
             let position = {
