@@ -13,13 +13,15 @@ import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicr
 import { CameraAccess } from "../../camera-access";
 import { CameraType } from "../../CameraType";
 import { GCodeRunner } from "../../gcode-runner";
+import { AutofocusCache } from "../AutofocusCache";
 
 export class PrintLayerTaskRunner {
     constructor(private task: PrintLayerTask,
         private movementExecutor: GCodeRunner,
         private slicerClient: SlicerClient,
         private printerUSB: PrinterUSB,
-        private store: Store) {
+        private store: Store,
+        private autofocusCache: AutofocusCache) {
     }
     async run(cancellationToken: PrinterTaskCancellationToken) {
         try {
@@ -46,25 +48,51 @@ export class PrintLayerTaskRunner {
                     await this.printTrack(track, { layerNr: this.task.layerNr, modelGroupId: group.modelGroupId },
                         cancellationToken);
                     cancellationToken.throwIfCanceled();
-                    let dryGroupUntil = add(new Date(), { seconds: group.printingParams.dryingTimeSeconds });
-                    if (dryGroupUntil > dryUntil) {
-                        dryUntil = dryGroupUntil;
-                    }
+                }
+                let groupPrintingFinished = new Date();
+                let dryGroupUntil = add(groupPrintingFinished, { seconds: group.printingParams.dryingTimeSeconds });
+                if (dryGroupUntil > dryUntil) {
+                    dryUntil = dryGroupUntil;
                 }
 
                 if (group.printingParams.photoPoints.length > 0) {
-                    for (let photoPoint of group.printingParams.photoPoints) {
-                        let microscopePos = printBedPositionToMicroscope(photoPoint, this.task.z, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
-                        if (microscopePos.feasible) {
-                            await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, microscopePos.microscopePos.z, 15000);
-                            let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
-                            await cameraAccess.performAutoFocus(0.5, 0.5, this.movementExecutor);
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            await cameraAccess.saveImage(`${this.task.layerNr}_${group.modelGroupId || 'no-group'}`);
+
+                    let photoPoint = group.printingParams.photoPoints[0];
+
+                    let microscopePos = printBedPositionToMicroscope(photoPoint, this.task.z, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
+                    if (microscopePos.feasible) {
+
+                        let focus = null;// this.autofocusCache.get(microscopePos.microscopePos.x, microscopePos.microscopePos.y);
+                        let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
+                        let cancelPriming;
+                        if (focus != null) {
+                            await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, focus, 15000);
+                            cancelPriming = this.nozzlePriming();
                         } else {
-                            console.log("Skipping camera move, out of range");
-                        } cancellationToken.throwIfCanceled();
+                            await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, microscopePos.microscopePos.z, 15000);
+                            cancelPriming = this.nozzlePriming();
+                            let res = await cameraAccess.performAutoFocus(0.5, 0.5, this.movementExecutor);
+                            this.autofocusCache.set(microscopePos.microscopePos.x, microscopePos.microscopePos.y, this.store.state.movementStageState.pos.z);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        let first = true;
+                        let photoInterval = 3000;
+                        try {
+                            while (first || dryGroupUntil > new Date()) {
+                                first = false;
+                                let photoTime = new Date();
+                                let driedForMs = +photoTime - +groupPrintingFinished;
+                                await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`);
+                                await new Promise(resolve => setTimeout(resolve, photoInterval - ((+new Date()) - (+photoTime))));
+                                cancellationToken.throwIfCanceled();
+                            }
+                        } finally {
+                            await cancelPriming();
+                        }
+                    } else {
+                        console.log("Skipping camera move, out of range");
                     }
+                    cancellationToken.throwIfCanceled();
                 }
             }
             let dryForMs = Math.max(0, (+dryUntil - +new Date()));
@@ -87,6 +115,36 @@ export class PrintLayerTaskRunner {
             }
             throw e;
         }
+    }
+
+    private nozzlePriming(): () => Promise<void> {
+        let canceled: () => void;
+        let timeoutToken: NodeJS.Timeout;
+        let loopStarted = false;
+        let primingLoop = () => {
+            loopStarted = true;
+            this.printerUSB.sendNozzlePrimingRequestAndWait().then(() => {
+                loopStarted = false;
+                if (!canceled) {
+                    timeoutToken = setTimeout(() => {
+                        primingLoop();
+                    }, 15000);
+                } else {
+                    canceled();
+                }
+            });
+        }
+        primingLoop();
+        return () => {
+            clearTimeout(timeoutToken);
+            return new Promise<void>((resolve, reject) => {
+                if (loopStarted) {
+                    canceled = resolve;
+                } else {
+                    resolve();
+                }
+            });
+        };
     }
 
     private async changeVoltageIfNeeded(voltage: number, cancellationToken: PrinterTaskCancellationToken) {
