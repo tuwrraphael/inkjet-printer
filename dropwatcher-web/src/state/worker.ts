@@ -543,10 +543,18 @@ async function handleMessage(msg: Actions) {
         case ActionType.ModelGroupParamsChanged:
             updateState(oldState => {
                 let modelGroupParams: ModelGroupPrintingParams = {};
-                for (let key in msg.params) {
-                    let keyprop: keyof ModelGroupPrintingParams = <any>key;
+                let keyprop: keyof ModelGroupPrintingParams;
+                for (keyprop in msg.params) {
+
                     if (!deepEquals(msg.params[keyprop], state.printState.printingParams[keyprop])) {
                         (<any>modelGroupParams[keyprop]) = msg.params[keyprop];
+                    }
+                }
+                let old: ModelGroupPrintingParams = oldState.printState.modelGroupPrintingParams[msg.id] || {};
+                let key: keyof ModelGroupPrintingParams;
+                for (key in old) {
+                    if (old.hasOwnProperty(key) && !msg.params.hasOwnProperty(key)) {
+                        (<any>modelGroupParams[key]) = old[key];
                     }
                 }
                 return {
