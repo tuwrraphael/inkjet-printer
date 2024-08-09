@@ -65,10 +65,26 @@ export const DefaultState: State =
             //     ...Array.from({ length: 63 + 1 - 48 }, (_, i) => i + 48),
             //     ...Array.from({ length: 31 + 1 - 24 }, (_, i) => i + 24),
             // ]
-            blockedNozzles: [],
+            // [
+            //     0, 4, 6, 8,
+            //     10, 11, 12, 14,
+            //     ...Array.from({ length: 47 + 1 - 32 }, (_, i) => i + 32),
+            //     ...Array.from({ length: 79 + 1 - 64 }, (_, i) => i + 64),
+            //     110, 111, 108, 106,
+            //     ...Array.from({ length: 104 + 1 - 96 }, (_, i) => i + 96),
+            //     112, 114,
+            //     ...Array.from({ length: 127 + 1 - 117 }, (_, i) => i + 117),
+            //     94, 92,
+            //     ...Array.from({ length: 90 + 1 - 86 }, (_, i) => i + 86),
+            //     ...Array.from({ length: 84 + 1 - 80 }, (_, i) => i + 80),
+            //     ...Array.from({ length: 63 + 1 - 48 }, (_, i) => i + 48),
+            //     30, 29, 28, 26, 24, 22, 20, 18, 16
+            // ]
+            blockedNozzles: [
+            ],
             printBedToCamera: {
-                x: 149.29,
-                y: 8.26,
+                x: 149.29 - 9.44 + 8.1,
+                y: 8.26 - 10.56 + 9.63,
                 z: 15.19,
             },
             movementRange: {
