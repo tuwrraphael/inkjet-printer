@@ -1,0 +1,11 @@
+image-list-entry {
+    display: block;
+    padding: 0.5em;
+    cursor: pointer;
+}
+
+.image-list-entry {
+    &--selected {
+        background-color: #f0f0f0;
+    }
+}

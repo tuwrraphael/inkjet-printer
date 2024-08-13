@@ -8,6 +8,7 @@ import { abortableEventListener } from "../../utils/abortableEventListener";
 import { OpenFile } from "../../state/actions/OpenFile";
 import { SaveToFile } from "../../state/actions/SaveToFile";
 import { SaveToCurrentFile } from "../../state/actions/SaveToCurrentFile";
+import { OutputFolderChanged } from "../../state/actions/OutputFolderChanged";
 
 export class AppComponent extends HTMLElement {
 
@@ -81,6 +82,19 @@ export class AppComponent extends HTMLElement {
             if (event.ctrlKey && event.key === "s") {
                 event.preventDefault();
                 await this.saveToCurrentFile();
+            }
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#select-output-folder"), "click", async (ev) => {
+            ev.preventDefault();
+            try {
+                let outputFolder = await window.showDirectoryPicker({
+                    mode: "readwrite",
+                    startIn: "documents"
+                });
+                this.store.postAction(new OutputFolderChanged(outputFolder));
+
+            } catch (e) {
+                console.error(e);
             }
         }, this.abortController.signal);
 

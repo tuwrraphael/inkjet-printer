@@ -159,13 +159,19 @@ export interface InkControlActionState {
 
     currentAction: string;
     currentStep: number;
-    actionsRunning : boolean;
+    actionsRunning: boolean;
 }
 
 export interface ValveState {
     valve1: ValvePosition;
     valve2: ValvePosition;
     valve3: ValvePosition;
+}
+
+export interface InspectImage {
+    file: FileSystemFileHandle,
+    metadata: {
+    }
 }
 
 export interface State {
@@ -240,8 +246,10 @@ export interface State {
         lastSaved: Date | null
     } | null,
     inspect: {
-        outputFolder: FileSystemDirectoryHandle
-    }
+        outputFolder: FileSystemDirectoryHandle,
+        images: InspectImage[],
+        selectedImageFileName: string | null
+    },
     printBedViewState: PrintBedViewState;
     inkControlAction: InkControlActionState;
 }

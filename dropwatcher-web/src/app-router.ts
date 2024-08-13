@@ -8,6 +8,7 @@ import { MovementControlTagName } from "./components/MovementControl/MovementCon
 import { InkControlTagName } from "./components/InkControl/InkControl";
 import { PrintTagName } from "./components/Print/Print";
 import { DropwatcherTagName } from "./components/Dropwatcher/Dropwatcher";
+import { InspectTagName } from "./components/Inspect/Inspect";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -49,6 +50,8 @@ export class AppRouter {
                     return document.createElement(PrintTagName);
                 } else if (/^dropwatcher$/.test(currentRoute)) {
                     return document.createElement(DropwatcherTagName);
+                } else if (/^inspect$/.test(currentRoute)) {
+                    return document.createElement(InspectTagName);
                 }
                 return document.createElement("home-component");
             }

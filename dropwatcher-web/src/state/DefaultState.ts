@@ -140,7 +140,9 @@ export const DefaultState: State =
         actionsRunning: false
     },
     inspect: {
-        outputFolder: null
+        outputFolder: null,
+        images: [],
+        selectedImageFileName: null
     },
     cameras: {
     }

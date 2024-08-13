@@ -29,5 +29,6 @@ export const enum ActionType {
     ValvePositionsChanged,
     OutputFolderChanged,
     SaveImage,
-    PlacePhotoPoint
+    PlacePhotoPoint,
+    ImageSelected
 }

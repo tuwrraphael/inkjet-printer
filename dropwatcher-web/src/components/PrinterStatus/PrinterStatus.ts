@@ -41,6 +41,8 @@ export class PrinterStatus extends HTMLElement {
     private voltage: HTMLSpanElement;
     private stageTemp: HTMLSpanElement;
     private microscopePosition: HTMLTableCellElement;
+    private projectFile : HTMLTableCellElement;
+    private outputFolder : HTMLTableCellElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -76,6 +78,8 @@ export class PrinterStatus extends HTMLElement {
             this.voltage = this.querySelector("#voltage");
             this.stageTemp = this.querySelector("#stage-temp");
             this.microscopePosition = this.querySelector("#microscope-position");
+            this.projectFile = this.querySelector("#project-file");
+            this.outputFolder = this.querySelector("#output-folder");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -205,6 +209,13 @@ export class PrinterStatus extends HTMLElement {
                 || { x: NaN, y: NaN, z: NaN }
                 , s.printState.printerParams.printBedToCamera);
             this.microscopePosition.innerText = this.formatStagePosition(microscopePosition);
+        }
+
+        if (c.includes("currentFileState")) {
+            this.projectFile.innerText = s.currentFileState?.currentFile?.name || "-";
+        }
+        if (c.includes("inspect")) {
+            this.outputFolder.innerText = s.inspect.outputFolder?.name || "-";
         }
     }
 

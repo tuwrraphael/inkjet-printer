@@ -161,13 +161,39 @@ export class CameraAccess {
         if (!this.stream) {
             await this.start();
         }
-        let track = this.stream.getVideoTracks()[0];
-        let imageCapture = new ImageCapture(track);
-        let image = await imageCapture.takePhoto();
-        this.store.postAction(new SaveImage(image, this.type, filename));
+        
+        
+
+        const video = document.createElement('video');
+        
+
+        video.srcObject = this.stream;
+        await video.play();
+
+        let offscreen = new OffscreenCanvas(this.stream.getVideoTracks()[0].getSettings().width, this.stream.getVideoTracks()[0].getSettings().height);
+        let ctx = offscreen.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+        let blob = await offscreen.convertToBlob();
+
+        this.store.postAction(new SaveImage(blob, this.type, filename));
+    }
+    
+    private waitForNextVideoFrame(videoElement: HTMLVideoElement) {
+        return new Promise<void>((resolve, reject) => {
+            videoElement.requestVideoFrameCallback(() => {
+                resolve();
+            })
+        });
     }
 
+
     private async autofocusAlg(movementExecutor: GCodeRunner, step: number, range: number, x: number, y: number, feedRate: number) {
+
+        const video = document.createElement('video');
+        
+
+        video.srcObject = this.stream;
+        await video.play();
 
         let direction = new cv.Mat(3, 1, cv.CV_64F);
         let dir = autofocusParams[this.type].direction;
@@ -181,10 +207,15 @@ export class CameraAccess {
         let best: ImageBitmap = null;
         // let bestArea: ImageData = null;
 
-        let imageCapture = new ImageCapture(this.stream.getVideoTracks()[0]);
+        
 
-        // await this.waitForNextVideoFrame();
-        let frame = await imageCapture.grabFrame();
+        await this.waitForNextVideoFrame(video);
+        let offscreen = new OffscreenCanvas(this.stream.getVideoTracks()[0].getSettings().width, this.stream.getVideoTracks()[0].getSettings().height);
+        let ctx = offscreen.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+        let frame = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+        
+      
         x = Math.floor(x * frame.width);
         y = Math.floor(y * frame.height);
 
@@ -196,20 +227,20 @@ export class CameraAccess {
         let maxY = Math.min(frame.height, y + areaSize / 2);
         // console.log(y, x, minX, minY, maxX - minX, maxY - minY);
 
-        let offscreen = new OffscreenCanvas(frame.width, frame.height);
-        let ctx2 = offscreen.getContext("2d");
+        
         for (let i = 0; i < range; i += step) {
             relativeMovement = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), step);
             await movementExecutor.moveRelativeAndWait(relativeMovement.data64F[0], relativeMovement.data64F[1], relativeMovement.data64F[2], feedRate);
-            // await this.waitForNextVideoFrame();
-            frame = await imageCapture.grabFrame();
+            await this.waitForNextVideoFrame(video);
+            ctx.drawImage(video, 0, 0);
+            frame = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
             // this.canvas.width = frame.width;
             // this.canvas.height = frame.height;
 
             // ctx.drawImage(frame, 0, 0);
 
-            ctx2.drawImage(frame, 0, 0);
-            let imageData: ImageData = ctx2.getImageData(minX, minY, maxX - minX, maxY - minY);
+            
+            let imageData: ImageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);
             // let imageData: ImageData = ctx.getImageData(0, 0, frame.width, frame.height);
             // console.log(imageData);
             // ctx.putImageData(imageData,0,0);
@@ -244,7 +275,7 @@ export class CameraAccess {
 
                 bestScore = focusScore;
                 bestDistance = i;
-                best = frame;
+                best = await createImageBitmap(imageData);
                 // bestArea = imageData;
             }
 
@@ -276,6 +307,7 @@ export class CameraAccess {
         let relativeMovementToBestDistance = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), -range + bestDistance);
         await movementExecutor.moveRelativeAndWait(relativeMovementToBestDistance.data64F[0], relativeMovementToBestDistance.data64F[1], relativeMovementToBestDistance.data64F[2], feedRate);
         direction.delete();
+        video.remove();
         return {
             area: {
                 x: minX,
@@ -287,6 +319,7 @@ export class CameraAccess {
             bestScore: bestScore,
             best: best,
         }
+
     }
 
     async performAutoFocus(x: number, y: number, movementExecutor: GCodeRunner) {

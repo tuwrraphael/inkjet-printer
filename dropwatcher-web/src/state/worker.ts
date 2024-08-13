@@ -30,6 +30,7 @@ import { PrintingParamsChanged } from "./actions/PrintOptionsChanged";
 import { getModelBoundingBox } from "../utils/getModelBoundingBox";
 import { SaveToCurrentFile } from "./actions/SaveToCurrentFile";
 import { ModelSelected } from "./actions/ModelSelected";
+import { ImageSelected } from "./actions/ImageSelected";
 import { ModelGroupParamsChanged, ModelParamsChanged } from "./actions/ModelParamsChanged";
 import { SetSlicerWorker } from "./actions/SetSlicerWorker";
 import { Slicer } from "../slicer/SlicerWorker";
@@ -73,6 +74,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | ValvePositionChanged
     | OutputFolderChanged
     | SaveImage
+    | ImageSelected
     ;
 let state: State;
 let initialized = false;
@@ -589,15 +591,18 @@ async function handleMessage(msg: Actions) {
             }));
             break;
         case ActionType.OutputFolderChanged:
-            updateState(oldState => ({
-                inspect: {
-                    ...oldState.inspect,
-                    outputFolder: msg.folder
-                }
-            }));
+            await outputFolderChanged(msg);
             break;
         case ActionType.SaveImage:
             await saveImage(msg);
+            break;
+        case ActionType.ImageSelected:
+            updateState(oldState => ({
+                inspect: {
+                    ...oldState.inspect,
+                    selectedImageFileName: msg.filename
+                }
+            }));
             break;
     }
 }
@@ -774,6 +779,60 @@ async function saveImage(saveImgMsg: SaveImage) {
     let fileName = lastNr >= 0 ? `${fileNameBase}_${lastNr + 1}.png` : `${fileNameBase}.png`;
     let file = await state.inspect.outputFolder.getFileHandle(fileName, { create: true });
     let writable = await file.createWritable();
-    writable.write(saveImgMsg.image);
-    writable.close();
+    await writable.write(saveImgMsg.image);
+    await writable.close();
+    updateState(oldState => ({
+        inspect: {
+            ...oldState.inspect,
+            images: [...oldState.inspect.images, {
+                file: file,
+                metadata: {
+                }
+            }],
+            selectedImageFileName: fileName
+        }
+    }));
+}
+
+async function enumerateImages() {
+    if (!state.inspect.outputFolder) {
+        console.error("No output folder set");
+        updateState(oldState => ({
+            inspect: {
+                ...oldState.inspect,
+                images: []
+            }
+        }));
+    }
+    let images = [];
+    for await (let entry of state.inspect.outputFolder.values()) {
+        if (entry.kind == "file" && entry.name.endsWith(".png")) {
+            let file = await entry.getFile();
+            // let image = await file.arrayBuffer();
+            images.push({
+                file: entry,
+                metadata: {
+                    // name: entry.name,
+                    // image: image
+                }
+            });
+        }
+    }
+    updateState(oldState => ({
+        inspect: {
+            ...oldState.inspect,
+            images: images
+        }
+    }));
+}
+
+async function outputFolderChanged(msg: OutputFolderChanged) {
+    updateState(oldState => ({
+        inspect: {
+            ...oldState.inspect,
+            outputFolder: msg.folder,
+            selectedImageFileName: null
+        }
+    }));
+    await enumerateImages();
 }

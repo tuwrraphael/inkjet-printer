@@ -38,7 +38,7 @@ export class MovementControl extends HTMLElement {
             abortableEventListener(this.querySelector("#btn-undock-capping-station"), "click", async (event) => {
                 event.preventDefault();
                 using executor = this.movementStage.getMovementExecutor("movement-control");
-                await executor.moveAbsoluteAndWait(100, 100, 30, 400);
+                await executor.moveRelativeAndWait(0, 0, 10, 400);
                 console.log("undocked");
             }, this.abortController.signal);
 
