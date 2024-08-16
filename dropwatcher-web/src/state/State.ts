@@ -4,7 +4,8 @@ import { TrackRasterization } from "../slicer/TrackRasterization";
 import { PrintingParams } from "../slicer/PrintingParams";
 import { ModelGroupPrintingParams } from "../slicer/ModelGroupPrintingParams";
 import { PrinterParams } from "../slicer/PrinterParams";
-import { CorrectionTrack, TrackRasterizationResult } from "../slicer/TrackRasterizer";
+import { TrackRasterizationResult } from "../slicer/TrackRasterizationResult";
+import { CorrectionTrack } from "../slicer/CorrectionTrack";
 import { PrintBedViewStateChanged } from "./actions/PrintBedViewStateChanged";
 import { CameraType } from "../CameraType";
 

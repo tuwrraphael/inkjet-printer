@@ -18,4 +18,5 @@ export interface PrintingParams {
         }
     },
     photoPoints: { x: number, y: number }[];
+    randomizeTracks : boolean;
 }

@@ -183,12 +183,10 @@ async function rasterizeTrack() {
     if (state.printBedViewState.viewMode.mode != "rasterization") {
         return;
     }
+    let viewMode = state.printBedViewState.viewMode;
     if (!state.printState.slicingState.printPlan) {
         return;
     }
-    let layerPlan = state.printState.slicingState.printPlan.layers[state.printBedViewState.viewLayer];
-    let modelGroup = state.printBedViewState.viewMode.modelGroup;
-    let moveAxisPos = moveAxisPositionFromPlanAndIncrement(layerPlan, modelGroup, state.printBedViewState.viewMode.trackIncrement);
     updateState(oldState => ({
         printState: {
             ...oldState.printState,
@@ -204,6 +202,9 @@ async function rasterizeTrack() {
         rasterizeLayers.push(state.printBedViewState.viewLayer + 1);
     }
     let result = await Promise.all(rasterizeLayers.map(async layer => {
+        let layerPlan = state.printState.slicingState.printPlan.layers[layer];
+        let modelGroup = viewMode.modelGroup;
+        let moveAxisPos = moveAxisPositionFromPlanAndIncrement(layerPlan, modelGroup, viewMode.trackIncrement);
         let r: TrackRasterizationPreview = {
             moveAxisPosition: moveAxisPos,
             result: await slicer.rasterizeTrack(modelGroup, layer, moveAxisPos)

@@ -1,6 +1,7 @@
 import { Model, ModelParams, Point, PolygonType } from "../state/State";
 import { getBoundingBox } from "../utils/getBoundingBox";
 import { getPrintheadSwathe } from "./getPrintheadSwathe";
+import { PointInPolygonTrackRasterizer } from "./PointInPolygonTrackRasterizer";
 import { TrackRasterizer } from "./TrackRasterizer";
 import { SliceModelInfo } from "./SliceModelInfo";
 import { TrackPlan } from "./TrackPlan";
@@ -9,13 +10,27 @@ import { PrintingParams } from "./PrintingParams";
 import { PrinterParams } from "./PrinterParams";
 import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
 
+function splitmix32(a: number) {
+    return function () {
+        a |= 0;
+        a = a + 0x9e3779b9 | 0;
+        let t = a ^ a >>> 16;
+        t = Math.imul(t, 0x21f0aaad);
+        t = t ^ t >>> 15;
+        t = Math.imul(t, 0x735a2d97);
+        return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+    }
+}
+
 export class PrintPlanner {
 
     private layerMap: Map<number, {
         modelmap: Map<string, SliceModelInfo>;
         plan: LayerPlan;
+        randomizedOffset: number;
     }> = new Map();
     private maxLayers: number;
+    private rng = splitmix32(4211531641);
     constructor(private models: Model[],
         private modelParamsDict: { [id: string]: ModelParams; },
         private printerParams: PrinterParams,
@@ -48,21 +63,24 @@ export class PrintPlanner {
             let modelParams = this.modelParamsDict[model.id];
             modelmap.set(model.id, { polygons, contourBoundingBoxes, modelGroupId: modelParams.modelGroupId });
         }
+        let swathe = getPrintheadSwathe(this.printerParams);
+        let randomizedOffset = this.printingParams.randomizeTracks ? Math.round((this.rng() * swathe.x * -0.75) * 10) / 10 : 0;
         this.layerMap.set(layer, {
             modelmap, plan: {
-                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap)),
-            }
+                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap, randomizedOffset)),
+            },
+            randomizedOffset
         });
         return this.layerMap.get(layer);
     }
 
-    private *estimateModelGroupPlans(modelmap: Map<string, SliceModelInfo>): IterableIterator<ModelGroupPlan> {
+    private *estimateModelGroupPlans(modelmap: Map<string, SliceModelInfo>, offset:number): IterableIterator<ModelGroupPlan> {
         let modelGroupIds = new Set(Array.from(modelmap.values()).map(m => m.modelGroupId));
         for (let modelGroupId of modelGroupIds) {
             let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
             let printingParams = { ...this.printingParams, ...modelGroupParams };
             let modelMap = new Map(Array.from(modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-            let tracks = this.estimateModelGroupTracks(modelMap);
+            let tracks = this.estimateModelGroupTracks(modelMap, offset);
             if (tracks.length > 0) {
                 yield {
                     modelGroupId: modelGroupId,
@@ -73,7 +91,7 @@ export class PrintPlanner {
         }
     }
 
-    private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>): TrackPlan[] {
+    private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>, offset:number): TrackPlan[] {
         if (modelmap.size === 0) {
             return [];
         }
@@ -93,6 +111,7 @@ export class PrintPlanner {
         let increment = swathe.x;
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let tracks: TrackPlan[] = [];
+        minX += offset;
         minX = Math.max(0, minX);
         for (let moveAxisPosition = minX; moveAxisPosition < maxX; moveAxisPosition += increment) {
             // todo optimize minY, maxY
@@ -113,7 +132,7 @@ export class PrintPlanner {
         let layer = this.getLayer(layerNr);
         let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
         let modelMap = new Map(Array.from(layer.modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-        return new TrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
+        return new PointInPolygonTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
     }
 
     getPrintPlan(): PrintPlan {

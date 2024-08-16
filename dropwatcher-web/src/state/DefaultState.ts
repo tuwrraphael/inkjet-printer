@@ -103,16 +103,17 @@ export const DefaultState: State =
             waveform: {
                 voltage: 28
             },
-            skipNozzles: 1,
+            skipNozzles: 0,
             offsetLayers: {
                 printAxis: {
                     everyOtherLayerByTicks: 2,
                 },
                 moveAxis: {
-                    everyOtherLayerByNozzles: 1
+                    everyOtherLayerByNozzles: 0
                 }
             },
-            photoPoints: []
+            photoPoints: [],
+            randomizeTracks: true
         },
         slicingState: {
             currentRasterization: null,
