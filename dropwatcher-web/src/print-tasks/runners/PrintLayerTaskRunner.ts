@@ -14,6 +14,7 @@ import { CameraAccess } from "../../camera-access";
 import { CameraType } from "../../CameraType";
 import { GCodeRunner } from "../../gcode-runner";
 import { AutofocusCache } from "../AutofocusCache";
+import { kHzToNs } from "../../utils/kHzToNs";
 
 export class PrintLayerTaskRunner {
     constructor(private task: PrintLayerTask,
@@ -43,7 +44,7 @@ export class PrintLayerTaskRunner {
 
             for (let group of orderedGroups) {
                 await this.movementExecutor.moveAbsoluteZAndWait(this.task.z, 500);
-                await this.changeVoltageIfNeeded(group.printingParams.waveform.voltage, cancellationToken);
+                await this.changeWaveformIfNeeded(group.printingParams.waveform.voltage, group.printingParams.waveform.clockFrequency, cancellationToken);
                 for (let track of group.tracks) {
                     await this.printTrack(track, { layerNr: this.task.layerNr, modelGroupId: group.modelGroupId },
                         cancellationToken);
@@ -147,11 +148,15 @@ export class PrintLayerTaskRunner {
         };
     }
 
-    private async changeVoltageIfNeeded(voltage: number, cancellationToken: PrinterTaskCancellationToken) {
+    private async changeWaveformIfNeeded(voltage: number, frequency: number, cancellationToken: PrinterTaskCancellationToken) {
 
         let setVoltage = this.store.state.printerSystemState.waveformControl.setVoltageMv;
-        if (Math.floor(voltage * 1000) != setVoltage) {
-            console.log("Changing voltage to " + voltage);
+        let requiresVoltageChange = Math.floor(voltage * 1000) != setVoltage;
+        let period = Math.round(kHzToNs(frequency));
+        let setPeriod = this.store.state.printerSystemState.waveformControl.clockPeriodNs;
+        let requiresPeriodChange = period != setPeriod;
+        if (requiresVoltageChange || requiresPeriodChange) {
+            console.log("Changing voltage to " + voltage + " and period to " + period);
             let changePrinterSystemStateRequest = new ChangePrinterSystemStateRequest();
             changePrinterSystemStateRequest.state = PrinterSystemState.PrinterSystemState_IDLE;
             await this.printerUSB.sendChangeSystemStateRequestAndWait(changePrinterSystemStateRequest);
@@ -162,6 +167,7 @@ export class PrintLayerTaskRunner {
             let settings = new WavefromControlSettings();
             request.settings = settings;
             settings.voltageMv = Math.floor(voltage * 1000);
+            settings.clockPeriodNs = period;
 
             await this.printerUSB.sendChangeWaveformControlSettingsRequestAndWait(request);
             cancellationToken.throwIfCanceled();
@@ -207,7 +213,7 @@ export class PrintLayerTaskRunner {
             encoderModeSettings.startPaused = false;
             changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
             await this.printerUSB.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
-            await this.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.endPrintAxisPosition, 2000);
+            await this.movementExecutor.moveAbsoluteXYAndWait(t.pos, printTrack.endPrintAxisPosition, 6000);
             let changeEncoderModeRequest = new ChangeEncoderModeRequest();
             changeEncoderModeRequest.paused = true;
             await this.printerUSB.sendChangeEncoderModeRequest(changeEncoderModeRequest);
@@ -228,7 +234,7 @@ export class PrintCustomTracksTaskRunner {
         await this.movementExecutor.moveAbsoluteZAndWait(this.task.z, 150);
         cancellationToken.throwIfCanceled();
         for (let customTrack of this.task.customTracks) {
-            await this.changeVoltageIfNeeded(this.task.printingParams.waveform.voltage, cancellationToken);
+            await this.changeVoltageIfNeeded(this.task.printingParams.waveform.voltage, this.task.printingParams.waveform.clockFrequency, cancellationToken);
             await this.movementExecutor.moveAbsoluteXAndWait(customTrack.moveAxisPos, 10000);
             cancellationToken.throwIfCanceled();
             if (customTrack.track.linesToPrint == 0) {
@@ -262,11 +268,15 @@ export class PrintCustomTracksTaskRunner {
         }
     }
 
-    private async changeVoltageIfNeeded(voltage: number, cancellationToken: PrinterTaskCancellationToken) {
+    private async changeVoltageIfNeeded(voltage: number, frequency: number, cancellationToken: PrinterTaskCancellationToken) {
 
         let setVoltage = this.store.state.printerSystemState.waveformControl.setVoltageMv;
-        if (Math.floor(voltage * 1000) != setVoltage) {
-            console.log("Changing voltage to " + voltage);
+        let requiresVoltageChange = Math.floor(voltage * 1000) != setVoltage;
+        let period = Math.round(kHzToNs(frequency));
+        let setPeriod = this.store.state.printerSystemState.waveformControl.clockPeriodNs;
+        let requiresPeriodChange = period != setPeriod;
+        if (requiresVoltageChange || requiresPeriodChange) {
+            console.log("Changing voltage to " + voltage + " and period to " + period);
             let changePrinterSystemStateRequest = new ChangePrinterSystemStateRequest();
             changePrinterSystemStateRequest.state = PrinterSystemState.PrinterSystemState_IDLE;
             await this.printerUSB.sendChangeSystemStateRequestAndWait(changePrinterSystemStateRequest);
@@ -277,6 +287,7 @@ export class PrintCustomTracksTaskRunner {
             let settings = new WavefromControlSettings();
             request.settings = settings;
             settings.voltageMv = Math.floor(voltage * 1000);
+            settings.clockPeriodNs = period;
 
             await this.printerUSB.sendChangeWaveformControlSettingsRequestAndWait(request);
             cancellationToken.throwIfCanceled();

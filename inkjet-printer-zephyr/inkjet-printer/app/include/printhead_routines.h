@@ -6,9 +6,15 @@
 
 typedef void (*printhead_routines_error_callback_t)(void);
 
-typedef struct {
+typedef struct
+{
     printhead_routines_error_callback_t error_callback;
 } printhead_routines_init_t;
+
+typedef struct
+{
+    uint32_t activated_period;
+} printhead_routines_info_t;
 
 enum printhead_routine_state
 {
@@ -29,5 +35,9 @@ int printhead_routine_smf(enum printhead_routine_state init_state);
 int printhead_routines_initialize(printhead_routines_init_t *init);
 
 void printhead_routines_go_to_safe_state();
+
+int printhead_routines_config_period(uint32_t period);
+
+void printhead_routines_get_info(printhead_routines_info_t *info);
 
 #endif

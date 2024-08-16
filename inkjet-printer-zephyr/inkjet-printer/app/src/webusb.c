@@ -33,6 +33,7 @@ LOG_MODULE_REGISTER(webusb, CONFIG_APP_LOG_LEVEL);
 #include "pressure_control.h"
 #include "print_control.h"
 #include "regulator.h"
+#include "printhead_routines.h"
 
 /* Max packet size for Bulk endpoints */
 #if defined(CONFIG_USB_DC_HAS_HS_SUPPORT)
@@ -354,9 +355,12 @@ static int set_printer_system_state_msg(pb_ostream_t *tx_stream)
 		response.has_waveform_control = true;
 		regulator_info_t info;
 		regulator_get_info(&info);
+		printhead_routines_info_t printhead_info;
+		printhead_routines_get_info(&printhead_info);
 		response.waveform_control.has_voltage_mv = info.voltage_reading_available;
 		response.waveform_control.voltage_mv = info.voltage_mv;
 		response.waveform_control.set_voltage_mv = info.set_voltage_mv;
+		response.waveform_control.clock_period_ns = printhead_info.activated_period;
 	default:
 		break;
 	}
@@ -623,13 +627,15 @@ static void webusb_read_cb(uint8_t ep, int size, void *priv)
 			LOG_ERR("Failed to decode ChangeEncoderModeRequest");
 		}
 	}
-	else if (type == ChangeWaveformControlSettingsRequest_fields) {
+	else if (type == ChangeWaveformControlSettingsRequest_fields)
+	{
 		ChangeWaveformControlSettingsRequest request = {};
 		status = decode_unionmessage_contents(&stream, ChangeWaveformControlSettingsRequest_fields, &request);
 		if (status)
 		{
 			waveform_settings_t settings;
 			settings.voltage = request.settings.voltage_mv;
+			settings.clock_period_ns = request.settings.clock_period_ns;
 			request_set_waveform_settings(&settings);
 			LOG_INF("ChangeWaveformControlSettingsRequest: voltage %d", request.settings.voltage_mv);
 		}

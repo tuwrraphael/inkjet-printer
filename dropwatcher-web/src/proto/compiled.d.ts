@@ -1810,6 +1810,9 @@ export class WavefromControlSettings implements IWavefromControlSettings {
     /** WavefromControlSettings voltageMv. */
     public voltageMv: number;
 
+    /** WavefromControlSettings clockPeriodNs. */
+    public clockPeriodNs: number;
+
     /**
      * Creates a new WavefromControlSettings instance using the specified properties.
      * @param [properties] Properties to set
@@ -1902,6 +1905,9 @@ export class WaveformControlState implements IWaveformControlState {
 
     /** WaveformControlState setVoltageMv. */
     public setVoltageMv: number;
+
+    /** WaveformControlState clockPeriodNs. */
+    public clockPeriodNs: number;
 
     /** WaveformControlState _voltageMv. */
     public _voltageMv?: "voltageMv";

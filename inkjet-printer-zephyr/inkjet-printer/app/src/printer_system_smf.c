@@ -90,6 +90,11 @@ static void printer_system_idle(void *o)
         {
             LOG_ERR("Failed to set voltage %d", ret);
         }
+        ret = printhead_routines_config_period(object->waveform_settings.clock_period_ns);
+        if (ret != 0)
+        {
+            LOG_ERR("Failed to set clock period %d", ret);
+        }
     }
 }
 

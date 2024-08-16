@@ -2,7 +2,7 @@ import { CameraAccess } from "../../camera-access";
 import { CameraType } from "../../CameraType";
 import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
-import { ChangeDropwatcherParametersRequest } from "../../proto/compiled";
+import { ChangeDropwatcherParametersRequest, ChangeWaveformControlSettingsRequest, WavefromControlSettings } from "../../proto/compiled";
 import { PrinterSystemState, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
@@ -13,9 +13,12 @@ import *as cv from "@techstark/opencv-js";
 import "../MovementControlPanel/MovementControlPanel";
 import { ChangePrinterSystemStateRequest, PrinterSystemState as ProtoPrinterSystemState } from "../../proto/compiled";
 import { DropwatcherNozzlePosChanged } from "../../state/actions/DropwatcherNozzlePosChanged";
+import { kHzToNs } from "../../utils/kHzToNs";
 
 
 const NumNozzles = 128;
+
+let numberFormat = new Intl.NumberFormat("en-US", { style: "decimal", maximumFractionDigits: 2 });
 
 export class DropwatcherComponent extends HTMLElement {
 
@@ -40,6 +43,7 @@ export class DropwatcherComponent extends HTMLElement {
     private nextVideoClickMessage: HTMLSpanElement;
     private toggleDropwatcherBtn: HTMLButtonElement;
     private moveToForm: HTMLFormElement;
+    private waveformForm: HTMLFormElement;
     measurementPoint1: { x: number; y: number; };
     constructor() {
         super();
@@ -145,6 +149,32 @@ export class DropwatcherComponent extends HTMLElement {
                 let id = parseInt(data.get("nozzle-pos") as string);
                 this.moveToNozzle(id - 1).catch(console.error);
             }, this.abortController.signal);
+            this.waveformForm = this.querySelector("#waveform-form");
+            abortableEventListener(this.waveformForm, "submit", async e => {
+                e.preventDefault();
+                if (this.store.state.printerSystemState.state != PrinterSystemState.Idle) {
+                    return;
+                }
+                if (this.waveformForm.reportValidity()) {
+                    let formData = new FormData(this.waveformForm);
+                    let request = new ChangeWaveformControlSettingsRequest();
+                    let settings = new WavefromControlSettings();
+                    request.settings = settings;
+                    settings.voltageMv = Math.round(parseFloat(formData.get("voltage") as string) * 1000);
+                    settings.clockPeriodNs = kHzToNs(parseFloat(formData.get("clock") as string));
+                    await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
+                }
+            }, this.abortController.signal);
+
+            abortableEventListener(this.querySelector("#capture-clock-sweep"), "click", e => {
+                e.preventDefault();
+                this.captureClockSweep().catch(console.error);
+            }, this.abortController.signal);
+            abortableEventListener(this.querySelector("#capture-voltage-sweep"), "click", e => {
+                e.preventDefault();
+                this.captureVoltageSweep().catch(console.error);
+            }, this.abortController.signal);
+
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
     }
@@ -444,6 +474,112 @@ export class DropwatcherComponent extends HTMLElement {
         });
     }
 
+    private async captureClockSweep() {
+        let from = 1500;
+        let to = 500;
+        let step = 50;
+
+
+        this.doCaptureContiniuous = false;
+        for (let i = from; i >= to; i -= step) {
+
+            // go to idle
+            let systemStateRequest = new ChangePrinterSystemStateRequest();
+            systemStateRequest.state = ProtoPrinterSystemState.PrinterSystemState_IDLE;
+            await this.printerUsb.sendChangeSystemStateRequest(systemStateRequest);
+
+            let request = new ChangeWaveformControlSettingsRequest();
+            request.settings = new WavefromControlSettings();
+            request.settings.voltageMv = 35600;
+            request.settings.clockPeriodNs = kHzToNs(i);
+            await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            // go to dropwatcher
+            systemStateRequest = new ChangePrinterSystemStateRequest();
+            systemStateRequest.state = ProtoPrinterSystemState.PrinterSystemState_DROPWATCHER;
+            await this.printerUsb.sendChangeSystemStateRequest(systemStateRequest);
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            // set timings
+
+            let flashRequest = new ChangeDropwatcherParametersRequest();
+            flashRequest.delayNanos = 270 * 1000;
+            flashRequest.flashOnTimeNanos = 2 * 1000;
+            await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
+            
+
+            // fire 10 times
+            for (let j = 0; j < 10; j++) {
+                await this.waitForNextVideoFrame();
+                await this.printerUsb.sendFireRequest();
+                
+            }
+
+            await this.waitForNextVideoFrame();
+                await this.printerUsb.sendFireRequest();
+                await this.cameraAccess.saveImage(`clocksweep-${i}-kHz`);
+
+            // wait for frame
+            // await this.waitForNextVideoFrame();
+
+
+        }
+
+    }
+
+    private async captureVoltageSweep() {
+        let from = 35.6;
+        let to = 15;
+        let step = 0.3;
+
+
+        this.doCaptureContiniuous = false;
+        for (let i = from; i >= to; i -= step) {
+
+            // go to idle
+            let systemStateRequest = new ChangePrinterSystemStateRequest();
+            systemStateRequest.state = ProtoPrinterSystemState.PrinterSystemState_IDLE;
+            await this.printerUsb.sendChangeSystemStateRequest(systemStateRequest);
+
+            let request = new ChangeWaveformControlSettingsRequest();
+            request.settings = new WavefromControlSettings();
+            request.settings.voltageMv = Math.round(i * 1000);
+            request.settings.clockPeriodNs = kHzToNs(1000);
+            await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            // go to dropwatcher
+            systemStateRequest = new ChangePrinterSystemStateRequest();
+            systemStateRequest.state = ProtoPrinterSystemState.PrinterSystemState_DROPWATCHER;
+            await this.printerUsb.sendChangeSystemStateRequest(systemStateRequest);
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            // set timings
+
+            let flashRequest = new ChangeDropwatcherParametersRequest();
+            flashRequest.delayNanos = 270 * 1000;
+            flashRequest.flashOnTimeNanos = 2 * 1000;
+            await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
+            
+
+            // fire 10 times
+            for (let j = 0; j < 10; j++) {
+                await this.waitForNextVideoFrame();
+                await this.printerUsb.sendFireRequest();
+                
+            }
+
+            await this.waitForNextVideoFrame();
+                await this.printerUsb.sendFireRequest();
+                await this.cameraAccess.saveImage(`voltagesweep-${numberFormat.format(i)}-V`);
+
+            // wait for frame
+            // await this.waitForNextVideoFrame();
+
+
+        }
+
+    }
+
     private captureTimelapse() {
         let photo = 0;
         let numphotos = 30;
@@ -493,7 +629,7 @@ export class DropwatcherComponent extends HTMLElement {
                 delay += enddelay / numphotos;
                 let request = new ChangeDropwatcherParametersRequest();
                 request.delayNanos = delay * 1000;
-                request.flashOnTimeNanos = 3 * 1000;
+                request.flashOnTimeNanos = 2 * 1000;
                 return this.printerUsb.sendChangeDropwatcherParametersRequest(request).then(() => {
                     return this.printerUsb.sendFireRequest().then(() => {
                         if (photo < numphotos) {

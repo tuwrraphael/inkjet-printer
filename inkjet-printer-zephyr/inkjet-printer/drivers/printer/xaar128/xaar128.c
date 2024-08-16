@@ -40,14 +40,14 @@ void ready_int_handler(const struct device *dev, struct gpio_callback *cb,
 	}
 }
 
-static int clock_control_pwm_on(const struct device *dev)
+static int clock_control_pwm_on(const struct device *dev, uint32_t period)
 {
 	const struct xaar128_config *config = dev->config;
 	const struct pwm_dt_spec *spec = &config->pwm_dt;
-	return pwm_set_dt(spec, spec->period, spec->period / 2);
+	return pwm_set_dt(spec, period, period / 2);
 }
 
-static int xaar128_clock_enable(const struct device *dev)
+static int xaar128_clock_enable(const struct device *dev, uint32_t period)
 {
 	const struct xaar128_config *config = dev->config;
 
@@ -56,7 +56,7 @@ static int xaar128_clock_enable(const struct device *dev)
 		return -ENODEV;
 	}
 
-	int ret = clock_control_pwm_on(dev);
+	int ret = clock_control_pwm_on(dev, period);
 	if (ret < 0)
 	{
 		LOG_ERR("Failed to enable clock [%d]", ret);

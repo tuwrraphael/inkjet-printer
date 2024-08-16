@@ -2,9 +2,11 @@ syntax = "proto3";
 
 message WavefromControlSettings {
     uint32 voltage_mv = 1;
+    uint32 clock_period_ns = 2;
 }
 
 message WaveformControlState {
     optional uint32 voltage_mv = 1;
     uint32 set_voltage_mv = 2;
+    uint32 clock_period_ns = 3;
 }

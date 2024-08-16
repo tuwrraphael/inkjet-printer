@@ -34,23 +34,7 @@ import { ChangeWaveformControlSettingsRequest } from "../../proto/compiled";
 import { WavefromControlSettings } from "../../proto/compiled";
 import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions/ModelParamsChanged";
-import { OutputFolderChanged } from "../../state/actions/OutputFolderChanged";
-import { CameraAccess } from "../../camera-access";
-import { CameraType } from "../../CameraType";
-import { getMicroscopeFeasibleRange } from "../../utils/getMicroscopeFeasibleRange";
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
-
-let cameraOffset = {
-    x: 165.4 - 13.14,
-    y: 38.78 - 23.89,
-    z: 23.35
-};
-
-let lowestZoomCameraOffset = {
-    x: 161.2 - 13.81,
-    y: 13.3 - 5.41,
-    z: 36
-};
 
 export class PrintComponent extends HTMLElement {
 
@@ -204,6 +188,7 @@ export class PrintComponent extends HTMLElement {
             let settings = new WavefromControlSettings();
             request.settings = settings;
             settings.voltageMv = 35.6 * 1000;
+            settings.clockPeriodNs = 1250;
             await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#write-data"), "click", async (ev) => {
@@ -228,27 +213,11 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             await this.printerUsb.sendNozzlePrimingRequestAndWait();
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#select-output-folder"), "click", async (ev) => {
-            ev.preventDefault();
-            try {
-                let outputFolder = await window.showDirectoryPicker({
-                    mode: "readwrite",
-                    startIn: "documents"
-                });
-                this.store.postAction(new OutputFolderChanged(outputFolder));
-                // let c = CameraAccess.getInstance(CameraType.Microscope);
-                // await c.performAutoFocus(0.5, 0.5);
-                // await CameraAccess.getInstance(CameraType.Microscope).saveImage("test");
-
-            } catch (e) {
-                console.error(e);
-            }
-        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
             ev.preventDefault();
             let from = 35.6;
-            let to = 28;
-            let step = 0.3;
+            let to = 25;
+            let step = 0.5;
             let position = {
                 x: 2,
                 y: 12
@@ -256,11 +225,16 @@ export class PrintComponent extends HTMLElement {
             let nr = 0;
             for (let v = from; v > to; v -= step) {
                 let voltage = Math.round(v * 100) / 100;
+                let swathe = getPrintheadSwathe(this.store.state.printState.printerParams);
                 let modelPosition = {
                     x: (nr % 3) * 10 + position.x,
                     y: Math.floor(nr / 3) * 5 + position.y
                 };
-                let id = `square-${nr}V`;
+                let purgePosition = {
+                    x: 0,
+                    y: 0
+                };
+                let id = `square-${nr}`;
                 let group = `${voltage}V`;
                 let model: NewModel = {
                     layers: [{
@@ -289,23 +263,131 @@ export class PrintComponent extends HTMLElement {
                     fileName: `square-${nr}.svg`,
                     id: id
                 };
+                let purgeModel: NewModel = {
+                    layers: [{
+                        polygons: [{
+                            type: PolygonType.Contour,
+                            "points": [
+                                [
+                                    2 * swathe.x - 1,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    10
+                                ],
+                                [
+                                    0,
+                                    0
+                                ],
+                                [
+                                    2 * swathe.x - 1,
+                                    0
+                                ]
+                            ]
+                        }]
+                    }],
+                    fileName: `purge-${nr}.svg`,
+                    id: `purge-${nr}V`
+                };
                 let photoPoint = {
-                    x : modelPosition.x+1.5,
-                    y : modelPosition.y+1.5
+                    x: modelPosition.x + 1.5,
+                    y: modelPosition.y + 1.5
                 };
                 this.store.postAction(new ModelAdded(model));
+                this.store.postAction(new ModelAdded(purgeModel));
                 this.store.postAction(new ModelParamsChanged(id, {
                     modelGroupId: group,
                     position: [modelPosition.x, modelPosition.y]
                 }));
+                this.store.postAction(new ModelParamsChanged(purgeModel.id, {
+                    modelGroupId: group,
+                    position: [purgePosition.x, purgePosition.y]
+                }));
                 this.store.postAction(new ModelGroupParamsChanged(group, {
                     waveform: {
-                        voltage: voltage
+                        voltage: voltage,
+                        clockFrequency: 1000
                     },
                     photoPoints: [photoPoint]
                 }));
                 nr++;
             }
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#generate-clock-test"), "click", async (ev) => {
+            ev.preventDefault();
+            let from = 1500;
+            let to = 500;
+            let step = 50;
+            let position = {
+                x: 2,
+                y: 12
+            };
+            let nr = 0;
+            for (let v = from; v > to; v -= step) {
+                let frequency = v;
+                let swathe = getPrintheadSwathe(this.store.state.printState.printerParams);
+                let modelPosition = {
+                    x: position.x,
+                    y: position.y
+                };
+                let purgePosition = {
+                    x: 0,
+                    y: 0
+                };
+                let id = `square-${nr}`;
+                let group = `${frequency}kHz`;
+                let model: NewModel = {
+                    layers: [{
+                        polygons: [{
+                            type: PolygonType.Contour,
+                            "points": [
+                                [
+                                    swathe.x,
+                                    swathe.x
+                                ],
+                                [
+                                    0,
+                                    swathe.x
+                                ],
+                                [
+                                    0,
+                                    0
+                                ],
+                                [
+                                    swathe.x,
+                                    0
+                                ]
+                            ]
+                        }]
+                    }],
+                    fileName: `square-${nr}.svg`,
+                    id: id
+                };
+                let photoPoint = {
+                    x: modelPosition.x + 1.5,
+                    y: modelPosition.y + 1.5
+                };
+                this.store.postAction(new ModelAdded(model));
+                // this.store.postAction(new ModelAdded(purgeModel));
+                this.store.postAction(new ModelParamsChanged(id, {
+                    modelGroupId: group,
+                    position: [modelPosition.x, modelPosition.y]
+                }));
+                // this.store.postAction(new ModelParamsChanged(purgeModel.id, {
+                //     modelGroupId: group,
+                //     position: [purgePosition.x, purgePosition.y]
+                // }));
+                this.store.postAction(new ModelGroupParamsChanged(group, {
+                    waveform: {
+                        voltage: 35.6,
+                        clockFrequency: v
+                    },
+                    photoPoints: [photoPoint]
+                }));
+                nr++;
+            }
+
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();

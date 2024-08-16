@@ -43,6 +43,7 @@ export class PrinterStatus extends HTMLElement {
     private microscopePosition: HTMLTableCellElement;
     private projectFile : HTMLTableCellElement;
     private outputFolder : HTMLTableCellElement;
+    private clock : HTMLSpanElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -80,6 +81,7 @@ export class PrinterStatus extends HTMLElement {
             this.microscopePosition = this.querySelector("#microscope-position");
             this.projectFile = this.querySelector("#project-file");
             this.outputFolder = this.querySelector("#output-folder");
+            this.clock = this.querySelector("#clock");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -194,6 +196,8 @@ export class PrinterStatus extends HTMLElement {
             let actualVoltage = s.printerSystemState.waveformControl?.voltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.voltageMv / 1000) : "-";
             let setVoltage = s.printerSystemState.waveformControl?.setVoltageMv ? this.formatNumber(s.printerSystemState.waveformControl?.setVoltageMv / 1000) : "-";
             this.voltage.innerText = `${actualVoltage} / ${setVoltage}`;
+            let clockFrequencykHz = s.printerSystemState.waveformControl?.clockPeriodNs ? this.formatNumber(1 / (s.printerSystemState.waveformControl?.clockPeriodNs * 1e-9) / 1e3) : "-";
+            this.clock.innerText = `${clockFrequencykHz} kHz`;
 
             let setTemp = s.movementStageState.bedTemperature?.target ? this.formatNumber(s.movementStageState.bedTemperature?.target) : "-";
             let currentTemp = s.movementStageState.bedTemperature?.current ? this.formatNumber(s.movementStageState.bedTemperature?.current) : "-";

@@ -5013,6 +5013,7 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
      * @exports IWavefromControlSettings
      * @interface IWavefromControlSettings
      * @property {number|null} [voltageMv] WavefromControlSettings voltageMv
+     * @property {number|null} [clockPeriodNs] WavefromControlSettings clockPeriodNs
      */
 
     /**
@@ -5037,6 +5038,14 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
      * @instance
      */
     WavefromControlSettings.prototype.voltageMv = 0;
+
+    /**
+     * WavefromControlSettings clockPeriodNs.
+     * @member {number} clockPeriodNs
+     * @memberof WavefromControlSettings
+     * @instance
+     */
+    WavefromControlSettings.prototype.clockPeriodNs = 0;
 
     /**
      * Creates a new WavefromControlSettings instance using the specified properties.
@@ -5064,6 +5073,8 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
             writer = $Writer.create();
         if (message.voltageMv != null && Object.hasOwnProperty.call(message, "voltageMv"))
             writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.voltageMv);
+        if (message.clockPeriodNs != null && Object.hasOwnProperty.call(message, "clockPeriodNs"))
+            writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.clockPeriodNs);
         return writer;
     };
 
@@ -5100,6 +5111,10 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
             switch (tag >>> 3) {
             case 1: {
                     message.voltageMv = reader.uint32();
+                    break;
+                }
+            case 2: {
+                    message.clockPeriodNs = reader.uint32();
                     break;
                 }
             default:
@@ -5140,6 +5155,9 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
         if (message.voltageMv != null && message.hasOwnProperty("voltageMv"))
             if (!$util.isInteger(message.voltageMv))
                 return "voltageMv: integer expected";
+        if (message.clockPeriodNs != null && message.hasOwnProperty("clockPeriodNs"))
+            if (!$util.isInteger(message.clockPeriodNs))
+                return "clockPeriodNs: integer expected";
         return null;
     };
 
@@ -5157,6 +5175,8 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
         let message = new $root.WavefromControlSettings();
         if (object.voltageMv != null)
             message.voltageMv = object.voltageMv >>> 0;
+        if (object.clockPeriodNs != null)
+            message.clockPeriodNs = object.clockPeriodNs >>> 0;
         return message;
     };
 
@@ -5173,10 +5193,14 @@ export const WavefromControlSettings = $root.WavefromControlSettings = (() => {
         if (!options)
             options = {};
         let object = {};
-        if (options.defaults)
+        if (options.defaults) {
             object.voltageMv = 0;
+            object.clockPeriodNs = 0;
+        }
         if (message.voltageMv != null && message.hasOwnProperty("voltageMv"))
             object.voltageMv = message.voltageMv;
+        if (message.clockPeriodNs != null && message.hasOwnProperty("clockPeriodNs"))
+            object.clockPeriodNs = message.clockPeriodNs;
         return object;
     };
 
@@ -5217,6 +5241,7 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
      * @interface IWaveformControlState
      * @property {number|null} [voltageMv] WaveformControlState voltageMv
      * @property {number|null} [setVoltageMv] WaveformControlState setVoltageMv
+     * @property {number|null} [clockPeriodNs] WaveformControlState clockPeriodNs
      */
 
     /**
@@ -5249,6 +5274,14 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
      * @instance
      */
     WaveformControlState.prototype.setVoltageMv = 0;
+
+    /**
+     * WaveformControlState clockPeriodNs.
+     * @member {number} clockPeriodNs
+     * @memberof WaveformControlState
+     * @instance
+     */
+    WaveformControlState.prototype.clockPeriodNs = 0;
 
     // OneOf field names bound to virtual getters and setters
     let $oneOfFields;
@@ -5292,6 +5325,8 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
             writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.voltageMv);
         if (message.setVoltageMv != null && Object.hasOwnProperty.call(message, "setVoltageMv"))
             writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.setVoltageMv);
+        if (message.clockPeriodNs != null && Object.hasOwnProperty.call(message, "clockPeriodNs"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.clockPeriodNs);
         return writer;
     };
 
@@ -5332,6 +5367,10 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
                 }
             case 2: {
                     message.setVoltageMv = reader.uint32();
+                    break;
+                }
+            case 3: {
+                    message.clockPeriodNs = reader.uint32();
                     break;
                 }
             default:
@@ -5378,6 +5417,9 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         if (message.setVoltageMv != null && message.hasOwnProperty("setVoltageMv"))
             if (!$util.isInteger(message.setVoltageMv))
                 return "setVoltageMv: integer expected";
+        if (message.clockPeriodNs != null && message.hasOwnProperty("clockPeriodNs"))
+            if (!$util.isInteger(message.clockPeriodNs))
+                return "clockPeriodNs: integer expected";
         return null;
     };
 
@@ -5397,6 +5439,8 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
             message.voltageMv = object.voltageMv >>> 0;
         if (object.setVoltageMv != null)
             message.setVoltageMv = object.setVoltageMv >>> 0;
+        if (object.clockPeriodNs != null)
+            message.clockPeriodNs = object.clockPeriodNs >>> 0;
         return message;
     };
 
@@ -5413,8 +5457,10 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         if (!options)
             options = {};
         let object = {};
-        if (options.defaults)
+        if (options.defaults) {
             object.setVoltageMv = 0;
+            object.clockPeriodNs = 0;
+        }
         if (message.voltageMv != null && message.hasOwnProperty("voltageMv")) {
             object.voltageMv = message.voltageMv;
             if (options.oneofs)
@@ -5422,6 +5468,8 @@ export const WaveformControlState = $root.WaveformControlState = (() => {
         }
         if (message.setVoltageMv != null && message.hasOwnProperty("setVoltageMv"))
             object.setVoltageMv = message.setVoltageMv;
+        if (message.clockPeriodNs != null && message.hasOwnProperty("clockPeriodNs"))
+            object.clockPeriodNs = message.clockPeriodNs;
         return object;
     };
 

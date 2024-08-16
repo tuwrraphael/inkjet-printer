@@ -7,6 +7,7 @@ export interface PrintingParams {
     dryingTimeSeconds: number;
     waveform: {
         voltage: number;
+        clockFrequency: number;
     };
     skipNozzles: number;
     offsetLayers: {

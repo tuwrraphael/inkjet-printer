@@ -2,6 +2,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/printer.h>
+#include <zephyr/drivers/pwm.h>
 
 #include "printhead_routines.h"
 #include "failure_handling.h"
@@ -12,6 +13,9 @@ LOG_MODULE_REGISTER(printhead_routines, CONFIG_APP_LOG_LEVEL);
 
 static bool watch_reset = false;
 static printhead_routines_error_callback_t error_callback;
+
+static uint32_t configured_period = PWM_HZ(1000000);
+static uint32_t activated_period = 0;
 
 static const struct gpio_dt_spec vpp_en = GPIO_DT_SPEC_GET(DT_NODELABEL(vpp_en), gpios);
 static const struct gpio_dt_spec comm_enable = GPIO_DT_SPEC_GET(DT_NODELABEL(comm_enable), gpios);
@@ -65,12 +69,12 @@ static void printhead_routine_activate_enable_clock_run(void *o)
 {
     const struct device *printhead;
     printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-    printer_clock_enable(printhead);
+    printer_clock_enable(printhead, configured_period);
+    activated_period = configured_period;
     LOG_INF("Printhead clock enabled");
     printhead_routine_state_object.next_delay = K_NO_WAIT;
     smf_set_state(SMF_CTX(&printhead_routine_state_object), &printhead_routine_states[PRINTHEAD_ROUTINE_ACTIVATE_ENABLE_VPP]);
 }
-
 
 static void printhead_routine_activate_enable_vpp_run(void *o)
 {
@@ -189,7 +193,7 @@ int printhead_routine_smf(enum printhead_routine_state init_state)
             switch (ret)
             {
             case PRINTHEAD_SMF_DONE:
-                if (init_state == PRINTHEAD_ROUTINE_ACTIVATE_INITIAL&& printhead_routine_state_object.disable_phase)
+                if (init_state == PRINTHEAD_ROUTINE_ACTIVATE_INITIAL && printhead_routine_state_object.disable_phase)
                 {
                     LOG_ERR("Printhead routine failed");
                     return -EINVAL;
@@ -351,4 +355,19 @@ void printhead_routines_go_to_safe_state()
 {
     gpio_pin_set_dt(&n_reset_mcu, 0);
     watch_reset = false;
+}
+
+int printhead_routines_config_period(uint32_t period)
+{
+    if (period <= PWM_HZ(500000) && period >= PWM_HZ(1500000))
+    {
+        configured_period = period;
+        return 0;
+    }
+    return -EINVAL;
+}
+
+void printhead_routines_get_info(printhead_routines_info_t *info)
+{
+    info->activated_period = activated_period;
 }

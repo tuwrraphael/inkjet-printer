@@ -30,6 +30,7 @@ export class ModelParamsComponent extends HTMLElement {
     private skipNozzles: HTMLInputElement;
     private offsetEveryOtherLayerByTicks: HTMLInputElement;
     private offsetEveryOtherLayerByNozzles: HTMLInputElement;
+    private clock: HTMLInputElement;
     // private iterativeOffset: HTMLSelectElement;
     // private iterativeOffsetOptionsRenderer: ArrayToElementRenderer<{ offset: number; }, HTMLOptionElement, number>;
     constructor() {
@@ -51,6 +52,7 @@ export class ModelParamsComponent extends HTMLElement {
             this.dryingTime = this.querySelector("#drying-time");
             this.fireEveryTicks = this.querySelector("#fire-every-ticks");
             this.voltage = this.querySelector("#voltage");
+            this.clock = this.querySelector("#clock");
             this.skipNozzles = this.querySelector("#skip-nozzles");
             this.offsetEveryOtherLayerByTicks = this.querySelector("#offset-every-other-layer-by-ticks");
             this.offsetEveryOtherLayerByNozzles = this.querySelector("#offset-every-other-layer-by-nozzles");
@@ -70,6 +72,7 @@ export class ModelParamsComponent extends HTMLElement {
         this.setVisibility();
     }
     private updateModelGroupParams() {
+        this.voltage.required = this.clock.required = this.clock.value != "" || this.voltage.value != "";
         if (this.modelGroupParamsForm.checkValidity()) {
             let formData = new FormData(this.modelGroupParamsForm);
             let modelGroupParams: ModelGroupPrintingParams = {};
@@ -79,8 +82,8 @@ export class ModelParamsComponent extends HTMLElement {
             if (formData.has("fire-every-ticks")) {
                 modelGroupParams.fireEveryTicks = parseInt(formData.get("fire-every-ticks") as string);
             }
-            if (formData.has("voltage")) {
-                modelGroupParams.waveform = { voltage: parseFloat(formData.get("voltage") as string) };
+            if (formData.has("voltage") && formData.has("clock")) {
+                modelGroupParams.waveform = { voltage: parseFloat(formData.get("voltage") as string), clockFrequency: parseFloat(formData.get("clock") as string) };
             }
             if (formData.has("skip-nozzles")) {
                 modelGroupParams.skipNozzles = parseInt(formData.get("skip-nozzles") as string);
@@ -161,6 +164,7 @@ export class ModelParamsComponent extends HTMLElement {
             this.setInput(this.skipNozzles, (params) => params?.skipNozzles, modelGroupParams, printingParams);
             this.setInput(this.offsetEveryOtherLayerByTicks, (params) => params?.offsetLayers?.printAxis?.everyOtherLayerByTicks, modelGroupParams, printingParams);
             this.setInput(this.offsetEveryOtherLayerByNozzles, (params) => params?.offsetLayers?.moveAxis?.everyOtherLayerByNozzles, modelGroupParams, printingParams);
+            this.setInput(this.clock, (params) => params?.waveform?.clockFrequency, modelGroupParams, printingParams);
 
             this.setVisibility();
         }

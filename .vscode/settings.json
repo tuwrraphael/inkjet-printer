@@ -13,6 +13,7 @@
         "print_control.h": "c",
         "failure_handling.h": "c",
         "stdint.h": "c",
-        "test_pattern.h": "c"
+        "test_pattern.h": "c",
+        "printhead_routines.h": "c"
     }
 }

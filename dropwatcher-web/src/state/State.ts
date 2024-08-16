@@ -131,6 +131,7 @@ export interface PressureControlState {
 export interface WaveformControl {
     voltageMv: number | null;
     setVoltageMv: number | null;
+    clockPeriodNs: number | null;
 }
 
 export type PrintBedViewMode = {

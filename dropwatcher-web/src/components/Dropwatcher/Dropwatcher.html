@@ -14,12 +14,14 @@
 </div>
 <h2>Capture Frame</h2>
 <button id="capture-single-frame">Capture Frame</button>
+<button id="capture-clock-sweep">Capture Clock Sweep</button>
+<button id="capture-voltage-sweep">Capture Voltage Sweep</button>
 <div class="frame-container">
     <canvas id="canvas" class="canvas"></canvas>
 </div>
 <div>
-<input type="checkbox" id="capture-continuous-frames" name="capture-continuous-frames">
-<label for="capture-continuous-frames">Fire continiously</label>
+    <input type="checkbox" id="capture-continuous-frames" name="capture-continuous-frames">
+    <label for="capture-continuous-frames">Fire continiously</label>
 </div>
 <h2>State</h2>
 <div>
@@ -57,4 +59,16 @@
             step="0.0625" max="4095.875"> us
     </div>
     <button id="set-light">Send to Printer</button>
+</form>
+<h2>Waveform</h2>
+<form id="waveform-form">
+    <label for="voltage">Waveform Voltage</label>
+    <div class="input-group">
+        <input type="number" id="voltage" name="voltage" min="15.5" max="35.6" step="0.01"> <span>V</span>
+    </div>
+    <label for="clock">Waveform Clock</label>
+    <div class="input-group">
+        <input type="number" id="clock" name="clock" min="500" max="1500" step="1"> <span>kHz</span>
+    </div>
+    <button>Send to Printer</button>
 </form>

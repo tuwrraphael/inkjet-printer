@@ -68,11 +68,14 @@ export class CameraAccess {
     }
 
     async start() {
+        navigator.mediaDevices.enumerateDevices().then(devices => {
+            console.log(devices);
+        });
         this.stream = await navigator.mediaDevices.getUserMedia({
             audio: false, video: {
                 width: { min: 0, ideal: 1920, max: 1920 },
                 height: { min: 0, ideal: 1080, max: 1080 },
-                deviceId: await this.getStoredDeviceId()
+                deviceId: await this.getStoredDeviceId(),
             }
         });
         await this.setStoredDeviceId(this.stream.getVideoTracks()[0].getSettings().deviceId);
@@ -161,11 +164,11 @@ export class CameraAccess {
         if (!this.stream) {
             await this.start();
         }
-        
-        
+
+
 
         const video = document.createElement('video');
-        
+
 
         video.srcObject = this.stream;
         await video.play();
@@ -177,7 +180,7 @@ export class CameraAccess {
 
         this.store.postAction(new SaveImage(blob, this.type, filename));
     }
-    
+
     private waitForNextVideoFrame(videoElement: HTMLVideoElement) {
         return new Promise<void>((resolve, reject) => {
             videoElement.requestVideoFrameCallback(() => {
@@ -190,7 +193,7 @@ export class CameraAccess {
     private async autofocusAlg(movementExecutor: GCodeRunner, step: number, range: number, x: number, y: number, feedRate: number) {
 
         const video = document.createElement('video');
-        
+
 
         video.srcObject = this.stream;
         await video.play();
@@ -207,15 +210,15 @@ export class CameraAccess {
         let best: ImageBitmap = null;
         // let bestArea: ImageData = null;
 
-        
+
 
         await this.waitForNextVideoFrame(video);
         let offscreen = new OffscreenCanvas(this.stream.getVideoTracks()[0].getSettings().width, this.stream.getVideoTracks()[0].getSettings().height);
         let ctx = offscreen.getContext("2d");
         ctx.drawImage(video, 0, 0);
         let frame = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
-        
-      
+
+
         x = Math.floor(x * frame.width);
         y = Math.floor(y * frame.height);
 
@@ -227,7 +230,7 @@ export class CameraAccess {
         let maxY = Math.min(frame.height, y + areaSize / 2);
         // console.log(y, x, minX, minY, maxX - minX, maxY - minY);
 
-        
+
         for (let i = 0; i < range; i += step) {
             relativeMovement = direction.mul(cv.Mat.ones(3, 1, cv.CV_64F), step);
             await movementExecutor.moveRelativeAndWait(relativeMovement.data64F[0], relativeMovement.data64F[1], relativeMovement.data64F[2], feedRate);
@@ -239,7 +242,7 @@ export class CameraAccess {
 
             // ctx.drawImage(frame, 0, 0);
 
-            
+
             let imageData: ImageData = ctx.getImageData(minX, minY, maxX - minX, maxY - minY);
             // let imageData: ImageData = ctx.getImageData(0, 0, frame.width, frame.height);
             // console.log(imageData);

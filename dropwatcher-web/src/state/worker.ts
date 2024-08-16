@@ -684,6 +684,7 @@ function mergeSystemStateResponse(msg: PrinterSystemStateResponseReceived) {
             waveformControlState = {
                 voltageMv: waveformControl.voltageMv == 0 ? null : waveformControl.voltageMv,
                 setVoltageMv: waveformControl.setVoltageMv == 0 ? null : waveformControl.setVoltageMv,
+                clockPeriodNs: waveformControl.clockPeriodNs == 0 ? null : waveformControl.clockPeriodNs,
             };
         }
         return {

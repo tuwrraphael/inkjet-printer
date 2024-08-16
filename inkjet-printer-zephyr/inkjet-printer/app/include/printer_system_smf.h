@@ -16,6 +16,7 @@ enum printer_system_smf_state
 typedef struct
 {
     uint32_t voltage;
+    uint32_t clock_period_ns;
 } waveform_settings_t;
 
 int printer_system_smf();

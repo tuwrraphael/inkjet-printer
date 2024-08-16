@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/motor.h>
+#include <zephyr/drivers/pwm.h>
 
 #include "pressure_control.h"
 #include "printhead_routines.h"
@@ -21,6 +22,7 @@
 #include "failure_handling.h"
 #include "print_control.h"
 #include "regulator.h"
+
 
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
@@ -605,7 +607,7 @@ static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-	printer_clock_enable(printhead);
+	printer_clock_enable(printhead, PWM_HZ(1000000));
 }
 
 static int cmd_print_control_set_mode(const struct shell *sh, size_t argc, char **argv, void *data)
