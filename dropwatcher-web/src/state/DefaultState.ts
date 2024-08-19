@@ -81,6 +81,10 @@ export const DefaultState: State =
             //     30, 29, 28, 26, 24, 22, 20, 18, 16
             // ]
             blockedNozzles: [
+                // // all but
+                // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
+                //     114,11,12,13,14,24,25,26
+                // ].indexOf(i) === -1),
             ],
             printBedToCamera: {
                 x: 149.29 - 9.44 + 8.1,

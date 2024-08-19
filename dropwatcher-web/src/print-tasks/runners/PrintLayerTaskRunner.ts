@@ -50,6 +50,7 @@ export class PrintLayerTaskRunner {
                         cancellationToken);
                     cancellationToken.throwIfCanceled();
                 }
+                await this.movementExecutor.setFanSpeed(255);
                 let groupPrintingFinished = new Date();
                 let dryGroupUntil = add(groupPrintingFinished, { seconds: group.printingParams.dryingTimeSeconds });
                 if (dryGroupUntil > dryUntil) {
@@ -95,9 +96,12 @@ export class PrintLayerTaskRunner {
                     }
                     cancellationToken.throwIfCanceled();
                 }
+                await this.movementExecutor.setFanSpeed(0);
             }
+            
             let dryForMs = Math.max(0, (+dryUntil - +new Date()));
             if (dryForMs > 0) {
+                await this.movementExecutor.setFanSpeed(255);
                 await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
                 cancellationToken.throwIfCanceled();
                 dryForMs = Math.max(0, (+dryUntil - +new Date()));
@@ -107,7 +111,8 @@ export class PrintLayerTaskRunner {
                         setTimeout(resolve, dryForMs);
                     });
                 }
-            }
+                await this.movementExecutor.setFanSpeed(0);
+            }            
         }
         catch (e) {
             if (e instanceof CanceledError) {
@@ -129,7 +134,7 @@ export class PrintLayerTaskRunner {
                 if (!canceled) {
                     timeoutToken = setTimeout(() => {
                         primingLoop();
-                    }, 15000);
+                    }, 5000);
                 } else {
                     canceled();
                 }

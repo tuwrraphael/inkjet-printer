@@ -49,5 +49,8 @@ export class GCodeRunner implements Disposable {
         await this.movementStage._sendGcode(gcode);
     }
 
+    async setFanSpeed(speed: number) {
+        await this.movementStage._sendGcode(`M106 S${speed}`);
+    }
 
 }

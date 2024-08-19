@@ -23,7 +23,6 @@
 #include "print_control.h"
 #include "regulator.h"
 
-
 LOG_MODULE_REGISTER(main, CONFIG_APP_LOG_LEVEL);
 #define SW0_NODE DT_ALIAS(sw0)
 #if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
@@ -112,12 +111,12 @@ void print_fire_timer_handler(struct k_timer *timer)
 {
 	if (gpio_pin_get_dt(&READY) == 1)
 	{
-		if (fire_count % 30 == 0)
-		{
-			advance_pattern();
-		}
+		// if (fire_count % 30 == 0)
+		// {
+		// 	advance_pattern();
+		// }
 		const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-		printer_set_pixels(printhead, pattern);
+		// printer_set_pixels(printhead, pattern);
 		request_printhead_fire();
 	}
 	fire_count++;
@@ -581,11 +580,11 @@ static int cmd_fire(const struct shell *sh, size_t argc, char **argv)
 	}
 	fire_count = 0;
 	drop_count = atoi(argv[2]);
-	int interval_ms = atoi(argv[1]);
+	int interval_us = atoi(argv[1]);
 	const struct device *printhead = DEVICE_DT_GET(DT_NODELABEL(printhead));
-	uint32_t pixels[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-	printer_set_pixels(printhead, pixels);
-	k_timer_start(&print_fire_timer, K_MSEC(interval_ms), K_MSEC(interval_ms));
+	// uint32_t pixels[4] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+	// printer_set_pixels(printhead, pixels);
+	k_timer_start(&print_fire_timer, K_USEC(interval_us), K_USEC(interval_us));
 	return 0;
 }
 
@@ -806,7 +805,7 @@ int main(void)
 		LOG_ERR("Print control initialization failed with error %d", ret);
 		return ret;
 	}
-
+	
 	ret = printer_system_smf();
 	if (ret != 0)
 	{
