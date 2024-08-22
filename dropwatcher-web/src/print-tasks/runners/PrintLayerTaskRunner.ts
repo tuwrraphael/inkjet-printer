@@ -98,7 +98,8 @@ export class PrintLayerTaskRunner {
                 }
                 await this.movementExecutor.setFanSpeed(0);
             }
-            
+            let cancelPriming = this.nozzlePriming();
+            try {
             let dryForMs = Math.max(0, (+dryUntil - +new Date()));
             if (dryForMs > 0) {
                 await this.movementExecutor.setFanSpeed(255);
@@ -112,6 +113,9 @@ export class PrintLayerTaskRunner {
                     });
                 }
                 await this.movementExecutor.setFanSpeed(0);
+                }
+            } finally {
+                await cancelPriming();
             }            
         }
         catch (e) {
