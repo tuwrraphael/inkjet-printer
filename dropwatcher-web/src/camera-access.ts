@@ -1,6 +1,5 @@
 import { CameraType } from "./CameraType";
 import { GCodeRunner } from "./gcode-runner";
-import { MovementStage } from "./movement-stage";
 import { Store } from "./state/Store";
 import { CameraStateChanged } from "./state/actions/CameraStateChanged";
 import { SaveImage } from "./state/actions/SaveImage";
@@ -85,33 +84,36 @@ export class CameraAccess {
 
         let capabilities = track.getCapabilities();
         console.log(capabilities)
-        let canChangeExposure = capabilities.exposureMode && capabilities.exposureMode.includes("manual")
-            && (<any>capabilities).exposureTime && (<any>capabilities).exposureTime.min && (<any>capabilities).exposureTime.max;
+        let canChangeExposure = false;
+        // if (this.type == CameraType.Dropwatcher) {
+            canChangeExposure = capabilities.exposureMode && capabilities.exposureMode.includes("manual")
+                && (<any>capabilities).exposureTime && (<any>capabilities).exposureTime.min && (<any>capabilities).exposureTime.max;
 
-        try {
-            if (canChangeExposure) {
-                let exposureTime = Math.min((<any>capabilities).exposureTime.max, Math.max((<any>capabilities).exposureTime.min,
-                    this.store.state.cameras[this.type]?.exposureTime || 1000));
-                if ((<any>capabilities).exposureTime.step) {
-                    exposureTime = Math.round(exposureTime / (<any>capabilities).exposureTime.step) * (<any>capabilities).exposureTime.step;
+            try {
+                if (canChangeExposure) {
+                    let exposureTime = Math.min((<any>capabilities).exposureTime.max, Math.max((<any>capabilities).exposureTime.min,
+                        this.store.state.cameras[this.type]?.exposureTime || 1000));
+                    if ((<any>capabilities).exposureTime.step) {
+                        exposureTime = Math.round(exposureTime / (<any>capabilities).exposureTime.step) * (<any>capabilities).exposureTime.step;
+                    }
+                    await track.applyConstraints({
+                        advanced: [{
+                            ...<any>{
+                                exposureTime: exposureTime,
+                            },
+                            ...{
+                                exposureMode: "manual",
+                                // width: 1920,
+                                // height: 1080,
+                            }
+                        }]
+                    });
                 }
-                await track.applyConstraints({
-                    advanced: [{
-                        ...<any>{
-                            exposureTime: exposureTime,
-                        },
-                        ...{
-                            exposureMode: "manual",
-                            // width: 1920,
-                            // height: 1080,
-                        }
-                    }]
-                });
+            } catch (e) {
+                console.error(e);
+                canChangeExposure = false;
             }
-        } catch (e) {
-            console.error(e);
-            canChangeExposure = false;
-        }
+        // }
         let settings = track.getSettings();
         this.store.postAction(new CameraStateChanged({
             cameraOn: true,
@@ -179,6 +181,7 @@ export class CameraAccess {
         let blob = await offscreen.convertToBlob();
 
         this.store.postAction(new SaveImage(blob, this.type, filename));
+        return ctx.getImageData(0, 0, offscreen.width, offscreen.height);
     }
 
     private waitForNextVideoFrame(videoElement: HTMLVideoElement) {

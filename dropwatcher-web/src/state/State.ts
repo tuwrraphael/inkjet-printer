@@ -17,6 +17,7 @@ export enum PrinterSystemState {
     Dropwatcher = 4,
     Print = 5,
     KeepAlive,
+    PrinterSystemState_PRINT,
 }
 export enum PressureControlDirection {
     Unspecified = 0,
@@ -254,6 +255,17 @@ export interface State {
     },
     printBedViewState: PrintBedViewState;
     inkControlAction: InkControlActionState;
+    nozzlePerformance: {
+        testResults: {
+            timestamp: Date;
+            nozzle: number;
+            analysis: {
+                dropCount: number;
+                sizeAverage: number;
+                sizeStdDev: number;
+            }
+        }[]
+    }
 }
 
 export type StateChanges = (keyof State)[];

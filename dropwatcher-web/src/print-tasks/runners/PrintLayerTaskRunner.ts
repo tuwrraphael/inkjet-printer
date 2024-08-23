@@ -80,12 +80,12 @@ export class PrintLayerTaskRunner {
                         let first = true;
                         let photoInterval = 3000;
                         try {
-                            while (first || dryGroupUntil > new Date()) {
+                            while (first) {
                                 first = false;
                                 let photoTime = new Date();
                                 let driedForMs = +photoTime - +groupPrintingFinished;
                                 await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`);
-                                await new Promise(resolve => setTimeout(resolve, photoInterval - ((+new Date()) - (+photoTime))));
+                                // await new Promise(resolve => setTimeout(resolve, photoInterval - ((+new Date()) - (+photoTime))));
                                 cancellationToken.throwIfCanceled();
                             }
                         } finally {
@@ -100,23 +100,23 @@ export class PrintLayerTaskRunner {
             }
             let cancelPriming = this.nozzlePriming();
             try {
-            let dryForMs = Math.max(0, (+dryUntil - +new Date()));
-            if (dryForMs > 0) {
-                await this.movementExecutor.setFanSpeed(255);
-                await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
-                cancellationToken.throwIfCanceled();
-                dryForMs = Math.max(0, (+dryUntil - +new Date()));
+                let dryForMs = Math.max(0, (+dryUntil - +new Date()));
                 if (dryForMs > 0) {
-                    console.log("Drying for " + dryForMs + "ms");
-                    await new Promise((resolve) => {
-                        setTimeout(resolve, dryForMs);
-                    });
-                }
-                await this.movementExecutor.setFanSpeed(0);
+                    await this.movementExecutor.setFanSpeed(255);
+                    await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
+                    cancellationToken.throwIfCanceled();
+                    dryForMs = Math.max(0, (+dryUntil - +new Date()));
+                    if (dryForMs > 0) {
+                        console.log("Drying for " + dryForMs + "ms");
+                        await new Promise((resolve) => {
+                            setTimeout(resolve, dryForMs);
+                        });
+                    }
+                    await this.movementExecutor.setFanSpeed(0);
                 }
             } finally {
                 await cancelPriming();
-            }            
+            }
         }
         catch (e) {
             if (e instanceof CanceledError) {

@@ -16,7 +16,7 @@ import { ModelAdded } from "../../state/actions/ModelAdded";
 import { parseSvgFile } from "../../utils/parseSvgFile";
 import { svgToModel } from "../../utils/svgToModel";
 import { ChangePrintMemoryRequest } from "../../proto/compiled";
-import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
+import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
 import "../PrintOptions/PrintOptions";
 import "../ModelList/ModelList";
 import "../ModelParams/ModelParams";
@@ -35,6 +35,8 @@ import { WavefromControlSettings } from "../../proto/compiled";
 import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions/ModelParamsChanged";
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
+import { timingSafeEqual } from "crypto";
+import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
 
 export class PrintComponent extends HTMLElement {
 
@@ -48,11 +50,16 @@ export class PrintComponent extends HTMLElement {
     private printBedSimulation: PrintBedSimulation;
     private slicingInProgress: HTMLSpanElement;
     private moveAxisPos: HTMLSpanElement;
+    private startPrintBtn: HTMLButtonElement;
+    private cancelPrintBtn: HTMLButtonElement;
+    private pausePrintBtn: HTMLButtonElement;
+    private taskRunnerSynchronization: TaskRunnerSynchronization;
     constructor() {
         super();
         this.store = Store.getInstance();
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
+        this.taskRunnerSynchronization = TaskRunnerSynchronization.getInstance();
     }
 
     connectedCallback() {
@@ -64,6 +71,9 @@ export class PrintComponent extends HTMLElement {
             this.printBedSimulation = this.querySelector(PrintBedSimulationTagName);
             this.slicingInProgress = this.querySelector("#slicing-in-progress");
             this.moveAxisPos = this.querySelector("#move-axis-pos");
+            this.startPrintBtn = this.querySelector("#start-print");
+            this.cancelPrintBtn = this.querySelector("#cancel-print");
+            this.pausePrintBtn = this.querySelector("#pause-print");
         }
         abortableEventListener(this.printBedSimulation, "drop", async (ev) => {
             ev.preventDefault();
@@ -82,16 +92,24 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         this.programRunnerState = document.querySelector("#program-runner-state");
         this.currentProgram = document.querySelector("#current-program");
-        abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {
+        abortableEventListener(this.startPrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            const PrintEncoderProgram: PrinterProgram = {
-                tasks: this.generateEncoderProgramSteps()
-            };
-            TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
+            if (this.store.state.programRunnerState.state === PrinterProgramState.Paused) {
+                this.taskRunnerSynchronization.continueAll();
+            } else {
+                const PrintEncoderProgram: PrinterProgram = {
+                    tasks: this.generateEncoderProgramSteps()
+                };
+                this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
+            }
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#cancel-print"), "click", async (ev) => {
+        abortableEventListener(this.cancelPrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            TaskRunnerSynchronization.getInstance().cancelAll();
+            this.taskRunnerSynchronization.cancelAll();
+        }, this.abortController.signal);
+        abortableEventListener(this.pausePrintBtn, "click", async (ev) => {
+            ev.preventDefault();
+            this.taskRunnerSynchronization.pauseAll();
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#zero-encoder"), "click", async (ev) => {
             ev.preventDefault();
@@ -389,9 +407,34 @@ export class PrintComponent extends HTMLElement {
             }
 
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#test-nozzle-pattern2"), "click", async (ev) => {
+            ev.preventDefault();
+
+
+
+
+
+
+
+
+            let res = getNozzleTestTracks(
+                0,
+                16,
+                5,
+                this.store.state.printState.printerParams,
+                8, 3500, 32);
+            let res2 = getNozzleTestTracks(
+                4,
+                16,
+                5 + 3 * 0.137,
+                this.store.state.printState.printerParams,
+                8, 3570, 32);
+            this.store.postAction(new SetCustomTracks([...res.customTracks, ...res2.customTracks]));
+            console.log(res.photoPoints, res2.photoPoints);
+        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();
-            let moveAxisPos = 10;
+            let moveAxisPos = 50;
             let blockSpacing = 20;
             let spacing = 32;
             let tracks: CustomTrack[] = [];
@@ -573,6 +616,46 @@ export class PrintComponent extends HTMLElement {
             }
             this.store.postAction(new ModelAdded(model));
         }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#start-nozzle-test"), "click", async (ev) => {
+            ev.preventDefault();
+            let steps: PrinterTasks[] = [
+                {
+                    type: PrinterTaskType.Home,
+                },
+                {
+                    type: PrinterTaskType.CheckNozzles,
+                    layerNr: 0,
+                    nozzleTestSurfaceHeight: 1,
+                    startNozzle: 0,
+                    safeTravelHeight: 10
+                },
+                {
+                    type: PrinterTaskType.CheckNozzles,
+                    layerNr: 0,
+                    nozzleTestSurfaceHeight: 1,
+                    startNozzle: 8,
+                    safeTravelHeight: 10
+                },
+                {
+                    type: PrinterTaskType.CheckNozzles,
+                    layerNr: 0,
+                    nozzleTestSurfaceHeight: 1,
+                    startNozzle: 16,
+                    safeTravelHeight: 10
+                },
+                {
+                    type: PrinterTaskType.CheckNozzles,
+                    layerNr: 0,
+                    nozzleTestSurfaceHeight: 1,
+                    startNozzle: 24,
+                    safeTravelHeight: 10
+                },
+            ];
+            let program: PrinterProgram = {
+                tasks: steps
+            };
+            this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(program));
+        }, this.abortController.signal);
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);
     }
 
@@ -580,11 +663,16 @@ export class PrintComponent extends HTMLElement {
         let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
             {
-                type: PrinterTaskType.HeatBed,
-                temperature: this.store.state.printState.printingParams.bedTemperature
+                type: PrinterTaskType.Home,
             },
             {
-                type: PrinterTaskType.Home,
+                type: PrinterTaskType.HeatBed,
+                temperature: this.store.state.printState.printingParams.bedTemperature,
+                primingPosition: {
+                    x: 200,
+                    y: 0,
+                    z: 40
+                }
             },
             {
                 type: PrinterTaskType.Move,
@@ -631,9 +719,9 @@ export class PrintComponent extends HTMLElement {
                     layerPlan: layerPlan,
                     z: height,
                     dryingPosition: {
-                        x: 175,
+                        x: 200,
                         y: 0,
-                        z: 25
+                        z: 40
                     }
                 });
             }
@@ -681,6 +769,10 @@ export class PrintComponent extends HTMLElement {
         }
         if (c.includes("currentProgram")) {
             // this.currentProgram.textContent = JSON.stringify(s.currentProgram, null, 2);
+            this.startPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Running;
+            this.cancelPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Done || s.programRunnerState.state == PrinterProgramState.Canceled;
+            this.pausePrintBtn.disabled = s.programRunnerState.state != PrinterProgramState.Running;
+            this.startPrintBtn.innerText = s.programRunnerState.state == PrinterProgramState.Running ? "Pause" : "Start Print";
         }
         if (c.includes("printState")) {
             this.slicingInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";

@@ -531,8 +531,8 @@ This is repeated 10 times.`,
                 cappingPump.direction = PressureControlDirection.PressureControlDirection_VACUUM;
                 cappingPump.feedTime = 5;
                 cappingPump.feedPwm = 1;
-                cappingPump.maxPressureLimit = 30;
-                cappingPump.minPressureLimit = -30;
+                cappingPump.maxPressureLimit = 50;
+                cappingPump.minPressureLimit = -50;
                 return {
                     cappingPump,
                     repetitions: {

@@ -13,11 +13,25 @@ export class TaskRunnerSynchronization {
     private taskRunners: PrintTaskRunner[] = [];
 
     startTaskRunner(taskRunner: PrintTaskRunner) {
-        if (this.taskRunners.some(tr => !tr.isRunning())) {
+        if (this.taskRunners.some(tr => !tr.isFinished())) {
             throw new Error("Cannot start task runner while another is running");
         } else {
             this.taskRunners.push(taskRunner);
             taskRunner.run().catch(console.error);
+        }
+    }
+
+    pauseAll() {
+        for (let taskRunner of this.taskRunners) {
+            taskRunner.pause();
+        }
+    }
+
+    continueAll() {
+        for (let taskRunner of this.taskRunners) {
+            if (taskRunner.isPaused()) {
+                taskRunner.run().catch(console.error);
+            }
         }
     }
 

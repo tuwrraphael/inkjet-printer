@@ -78,12 +78,12 @@ class GCodeQueue {
             throw new Error("No gcode to send");
         }
         for (let line of lines.slice(0, -1)) {
-            this.enqueueSingle(line);
+            await this.enqueueSingle(line);
         }
         await this.enqueueSingle(lines[lines.length - 1], waitForTest, timeout);
     }
 
-    private async enqueueSingle(gcode: string, waitForTest?: (data: string) => boolean, timeout = 5) {
+    private enqueueSingle(gcode: string, waitForTest?: (data: string) => boolean, timeout = 5) {
         if (!gcode.endsWith("\n")) {
             gcode += "\n";
         }
@@ -97,7 +97,7 @@ class GCodeQueue {
             });
         });
         this.triggerQueue();
-        await promise.finally(() => { console.log("Promise resolved", gcode); });
+        return promise;
     }
 
     private triggerQueue() {
@@ -111,7 +111,8 @@ class GCodeQueue {
     }
 
     private async processQueue() {
-        while (true) {
+        let ctd = true;
+        while (ctd) {
 
             let item = this.queue.shift();
             if (!item) {
@@ -119,7 +120,7 @@ class GCodeQueue {
                 break;
             }
             console.log("Processing queue item", item);
-            await this.processItem(item);
+            ctd = await this.processItem(item);
         }
     }
 
@@ -148,9 +149,10 @@ class GCodeQueue {
             });
         } catch (e) {
             item.reject(e);
-            throw e;
+            return false;
         }
         item.resolve();
+        return true;
     }
 
     async incomingData(data: string) {

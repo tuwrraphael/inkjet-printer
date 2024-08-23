@@ -13,7 +13,8 @@ export const enum PrinterTaskType {
     Wait,
     PrintLayer,
     PrintCustomTracks,
-    HeatBed
+    HeatBed,
+    CheckNozzles
 }
 
 export interface PrinterTask {
@@ -50,6 +51,11 @@ export interface PrinterTaskMove extends PrinterTask {
 export interface PrinterTaskHeadBed extends PrinterTask {
     readonly type: PrinterTaskType.HeatBed;
     temperature: number;
+    primingPosition: {
+        x: number;
+        y: number;
+        z: number;
+    };
 }
 
 export interface PrintLayerTask extends PrinterTask {
@@ -64,10 +70,18 @@ export interface PrintLayerTask extends PrinterTask {
     z: number;
 }
 
+export interface CheckNozzlesTask extends PrinterTask {
+    readonly type: PrinterTaskType.CheckNozzles;
+    startNozzle: number;
+    layerNr : number;
+    nozzleTestSurfaceHeight: number;
+    safeTravelHeight: number;
+}
+
 export interface PrinterTaskPrintCustomTracksTask extends PrinterTask {
     readonly type: PrinterTaskType.PrintCustomTracks;
     customTracks: CustomTrack[];
-    printingParams : PrintingParams;
+    printingParams: PrintingParams;
     z: number;
 }
 
@@ -93,13 +107,17 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskWait
     | PrinterTaskPrintCustomTracksTask
     | PrinterTaskHeadBed
+    | CheckNozzlesTask
     ;
 
 
 export enum PrinterProgramState {
+    Initial,
     Running,
     Canceled,
-    Done
+    Done,
+    Paused,
+    Failed
 }
 
 export interface PrinterProgram {
