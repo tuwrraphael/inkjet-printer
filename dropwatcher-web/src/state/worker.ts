@@ -201,6 +201,7 @@ async function rasterizeTrack() {
     if (state.printBedViewState.viewMode.evenOddView && state.printBedViewState.viewLayer + 1 < state.printState.slicingState.printPlan.layers.length) {
         rasterizeLayers.push(state.printBedViewState.viewLayer + 1);
     }
+    // let rasterizeLayers = state.printState.slicingState.printPlan.layers.map((_, i) => i);
     let result = await Promise.all(rasterizeLayers.map(async layer => {
         let layerPlan = state.printState.slicingState.printPlan.layers[layer];
         let modelGroup = viewMode.modelGroup;

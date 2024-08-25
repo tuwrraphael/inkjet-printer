@@ -9,20 +9,9 @@ import { LayerPlan, ModelGroupPlan, PrintPlan } from "./LayerPlan";
 import { PrintingParams } from "./PrintingParams";
 import { PrinterParams } from "./PrinterParams";
 import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
-import { ScanlineTrackRasterizer } from "./ScanlineTrackRasterizer";
+// import { ScanlineTrackRasterizer } from "./ScanlineTrackRasterizer";
 import { getNozzleDistance } from "./getNozzleDistance";
-
-function splitmix32(a: number) {
-    return function () {
-        a |= 0;
-        a = a + 0x9e3779b9 | 0;
-        let t = a ^ a >>> 16;
-        t = Math.imul(t, 0x21f0aaad);
-        t = t ^ t >>> 15;
-        t = Math.imul(t, 0x735a2d97);
-        return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
-    }
-}
+import { splitmix32 } from "./splitmix32";
 
 export class PrintPlanner {
 
@@ -66,13 +55,16 @@ export class PrintPlanner {
             let modelParams = this.modelParamsDict[model.id];
             modelmap.set(model.id, { polygons, contourBoundingBoxes, modelGroupId: modelParams.modelGroupId });
         }
+        let swathe = getPrintheadSwathe(this.printerParams);
         let nozzleDistance = getNozzleDistance(this.printerParams);
-        let randomizedOffset = this.printingParams.randomizeTracks ? Math.floor(this.rng() * (this.printerParams.numNozzles)) * -1 * nozzleDistance.x : 0;
+        let randomizedOffset = this.printingParams.randomizeTracks ? Math.floor(this.rng() * swathe.x) * -1 : 0;
+        // round to 0.01
+        randomizedOffset = Math.floor(randomizedOffset * 100) / 100;
         // console.log(layer, "randomizedOffset", randomizedOffset, nozzleDistance);
         let alignOffset = layer % 4 > 1 ? nozzleDistance.x / 2 : 0;
         this.layerMap.set(layer, {
             modelmap, plan: {
-                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap, randomizedOffset + alignOffset)),
+                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap, randomizedOffset)),
             },
             randomizedOffset,
             alignOffset
@@ -138,10 +130,11 @@ export class PrintPlanner {
         let layer = this.getLayer(layerNr);
         let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
         let modelMap = new Map(Array.from(layer.modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-        return new ScanlineTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
+        return new PointInPolygonTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr, this.rng);
     }
 
     getPrintPlan(): PrintPlan {
+        this.rng = splitmix32(4211531641);
         let layerPlans = [];
         for (let i = 0; i < this.maxLayers; i++) {
             let layer = this.getLayer(i);

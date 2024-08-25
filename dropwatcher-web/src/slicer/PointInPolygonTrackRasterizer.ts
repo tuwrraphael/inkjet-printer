@@ -9,6 +9,7 @@ import { getPrintingParams } from "./getPrintingParams";
 import { TrackRasterizer } from "./TrackRasterizer";
 import { CorrectionTrack } from "./CorrectionTrack";
 import { TrackRasterizationResult } from "./TrackRasterizationResult";
+import { splitmix32 } from "./splitmix32";
 
 type BlockedNozzleJets = Set<number>;
 
@@ -19,7 +20,8 @@ export class PointInPolygonTrackRasterizer implements TrackRasterizer {
         private printerParams: PrinterParams,
         private generalPrintingParams: PrintingParams,
         private modelGroupParams: ModelGroupPrintingParams,
-        private layerNr: number) {
+        private layerNr: number,
+        private rng: () => number) {
     }
 
     private get printingParams(): PrintingParams {
@@ -204,9 +206,15 @@ export class PointInPolygonTrackRasterizer implements TrackRasterizer {
         let entries = Array.from(correctionMovements.entries()).filter(([movement, nozzles]) => nozzles.length > 0);
         while (entries.length > 0) {
             let bestCandidates = entries.sort(([movementA, b], [movementB, d]) => d.length - b.length);
-            let best = bestCandidates.filter(([movement, nozzles]) => nozzles.length == bestCandidates[0][1].length)
-                .sort(([movementA, b], [movementB, d]) => Math.abs(movementA) - Math.abs(movementB));
-            let selected = best[0];
+
+            let best = bestCandidates.filter(([movement, nozzles]) => nozzles.length == bestCandidates[0][1].length);
+            if (best.length < 0.1 * bestCandidates.length) {
+                best = [...best,
+                ...bestCandidates.filter(([movement, nozzles]) => nozzles.length != bestCandidates[0][1].length)
+                    .slice(0, Math.floor(0.1 * bestCandidates.length) - best.length)
+                ];
+            }
+            let selected = best[Math.floor(this.rng() * best.length)];
             console.log("selected", selected);
             movements.push(selected);
             entries = entries.map(([movement, nozzles]) => {
