@@ -9635,7 +9635,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "\n10 Bit Analog to Digital Converter 1 Input 1 SAR SOT-23-5\n"
+		(property "Description" "10 Bit Analog to Digital Converter 1 Input 1 SAR SOT-23-5"
 			(at 190.5 127.635 0)
 			(effects
 				(font

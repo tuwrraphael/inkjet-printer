@@ -710,7 +710,7 @@
           "group_by": false,
           "label": "RSBestNr",
           "name": "RSBestNr",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,

@@ -5723,7 +5723,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "DMG2305UX"
+		(property "Value" "SI2319CDS-T1-GE3"
 			(at 267.97 90.17 0)
 			(effects
 				(font
@@ -5743,7 +5743,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.diodes.com/assets/Datasheets/DMG2301L.pdf"
+		(property "Datasheet" ""
 			(at 261.62 91.44 0)
 			(effects
 				(font
@@ -5762,7 +5762,7 @@
 				(hide yes)
 			)
 		)
-		(property "RSBestNr" "827-0452"
+		(property "RSBestNr" "787-9042"
 			(at 261.62 91.44 0)
 			(effects
 				(font
@@ -6470,7 +6470,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "DMG2305UX"
+		(property "Value" "SI2319CDS-T1-GE3"
 			(at 129.54 90.17 0)
 			(effects
 				(font
@@ -6490,7 +6490,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.diodes.com/assets/Datasheets/DMG2301L.pdf"
+		(property "Datasheet" ""
 			(at 135.89 91.44 0)
 			(effects
 				(font
@@ -6509,7 +6509,7 @@
 				(hide yes)
 			)
 		)
-		(property "RSBestNr" "827-0452"
+		(property "RSBestNr" "787-9042"
 			(at 135.89 91.44 0)
 			(effects
 				(font
