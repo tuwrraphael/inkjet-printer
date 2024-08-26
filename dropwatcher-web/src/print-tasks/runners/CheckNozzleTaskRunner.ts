@@ -51,7 +51,7 @@ export class CheckNozzleTaskRunner {
                     focus = this.store.state.movementStageState.pos.z;
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
-                let imageData = await cameraAccess.saveImage(`nozzletest_${this.task.layerNr}_${nozzle}`);
+                let imageData = await cameraAccess.saveImage(`nozzletest_${this.task.layerNr}_${nozzle}`, "nozzletest");
                 let drops = dropDetector.detectDrops(imageData);
                 console.log(`Nozzle ${nozzle} drop count: ${drops.drops.length}, avg diameter: ${dropDetector.averageDropSize(drops.drops)}`, drops.drops);
                 // this.store.postAction(new AddNozzleTestResult(nozzle, drops.drops.map(d => ({

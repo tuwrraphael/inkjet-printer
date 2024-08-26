@@ -31,5 +31,6 @@ export const enum ActionType {
     SaveImage,
     PlacePhotoPoint,
     ImageSelected,
-    AddNozzleTestResult
+    AddNozzleTestResult,
+    RouteChanged
 }

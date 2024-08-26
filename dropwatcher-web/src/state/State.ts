@@ -265,7 +265,8 @@ export interface State {
                 sizeStdDev: number;
             }
         }[]
-    }
+    },
+    currentRoute: string;
 }
 
 export type StateChanges = (keyof State)[];

@@ -142,6 +142,18 @@ export class AppComponent extends HTMLElement {
                 }
             }
         }
+        if (s && c.includes("currentRoute")) {
+            console.log("Current route: " + s.currentRoute);
+            this.querySelectorAll("a").forEach((e: HTMLAnchorElement) => {
+                e.classList.remove("current");
+                if (e.getAttribute("href") === s.currentRoute) {
+                    e.classList.add("current");
+                    e.setAttribute("aria-current", "page");
+                } else {
+                    e.removeAttribute("aria-current");
+                }
+            });
+        }
     }
 
     disconnectedCallback() {

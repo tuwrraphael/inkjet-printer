@@ -19,6 +19,7 @@ import {
 import { InkControlAction, inkControlActions } from "./ink-control-actions";
 import { InkControlActionChanged } from "../../state/actions/InkControlActionChanged";
 import { ValvePositionChanged } from "../../state/actions/ValvePositionChanged";
+import { MovementStage } from "../../movement-stage";
 
 export class InkControl extends HTMLElement {
 
@@ -36,7 +37,6 @@ export class InkControl extends HTMLElement {
     // private initialValueSet = false;
     private inkPumpStatus: PumpStatus;
     private cappingPumpStatus: PumpStatus;
-    private btnKeepAlive: HTMLButtonElement;
     private inkControlIllustration: SVGElement;
     private pumprotor1: SVGGElement;
     private pumprotor2: SVGGElement
@@ -53,12 +53,14 @@ export class InkControl extends HTMLElement {
     private btnNextAction: HTMLButtonElement;
     private extraComponentSpace: HTMLDivElement;
     private loadedExtraComponent: () => Element;
-    private bntAbortAction : HTMLButtonElement;
+    private btnAbortAction : HTMLButtonElement;
+    private movementStage: MovementStage;
 
     constructor() {
         super();
         this.printerUSB = PrinterUSB.getInstance();
         this.store = Store.getInstance();
+        this.movementStage = MovementStage.getInstance();
     }
 
     connectedCallback() {
@@ -74,7 +76,6 @@ export class InkControl extends HTMLElement {
             this.btnStop = this.querySelector("#btn-stop");
             this.inkPumpStatus = this.querySelector("#ink-pump-status");
             this.cappingPumpStatus = this.querySelector("#capping-pump-status");
-            this.btnKeepAlive = this.querySelector("#btn-keepalive");
             this.inkControlIllustration = this.querySelector("#ink-control-illustration");
             this.inkControlIllustration.innerHTML = svgIllustration;
 
@@ -88,7 +89,7 @@ export class InkControl extends HTMLElement {
             this.capping = this.querySelector(".capping");
 
             this.btnNextAction = this.querySelector("#btn-next-action");
-            this.bntAbortAction = this.querySelector("#btn-abort-action");
+            this.btnAbortAction = this.querySelector("#btn-abort-action");
 
             for (let possibleaction of inkControlActions) {
                 this.action.add(new Option(possibleaction.name, possibleaction.name));
@@ -109,12 +110,6 @@ export class InkControl extends HTMLElement {
             ev.preventDefault();
             this.stop().catch(console.error);
         }, this.abortController.signal);
-        abortableEventListener(this.btnKeepAlive, "click", async (ev) => {
-            ev.preventDefault();
-            let request = new ChangePrinterSystemStateRequest();
-            request.state = PrinterSystemState.PrinterSystemState_KEEP_ALIVE;
-            await this.printerUSB.sendChangeSystemStateRequest(request);
-        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#ink-control-action-form"), "submit", (ev) => {
             ev.preventDefault();
             this.store.postAction(new InkControlActionChanged({
@@ -131,7 +126,7 @@ export class InkControl extends HTMLElement {
             ev.preventDefault();
             this.next();
         }, this.abortController.signal);
-        abortableEventListener(this.bntAbortAction, "click", (ev) => {
+        abortableEventListener(this.btnAbortAction, "click", (ev) => {
             ev.preventDefault();
             this.store.postAction(new InkControlActionChanged({
                 currentAction: null,
@@ -140,7 +135,18 @@ export class InkControl extends HTMLElement {
             }));
             this.stop().catch(console.error);
         }, this.abortController.signal);
-
+        abortableEventListener(this.querySelector("#btn-dock-capping-station"), "click", async (event) => {
+            event.preventDefault();
+            using executor = this.movementStage.getMovementExecutor("ink-control");
+            await executor.home();
+            await executor.moveAbsoluteAndWait(100, 100, 0, 400);
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#btn-undock-capping-station"), "click", async (event) => {
+            event.preventDefault();
+            using executor = this.movementStage.getMovementExecutor("ink-control");
+            await executor.moveRelativeAndWait(0, 0, 15, 400);
+            console.log("undocked");
+        }, this.abortController.signal);
         // this.actionChanged();
         this.store.subscribe((s, c) => this.update(s, c), this.abortController.signal);
         this.update(this.store.state, null);
@@ -153,7 +159,9 @@ export class InkControl extends HTMLElement {
         if (currentStep.pumpactions) {
             let actions = currentStep.pumpactions();
             for (let i = 0; i < (actions.repetitions?.count || 1); i++) {
-
+                if (this.store.state.inkControlAction.actionsRunning == false) {
+                    break;
+                }
                 let changeParametersRequest = new ChangePressureControlParametersRequest();
                 let parameters = new PressureControlParameters();
                 changeParametersRequest.parameters = parameters;

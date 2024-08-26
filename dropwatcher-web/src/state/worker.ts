@@ -45,6 +45,7 @@ import { ValvePositionChanged } from "./actions/ValvePositionChanged";
 import { OutputFolderChanged } from "./actions/OutputFolderChanged";
 import { SaveImage } from "./actions/SaveImage";
 import { CameraType } from "../CameraType";
+import { RouteChanged } from "./actions/RouteChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -75,6 +76,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | OutputFolderChanged
     | SaveImage
     | ImageSelected
+    | RouteChanged
     ;
 let state: State;
 let initialized = false;
@@ -606,6 +608,11 @@ async function handleMessage(msg: Actions) {
                 }
             }));
             break;
+        case ActionType.RouteChanged:
+            updateState(oldState => ({
+                currentRoute: msg.route
+            }));
+            break;
     }
 }
 
@@ -752,6 +759,14 @@ async function saveImage(saveImgMsg: SaveImage) {
     if (!state.inspect.outputFolder) {
         console.error("No output folder set");
         return;
+    }
+    let folder = state.inspect.outputFolder;
+    if (saveImgMsg.folder) {
+        folder = await state.inspect.outputFolder.getDirectoryHandle(saveImgMsg.folder, { create: true });
+        if (!folder) {
+            console.error("Could not create folder", saveImgMsg.folder);
+            return;
+        }
     }
     let fileNameBase: string = saveImgMsg.fileName;
     if (!fileNameBase) {
