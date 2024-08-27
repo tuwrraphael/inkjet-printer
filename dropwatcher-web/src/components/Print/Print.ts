@@ -34,6 +34,7 @@ import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
 import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
 import { getCodeModel } from "../../slicer/getCodeModel";
+import { getSquareModel } from "../../slicer/getSquareModel";
 
 export class PrintComponent extends HTMLElement {
 
@@ -43,7 +44,6 @@ export class PrintComponent extends HTMLElement {
     private printerUsb: PrinterUSB;
     private movementStage: MovementStage;
     private printBedSimulation: PrintBedSimulation;
-    private slicingInProgress: HTMLSpanElement;
     private startPrintBtn: HTMLButtonElement;
     private cancelPrintBtn: HTMLButtonElement;
     private pausePrintBtn: HTMLButtonElement;
@@ -64,7 +64,6 @@ export class PrintComponent extends HTMLElement {
             this.rendered = true;
             this.innerHTML = template;
             this.printBedSimulation = this.querySelector(PrintBedSimulationTagName);
-            this.slicingInProgress = this.querySelector("#slicing-in-progress");
             this.startPrintBtn = this.querySelector("#start-print");
             this.cancelPrintBtn = this.querySelector("#cancel-print");
             this.pausePrintBtn = this.querySelector("#pause-print");
@@ -547,6 +546,10 @@ export class PrintComponent extends HTMLElement {
                         8, 3570, 32);
                     this.store.postAction(new SetCustomTracks([...res.customTracks, ...res2.customTracks]));
                     break;
+                case "8x8square":
+                    let square = getSquareModel(8,10);
+                    this.store.postAction(new ModelAdded(square));
+                    break;
                 default:
                     break;
             }
@@ -666,10 +669,6 @@ export class PrintComponent extends HTMLElement {
             this.cancelPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Done || s.programRunnerState.state == PrinterProgramState.Canceled;
             this.pausePrintBtn.disabled = s.programRunnerState.state != PrinterProgramState.Running;
             this.startPrintBtn.innerText = s.programRunnerState.state == PrinterProgramState.Running ? "Pause" : "Start Print";
-        }
-        if (c.includes("printState")) {
-            this.slicingInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";
-            // this.moveAxisPos.innerText = "" + s.printBedViewState.;
         }
     }
 

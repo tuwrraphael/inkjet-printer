@@ -159,7 +159,8 @@ export const DefaultState: State =
     models: [],
     currentFileState: null,
     printBedViewState: {
-        viewLayer: 0,
+        viewLayerFrom: 0,
+        viewLayerTo: 0,
         selectedModelId: null,
         viewMode: {
             mode: "layerPlan"

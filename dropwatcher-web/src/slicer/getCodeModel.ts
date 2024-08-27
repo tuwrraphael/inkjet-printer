@@ -27,7 +27,7 @@ export function getCodeModel(printerParams: PrinterParams) {
         }
     }
     let model: NewModel = {
-        fileName: "test",
+        fileName: "code",
         layers: [
             {
                 polygons: polygons

@@ -61,8 +61,8 @@ export class AppRouter {
                 } else if (/^utils$/.test(currentRoute)) {
                     return document.createElement(UtilsTagName);
                 }
-                store.postAction(new RouteChanged("home"));
-                return document.createElement("home-component");
+                store.postAction(new RouteChanged("print"));
+                return document.createElement(PrintTagName);
             }
         }
         let container: HTMLElement = document.querySelector(".content");

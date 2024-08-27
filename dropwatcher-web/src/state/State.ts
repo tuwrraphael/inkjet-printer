@@ -142,7 +142,8 @@ export type PrintBedViewMode = {
 
 export interface PrintBedViewState {
     selectedModelId: string | null;
-    viewLayer: number;
+    viewLayerFrom: number;
+    viewLayerTo: number;
     viewMode: PrintBedViewMode;
 }
 

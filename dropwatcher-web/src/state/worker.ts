@@ -199,11 +199,11 @@ async function rasterizeTrack() {
             }
         }
     }));
-    let rasterizeLayers = [state.printBedViewState.viewLayer];
-    if (state.printBedViewState.viewMode.evenOddView && state.printBedViewState.viewLayer + 1 < state.printState.slicingState.printPlan.layers.length) {
-        rasterizeLayers.push(state.printBedViewState.viewLayer + 1);
-    }
-    // let rasterizeLayers = state.printState.slicingState.printPlan.layers.map((_, i) => i);
+    let rasterizeLayers = Array.from(
+        { length: (state.printBedViewState.viewLayerTo+1) - state.printBedViewState.viewLayerFrom },
+        (_, i) => state.printBedViewState.viewLayerFrom + i
+    );
+    console.log("Rasterizing layers", rasterizeLayers);	
     let result = await Promise.all(rasterizeLayers.map(async layer => {
         let layerPlan = state.printState.slicingState.printPlan.layers[layer];
         let modelGroup = viewMode.modelGroup;
@@ -432,7 +432,8 @@ async function handleMessage(msg: Actions) {
         case ActionType.PrintBedViewStateChanged:
 
             updateState(oldState => {
-                let viewLayerChanged = msg.state.viewLayer !== undefined && state.printBedViewState.viewLayer != msg.state.viewLayer;
+                let viewLayerChanged = (msg.state.viewLayerFrom !== undefined && state.printBedViewState.viewLayerFrom != msg.state.viewLayerFrom)
+                || (msg.state.viewLayerTo !== undefined && state.printBedViewState.viewLayerTo != msg.state.viewLayerTo);
                 let news = {
                     printBedViewState: {
                         ...oldState.printBedViewState,
