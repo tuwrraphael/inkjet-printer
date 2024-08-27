@@ -137,7 +137,7 @@ export interface WaveformControl {
 
 export type PrintBedViewMode = {
     mode: "layerPlan"
-} | { mode: "rasterization", modelGroup: string, trackIncrement: number, evenOddView: boolean }
+} | { mode: "rasterization", modelGroup: string, trackIncrement: number }
     | { mode: "printingTrack", moveAxisPosition: number };
 
 export interface PrintBedViewState {

@@ -126,13 +126,11 @@ export class PrintComponent extends HTMLElement {
                 viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: null,
-                    evenOddView: false,
+                    modelGroup: null
                 } : {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
-                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup
                 }
             }));
         }, this.abortController.signal);
@@ -142,13 +140,11 @@ export class PrintComponent extends HTMLElement {
                 viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: null,
-                    evenOddView: false,
+                    modelGroup: null
                 } : {
                     mode: "rasterization",
                     trackIncrement: this.store.state.printBedViewState.viewMode.trackIncrement + 1,
-                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
-                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup
                 }
             }));
         }, this.abortController.signal);
@@ -477,46 +473,6 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             (this.querySelector(PrintBedSimulationTagName) as PrintBedSimulation).setClickAction(PrintBedClickAction.MoveCamera);
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#start-nozzle-test"), "click", async (ev) => {
-            ev.preventDefault();
-            let steps: PrinterTasks[] = [
-                {
-                    type: PrinterTaskType.Home,
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 0,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 8,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 16,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 24,
-                    safeTravelHeight: 10
-                },
-            ];
-            let program: PrinterProgram = {
-                tasks: steps
-            };
-            this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(program));
-        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#insert-special"), "click", async (ev) => {
             ev.preventDefault();
             this.insertSpecialDialog.showModal();
@@ -537,13 +493,13 @@ export class PrintComponent extends HTMLElement {
                         16,
                         5,
                         this.store.state.printState.printerParams,
-                        8, 3500, 32);
+                        6, 3500, 32);
                     let res2 = getNozzleTestTracks(
                         4,
                         16,
                         5 + 3 * 0.137,
                         this.store.state.printState.printerParams,
-                        8, 3570, 32);
+                        6, 3570, 32);
                     this.store.postAction(new SetCustomTracks([...res.customTracks, ...res2.customTracks]));
                     break;
                 case "8x8square":

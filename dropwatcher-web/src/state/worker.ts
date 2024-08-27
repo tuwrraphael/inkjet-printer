@@ -46,6 +46,7 @@ import { OutputFolderChanged } from "./actions/OutputFolderChanged";
 import { SaveImage } from "./actions/SaveImage";
 import { CameraType } from "../CameraType";
 import { RouteChanged } from "./actions/RouteChanged";
+import { NozzleBlockStatusChanged } from "./actions/NozzleBlockStatusChanged";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -77,6 +78,7 @@ type Actions = PrinterUSBConnectionStateChanged
     | SaveImage
     | ImageSelected
     | RouteChanged
+    | NozzleBlockStatusChanged
     ;
 let state: State;
 let initialized = false;
@@ -200,10 +202,10 @@ async function rasterizeTrack() {
         }
     }));
     let rasterizeLayers = Array.from(
-        { length: (state.printBedViewState.viewLayerTo+1) - state.printBedViewState.viewLayerFrom },
+        { length: (state.printBedViewState.viewLayerTo + 1) - state.printBedViewState.viewLayerFrom },
         (_, i) => state.printBedViewState.viewLayerFrom + i
     );
-    console.log("Rasterizing layers", rasterizeLayers);	
+    console.log("Rasterizing layers", rasterizeLayers);
     let result = await Promise.all(rasterizeLayers.map(async layer => {
         let layerPlan = state.printState.slicingState.printPlan.layers[layer];
         let modelGroup = viewMode.modelGroup;
@@ -433,7 +435,7 @@ async function handleMessage(msg: Actions) {
 
             updateState(oldState => {
                 let viewLayerChanged = (msg.state.viewLayerFrom !== undefined && state.printBedViewState.viewLayerFrom != msg.state.viewLayerFrom)
-                || (msg.state.viewLayerTo !== undefined && state.printBedViewState.viewLayerTo != msg.state.viewLayerTo);
+                    || (msg.state.viewLayerTo !== undefined && state.printBedViewState.viewLayerTo != msg.state.viewLayerTo);
                 let news = {
                     printBedViewState: {
                         ...oldState.printBedViewState,
@@ -613,6 +615,26 @@ async function handleMessage(msg: Actions) {
             updateState(oldState => ({
                 currentRoute: msg.route
             }));
+            break;
+        case ActionType.NozzleBlockStatusChanged:
+            updateState(oldState => {
+                let blockedNozzles = oldState.printState.printerParams.blockedNozzles || [];
+                if (msg.blocked) {
+                    blockedNozzles = [...blockedNozzles, msg.nozzleId];
+                } else {
+                    blockedNozzles = blockedNozzles.filter(n => n !== msg.nozzleId);
+                }
+                return {
+                    printState: {
+                        ...oldState.printState,
+                        printerParams: {
+                            ...oldState.printState.printerParams,
+                            blockedNozzles: blockedNozzles
+                        }
+                    }
+                }
+            });
+            await updateSlicerParams();
             break;
     }
 }

@@ -69,7 +69,7 @@ export class CheckNozzleTaskRunner {
     private generateTracks() {
         let moveAxisPos = 5;
         let stride = 32;
-        let fireEveryTicks = 8;
+        let fireEveryTicks = 6;
         let numNozzles = 16;
         let res = getNozzleTestTracks(
             this.task.startNozzle,

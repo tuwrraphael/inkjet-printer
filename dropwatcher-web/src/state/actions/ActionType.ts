@@ -32,5 +32,6 @@ export const enum ActionType {
     PlacePhotoPoint,
     ImageSelected,
     AddNozzleTestResult,
-    RouteChanged
+    RouteChanged,
+    NozzleBlockStatusChanged
 }

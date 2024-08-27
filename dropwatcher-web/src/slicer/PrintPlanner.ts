@@ -130,7 +130,8 @@ export class PrintPlanner {
         let layer = this.getLayer(layerNr);
         let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
         let modelMap = new Map(Array.from(layer.modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-        return new ScanlineTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
+        // return new ScanlineTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
+        return new PointInPolygonTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr, this.rng);
     }
 
     getPrintPlan(): PrintPlan {

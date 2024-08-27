@@ -91,6 +91,11 @@ button {
             background-color: lighten(red, 40%);
         }
     }
+    &:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
 }
 
 input,select {
