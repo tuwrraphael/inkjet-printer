@@ -15,7 +15,6 @@ export class PrintBedViewStateControl extends HTMLElement {
     abortController: AbortController;
     private viewMode: HTMLSelectElement;
     private trackIncrement: HTMLInputElement;
-    private evenOddView: HTMLInputElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -28,7 +27,6 @@ export class PrintBedViewStateControl extends HTMLElement {
             this.modelGroup = this.querySelector("#model-group");
             this.viewMode = this.querySelector("#view-mode");
             this.trackIncrement = this.querySelector("#track-increment");
-            this.evenOddView = this.querySelector("#even-odd-view");
             this.modelGroupOptionsRenderer = new ArrayToElementRenderer<string, HTMLOptionElement, string>(this.modelGroup, k => k, (e) => {
                 let o = document.createElement("option");
                 return o;
@@ -44,8 +42,7 @@ export class PrintBedViewStateControl extends HTMLElement {
                     viewMode: {
                         mode: "rasterization",
                         modelGroup: formData.get("model-group") as string || null,
-                        trackIncrement: parseInt(formData.get("track-increment") as string || "0"),
-                        evenOddView: formData.get("even-odd-view") == "on"
+                        trackIncrement: parseInt(formData.get("track-increment") as string || "0")
                     },
                 }));
             } else if (viewMode == "layerPlan") {
@@ -77,12 +74,10 @@ export class PrintBedViewStateControl extends HTMLElement {
             if (s.printBedViewState.viewMode.mode == "rasterization") {
                 this.modelGroup.value = s.printBedViewState.viewMode.modelGroup == null ? "" : s.printBedViewState.viewMode.modelGroup;
                 this.trackIncrement.value = s.printBedViewState.viewMode.trackIncrement.toString();
-                this.evenOddView.checked = s.printBedViewState.viewMode.evenOddView;
             } else {
                 let firstOption = this.modelGroup.querySelector("option");
                 this.modelGroup.value = firstOption ? firstOption.value : "";
                 this.trackIncrement.value = "";
-                this.evenOddView.checked = false;
             }
 
             this.viewMode.value = s.printBedViewState.viewMode.mode;

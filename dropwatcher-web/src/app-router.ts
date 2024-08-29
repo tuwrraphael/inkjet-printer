@@ -1,14 +1,16 @@
 import { Router, RouteRenderer, AsyncRouteResolver } from "route-it";
 import "./components/HomeComponent/HomeComponent";
 import "./components/InkControl/InkControl";
-import "./components/MovementControl/MovementControl";
 import "./components/Print/Print";
 import "./components/Dropwatcher/Dropwatcher";
-import { MovementControlTagName } from "./components/MovementControl/MovementControl";
 import { InkControlTagName } from "./components/InkControl/InkControl";
 import { PrintTagName } from "./components/Print/Print";
 import { DropwatcherTagName } from "./components/Dropwatcher/Dropwatcher";
 import { InspectTagName } from "./components/Inspect/Inspect";
+import { NozzletestTagName } from "./components/Nozzletest/Nozzletest";
+import { UtilsTagName } from "./components/Utils/Utils";
+import { Store } from "./state/Store";
+import { RouteChanged } from "./state/actions/RouteChanged";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -28,6 +30,7 @@ class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
 export class AppRouter {
     static instance: AppRouter = null;
     router: Router<HTMLElement>;
+    private store: Store;
 
     static getInstance() {
         if (null == this.instance) {
@@ -37,23 +40,29 @@ export class AppRouter {
     }
 
     constructor() {
+        this.store = Store.getInstance();
+        let store = this.store;
+
         class AppRouteResolver implements AsyncRouteResolver<HTMLElement> {
 
             async resolve(lastRoute: string, currentRoute: string, router: Router<any>, s: { searchParams: URLSearchParams }): Promise<false | HTMLElement> {
                 console.log("Resolving route: " + currentRoute);
+                store.postAction(new RouteChanged(currentRoute));
                 if (/^ink-control$/.test(currentRoute)) {
                     return document.createElement(InkControlTagName);
-                } else if (/^movement-control$/.test(currentRoute)) {
-                    return document.createElement(MovementControlTagName);
-                }
-                else if (/^print$/.test(currentRoute)) {
+                } else if (/^print$/.test(currentRoute)) {
                     return document.createElement(PrintTagName);
                 } else if (/^dropwatcher$/.test(currentRoute)) {
                     return document.createElement(DropwatcherTagName);
                 } else if (/^inspect$/.test(currentRoute)) {
                     return document.createElement(InspectTagName);
+                } else if (/^nozzletest$/.test(currentRoute)) {
+                    return document.createElement(NozzletestTagName);
+                } else if (/^utils$/.test(currentRoute)) {
+                    return document.createElement(UtilsTagName);
                 }
-                return document.createElement("home-component");
+                store.postAction(new RouteChanged("print"));
+                return document.createElement(PrintTagName);
             }
         }
         let container: HTMLElement = document.querySelector(".content");

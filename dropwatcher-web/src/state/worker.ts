@@ -1,7 +1,7 @@
 import * as Comlink from "comlink";
 
 import { ActionType } from "./actions/ActionType";
-import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, Model, SlicingStatus, PrintControlEncoderMode, PressureControlPumpParameters, TrackRasterizationPreview } from "./State";
+import { PrinterSystemState, State, PressureControlAlgorithm, PressureControlDirection, Model, SlicingStatus, PrintControlEncoderMode, PressureControlPumpParameters, TrackRasterizationPreview, InspectImageType, InspectImage } from "./State";
 
 import { PrinterUSBConnectionStateChanged } from "./actions/PrinterUSBConnectionStateChanged";
 import { PrinterSystemStateResponseReceived } from "./actions/PrinterSystemStateResponseReceived";
@@ -45,6 +45,9 @@ import { ValvePositionChanged } from "./actions/ValvePositionChanged";
 import { OutputFolderChanged } from "./actions/OutputFolderChanged";
 import { SaveImage } from "./actions/SaveImage";
 import { CameraType } from "../CameraType";
+import { RouteChanged } from "./actions/RouteChanged";
+import { NozzleBlockStatusChanged } from "./actions/NozzleBlockStatusChanged";
+import { timeStamp } from "console";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -75,6 +78,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | OutputFolderChanged
     | SaveImage
     | ImageSelected
+    | RouteChanged
+    | NozzleBlockStatusChanged
     ;
 let state: State;
 let initialized = false;
@@ -197,11 +202,11 @@ async function rasterizeTrack() {
             }
         }
     }));
-    let rasterizeLayers = [state.printBedViewState.viewLayer];
-    if (state.printBedViewState.viewMode.evenOddView && state.printBedViewState.viewLayer + 1 < state.printState.slicingState.printPlan.layers.length) {
-        rasterizeLayers.push(state.printBedViewState.viewLayer + 1);
-    }
-    // let rasterizeLayers = state.printState.slicingState.printPlan.layers.map((_, i) => i);
+    let rasterizeLayers = Array.from(
+        { length: (state.printBedViewState.viewLayerTo + 1) - state.printBedViewState.viewLayerFrom },
+        (_, i) => state.printBedViewState.viewLayerFrom + i
+    );
+    console.log("Rasterizing layers", rasterizeLayers);
     let result = await Promise.all(rasterizeLayers.map(async layer => {
         let layerPlan = state.printState.slicingState.printPlan.layers[layer];
         let modelGroup = viewMode.modelGroup;
@@ -430,7 +435,8 @@ async function handleMessage(msg: Actions) {
         case ActionType.PrintBedViewStateChanged:
 
             updateState(oldState => {
-                let viewLayerChanged = msg.state.viewLayer !== undefined && state.printBedViewState.viewLayer != msg.state.viewLayer;
+                let viewLayerChanged = (msg.state.viewLayerFrom !== undefined && state.printBedViewState.viewLayerFrom != msg.state.viewLayerFrom)
+                    || (msg.state.viewLayerTo !== undefined && state.printBedViewState.viewLayerTo != msg.state.viewLayerTo);
                 let news = {
                     printBedViewState: {
                         ...oldState.printBedViewState,
@@ -531,7 +537,8 @@ async function handleMessage(msg: Actions) {
                             mode: "printingTrack",
                             moveAxisPosition: msg.moveAxisPos
                         },
-                        viewLayer: msg.layer
+                        viewLayerFrom: msg.layer,
+                        viewLayerTo: msg.layer
                     }
                 }));
             }
@@ -605,6 +612,33 @@ async function handleMessage(msg: Actions) {
                     selectedImageFileName: msg.filename
                 }
             }));
+            break;
+        case ActionType.RouteChanged:
+            updateState(oldState => ({
+                currentRoute: msg.route
+            }));
+            break;
+        case ActionType.NozzleBlockStatusChanged:
+            updateState(oldState => {
+                let blockedNozzles = oldState.printState.printerParams.blockedNozzles || [];
+                for (let m of msg.state) {
+                    if (m.blocked) {
+                        blockedNozzles = [...blockedNozzles, m.nozzleId];
+                    } else {
+                        blockedNozzles = blockedNozzles.filter(n => n !== m.nozzleId);
+                    }
+                }
+                return {
+                    printState: {
+                        ...oldState.printState,
+                        printerParams: {
+                            ...oldState.printState.printerParams,
+                            blockedNozzles: blockedNozzles
+                        }
+                    }
+                }
+            });
+            await updateSlicerParams();
             break;
     }
 }
@@ -748,11 +782,31 @@ async function saveToFile(handle: FileSystemFileHandle) {
     }));
 }
 
+function getImageFolder(inspectImageType: InspectImageType) {
+    switch (inspectImageType) {
+        case InspectImageType.NozzleTest:
+            return "nozzletest";
+        case InspectImageType.Dropwatcher:
+            return "dropwatcher";
+        case InspectImageType.PhotoPoint:
+            return "photopoints";
+    }
+}
+
 async function saveImage(saveImgMsg: SaveImage) {
     if (!state.inspect.outputFolder) {
         console.error("No output folder set");
         return;
     }
+    let folder = state.inspect.outputFolder;
+    let subFolder = getImageFolder(saveImgMsg.imageType);
+
+    folder = await state.inspect.outputFolder.getDirectoryHandle(subFolder, { create: true });
+    if (!folder) {
+        console.error("Could not create folder", subFolder);
+        return;
+    }
+
     let fileNameBase: string = saveImgMsg.fileName;
     if (!fileNameBase) {
         switch (saveImgMsg.camera) {
@@ -764,37 +818,53 @@ async function saveImage(saveImgMsg: SaveImage) {
                 break;
         }
     }
-    let lastNr = -1;
-    for await (let entry of state.inspect.outputFolder.values()) {
-        if (entry.name.startsWith(fileNameBase)) {
-            let withoutExt = entry.name.split(".")[0];
-            let splitted = withoutExt.split("_");
-            if (splitted && splitted.length > 1 && !isNaN(Number(splitted[splitted.length - 1]))) {
-                let nr = Number(splitted[splitted.length - 1]);
-                if (nr > lastNr) {
-                    lastNr = nr;
-                }
-            } else if (lastNr == -1) {
-                lastNr = 0;
-            }
+    let fileName = `${fileNameBase}.png`;
+    let files: string[] = [];
+    for await (let entry of folder.values()) {
+        if (entry.kind == "file") {
+            files.push(entry.name);
         }
     }
-    let fileName = lastNr >= 0 ? `${fileNameBase}_${lastNr + 1}.png` : `${fileNameBase}.png`;
-    let file = await state.inspect.outputFolder.getFileHandle(fileName, { create: true });
+    let i = 0;
+    while (files.includes(fileName)) {
+        i++;
+        fileName = `${fileNameBase}_${i}.png`;
+    }
+    let file = await folder.getFileHandle(fileName, { create: true });
     let writable = await file.createWritable();
     await writable.write(saveImgMsg.image);
     await writable.close();
+    let fileTimeStamp = (await file.getFile()).lastModified;
     updateState(oldState => ({
         inspect: {
             ...oldState.inspect,
             images: [...oldState.inspect.images, {
                 file: file,
                 metadata: {
+                    type: saveImgMsg.imageType,
+                    timestamp: new Date(fileTimeStamp)
                 }
             }],
             selectedImageFileName: fileName
         }
     }));
+}
+
+async function* enumerateFolder(folder: FileSystemDirectoryHandle, type: InspectImageType) {
+    for await (let entry of folder.values()) {
+        if (entry.kind == "file" && entry.name.endsWith(".png")) {
+            let file = await entry.getFile();
+            let img: InspectImage = {
+                file: entry,
+                metadata: {
+                    timestamp: new Date(file.lastModified),
+                    type: type
+                }
+            }
+            yield img;
+        }
+    }
+
 }
 
 async function enumerateImages() {
@@ -808,18 +878,26 @@ async function enumerateImages() {
         }));
     }
     let images = [];
+    let searchMap: {
+        [key: string]: InspectImageType
+    } = {
+        "nozzletest": InspectImageType.NozzleTest,
+        "dropwatcher": InspectImageType.Dropwatcher,
+        "photopoints": InspectImageType.PhotoPoint
+    };
     for await (let entry of state.inspect.outputFolder.values()) {
-        if (entry.kind == "file" && entry.name.endsWith(".png")) {
-            let file = await entry.getFile();
-            // let image = await file.arrayBuffer();
-            images.push({
-                file: entry,
-                metadata: {
-                    // name: entry.name,
-                    // image: image
+        if (entry.kind == "directory") {
+            if (searchMap[entry.name] != null) {
+                let type = searchMap[entry.name];
+                let folder = await state.inspect.outputFolder.getDirectoryHandle(entry.name);
+                for await (let img of enumerateFolder(folder, type)) {
+                    images.push(img);
                 }
-            });
+            }
         }
+    }
+    for await (let img of enumerateFolder(state.inspect.outputFolder, InspectImageType.Unknown)) {
+        images.push(img);
     }
     updateState(oldState => ({
         inspect: {

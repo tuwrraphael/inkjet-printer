@@ -3,13 +3,12 @@ import { CameraType } from "../../CameraType";
 import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
 import { ChangeDropwatcherParametersRequest, ChangeWaveformControlSettingsRequest, WavefromControlSettings } from "../../proto/compiled";
-import { PrinterSystemState, State, StateChanges } from "../../state/State";
+import { InspectImageType, PrinterSystemState, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import { NozzleCheckBox, NozzleCheckBoxTagName } from "../NozzleCheckBox/NozzleCheckBox";
 import template from "./Dropwatcher.html";
 import "./Dropwatcher.scss";
-import *as cv from "@techstark/opencv-js";
 import "../MovementControlPanel/MovementControlPanel";
 import { ChangePrinterSystemStateRequest, PrinterSystemState as ProtoPrinterSystemState } from "../../proto/compiled";
 import { DropwatcherNozzlePosChanged } from "../../state/actions/DropwatcherNozzlePosChanged";
@@ -506,18 +505,18 @@ export class DropwatcherComponent extends HTMLElement {
             flashRequest.delayNanos = 270 * 1000;
             flashRequest.flashOnTimeNanos = 2 * 1000;
             await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
-            
+
 
             // fire 10 times
             for (let j = 0; j < 10; j++) {
                 await this.waitForNextVideoFrame();
                 await this.printerUsb.sendFireRequest();
-                
+
             }
 
             await this.waitForNextVideoFrame();
-                await this.printerUsb.sendFireRequest();
-                await this.cameraAccess.saveImage(`clocksweep-${i}-kHz`);
+            await this.printerUsb.sendFireRequest();
+            await this.cameraAccess.saveImage(`clocksweep-${i}-kHz`, InspectImageType.Dropwatcher);
 
             // wait for frame
             // await this.waitForNextVideoFrame();
@@ -559,18 +558,18 @@ export class DropwatcherComponent extends HTMLElement {
             flashRequest.delayNanos = 270 * 1000;
             flashRequest.flashOnTimeNanos = 2 * 1000;
             await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
-            
+
 
             // fire 10 times
             for (let j = 0; j < 10; j++) {
                 await this.waitForNextVideoFrame();
                 await this.printerUsb.sendFireRequest();
-                
+
             }
 
             await this.waitForNextVideoFrame();
-                await this.printerUsb.sendFireRequest();
-                await this.cameraAccess.saveImage(`voltagesweep-${numberFormat.format(i)}-V`);
+            await this.printerUsb.sendFireRequest();
+            await this.cameraAccess.saveImage(`voltagesweep-${numberFormat.format(i)}-V`, InspectImageType.Dropwatcher);
 
             // wait for frame
             // await this.waitForNextVideoFrame();

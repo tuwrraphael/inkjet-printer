@@ -1,6 +1,6 @@
 import { CameraType } from "./CameraType";
 import { GCodeRunner } from "./gcode-runner";
-import { MovementStage } from "./movement-stage";
+import { InspectImageType } from "./state/State";
 import { Store } from "./state/Store";
 import { CameraStateChanged } from "./state/actions/CameraStateChanged";
 import { SaveImage } from "./state/actions/SaveImage";
@@ -85,7 +85,9 @@ export class CameraAccess {
 
         let capabilities = track.getCapabilities();
         console.log(capabilities)
-        let canChangeExposure = capabilities.exposureMode && capabilities.exposureMode.includes("manual")
+        let canChangeExposure = false;
+        // if (this.type == CameraType.Dropwatcher) {
+        canChangeExposure = capabilities.exposureMode && capabilities.exposureMode.includes("manual")
             && (<any>capabilities).exposureTime && (<any>capabilities).exposureTime.min && (<any>capabilities).exposureTime.max;
 
         try {
@@ -112,6 +114,7 @@ export class CameraAccess {
             console.error(e);
             canChangeExposure = false;
         }
+        // }
         let settings = track.getSettings();
         this.store.postAction(new CameraStateChanged({
             cameraOn: true,
@@ -160,7 +163,7 @@ export class CameraAccess {
         return this.stream;
     }
 
-    async saveImage(filename: string) {
+    async saveImage(filename: string, imgType : InspectImageType) {
         if (!this.stream) {
             await this.start();
         }
@@ -178,7 +181,8 @@ export class CameraAccess {
         ctx.drawImage(video, 0, 0);
         let blob = await offscreen.convertToBlob();
 
-        this.store.postAction(new SaveImage(blob, this.type, filename));
+        this.store.postAction(new SaveImage(blob, this.type, filename, imgType));
+        return ctx.getImageData(0, 0, offscreen.width, offscreen.height);
     }
 
     private waitForNextVideoFrame(videoElement: HTMLVideoElement) {

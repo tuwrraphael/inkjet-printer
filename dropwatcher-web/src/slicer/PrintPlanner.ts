@@ -9,26 +9,31 @@ import { LayerPlan, ModelGroupPlan, PrintPlan } from "./LayerPlan";
 import { PrintingParams } from "./PrintingParams";
 import { PrinterParams } from "./PrinterParams";
 import { ModelGroupPrintingParams } from "./ModelGroupPrintingParams";
-// import { ScanlineTrackRasterizer } from "./ScanlineTrackRasterizer";
-import { getNozzleDistance } from "./getNozzleDistance";
-import { splitmix32 } from "./splitmix32";
-
+import { ScanlineTrackRasterizer } from "./ScanlineTrackRasterizer";
+import { SplitMix32 } from "./splitmix32";
 export class PrintPlanner {
 
     private layerMap: Map<number, {
         modelmap: Map<string, SliceModelInfo>;
         plan: LayerPlan;
-        randomizedOffset: number;
-        alignOffset: number;
     }> = new Map();
     private maxLayers: number;
-    private rng = splitmix32(4211531641);
+    private rng = new SplitMix32(4211531641);
+    private layerOffsetRandomNr = new Map<number, number>();
+    private rasterizerRandomState = new Map<number, number>();
     constructor(private models: Model[],
         private modelParamsDict: { [id: string]: ModelParams; },
         private printerParams: PrinterParams,
         private printingParams: PrintingParams,
         private modelGroupParamsDict: { [id: string]: ModelGroupPrintingParams; }) {
         this.maxLayers = Math.max(...models.map(m => m.layers.length));
+        for (let i = 0; i < this.maxLayers; i++) {
+            this.layerOffsetRandomNr.set(i, this.rng.next());
+        }
+        for (let i = 0; i < this.maxLayers; i++) {
+            this.rng.next();
+            this.rasterizerRandomState.set(i, this.rng.state);
+        }
     }
 
     private transformCoordinates(points: Point[], modelParams: ModelParams): Point[] {
@@ -55,30 +60,21 @@ export class PrintPlanner {
             let modelParams = this.modelParamsDict[model.id];
             modelmap.set(model.id, { polygons, contourBoundingBoxes, modelGroupId: modelParams.modelGroupId });
         }
-        let swathe = getPrintheadSwathe(this.printerParams);
-        let nozzleDistance = getNozzleDistance(this.printerParams);
-        let randomizedOffset = this.printingParams.randomizeTracks ? Math.floor(this.rng() * swathe.x) * -1 : 0;
-        // round to 0.01
-        randomizedOffset = Math.floor(randomizedOffset * 100) / 100;
-        // console.log(layer, "randomizedOffset", randomizedOffset, nozzleDistance);
-        let alignOffset = layer % 4 > 1 ? nozzleDistance.x / 2 : 0;
         this.layerMap.set(layer, {
             modelmap, plan: {
-                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap, randomizedOffset)),
-            },
-            randomizedOffset,
-            alignOffset
+                modelGroupPlans: Array.from(this.estimateModelGroupPlans(modelmap, this.layerOffsetRandomNr.get(layer))),
+            }
         });
         return this.layerMap.get(layer);
     }
 
-    private *estimateModelGroupPlans(modelmap: Map<string, SliceModelInfo>, offset: number): IterableIterator<ModelGroupPlan> {
+    private *estimateModelGroupPlans(modelmap: Map<string, SliceModelInfo>, randomNr: number): IterableIterator<ModelGroupPlan> {
         let modelGroupIds = new Set(Array.from(modelmap.values()).map(m => m.modelGroupId));
         for (let modelGroupId of modelGroupIds) {
             let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
             let printingParams = { ...this.printingParams, ...modelGroupParams };
             let modelMap = new Map(Array.from(modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-            let tracks = this.estimateModelGroupTracks(modelMap, offset);
+            let tracks = this.estimateModelGroupTracks(modelMap, randomNr);
             if (tracks.length > 0) {
                 yield {
                     modelGroupId: modelGroupId,
@@ -89,7 +85,7 @@ export class PrintPlanner {
         }
     }
 
-    private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>, offset: number): TrackPlan[] {
+    private estimateModelGroupTracks(modelmap: Map<string, SliceModelInfo>, randomNr: number): TrackPlan[] {
         if (modelmap.size === 0) {
             return [];
         }
@@ -109,8 +105,10 @@ export class PrintPlanner {
         let increment = swathe.x;
         let encoderMMperDot = 25.4 / this.printerParams.encoder.printAxis.dpi;
         let tracks: TrackPlan[] = [];
-        minX += offset;
         minX = Math.max(0, minX);
+        let offset = this.printingParams.randomizeTracks ? randomNr * Math.min(swathe.x, minX) * -1 : 0;
+        offset = Math.floor(offset * 100) / 100;
+        minX += offset;
         for (let moveAxisPosition = minX; moveAxisPosition < maxX; moveAxisPosition += increment) {
             // todo optimize minY, maxY
             let printFirstLineAfterEncoderTick = Math.max(1, Math.floor(minY / encoderMMperDot));
@@ -130,11 +128,12 @@ export class PrintPlanner {
         let layer = this.getLayer(layerNr);
         let modelGroupParams = this.modelGroupParamsDict[modelGroupId] || null;
         let modelMap = new Map(Array.from(layer.modelmap.entries()).filter(([id, sliceInfo]) => modelGroupId === sliceInfo.modelGroupId));
-        return new PointInPolygonTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr, this.rng);
+        // return new ScanlineTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr);
+        let rasterizerRng = () => new SplitMix32(this.rasterizerRandomState.get(layerNr)).next();
+        return new PointInPolygonTrackRasterizer(modelMap, this.modelParamsDict, this.printerParams, this.printingParams, modelGroupParams, layerNr, rasterizerRng);
     }
 
     getPrintPlan(): PrintPlan {
-        this.rng = splitmix32(4211531641);
         let layerPlans = [];
         for (let i = 0; i < this.maxLayers; i++) {
             let layer = this.getLayer(i);

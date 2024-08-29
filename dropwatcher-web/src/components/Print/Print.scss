@@ -4,7 +4,7 @@ print-container {
 .printbed-container {
     display: grid;
     grid-template-columns: 4fr 1fr;
-    grid-template-rows: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
     grid-template-areas:
         "content modellist"
         "content modelparams";

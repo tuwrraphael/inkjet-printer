@@ -39,8 +39,8 @@ export class ChartComponent extends HTMLElement {
                 data: {
                     datasets: [{
                         label: "Pressure (mbar)",
-                        borderColor: "#00F",
-                        backgroundColor: "#00F",
+                        borderColor: "#00b5aa",
+                        backgroundColor: "#00b5aa",
                         data: [],
                         pointRadius: 0
                     }],

@@ -1,4 +1,4 @@
-import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, StagePos, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
+import { CustomTrack, Model, ModelParams, Point, PolygonType, PrintBedViewMode, SlicingStatus, StagePos, State, StateChanges, TrackRasterizationPreview } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./PrintBedSimulation.html";
@@ -16,6 +16,11 @@ import { getPrintheadSwathe } from "../../slicer/getPrintheadSwathe";
 import { getMicroscopePosition } from "../../utils/getMicroscopePosition";
 import { MovementStage } from "../../movement-stage";
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
+import 'toolcool-range-slider/dist/plugins/tcrs-generated-labels.min.js';
+import 'toolcool-range-slider';
+import { RangeSlider } from "toolcool-range-slider";
+import { off } from "process";
+
 
 let maxCanvasSize = 4096;
 let simmargin = 10;
@@ -66,10 +71,9 @@ export class PrintBedSimulation extends HTMLElement {
     private pan: { x: number; y: number; };
     private printCanvasInfo: HTMLDivElement;
     private models: Model[];
-    private viewLayer = -1;
+    private viewLayerFrom = -1;
+    private viewLayerTo = -1;
     private modelCanvasMap = new Map<Model, HTMLCanvasElement>();
-    private rangeInput: HTMLInputElement;
-    private layerDisplay: HTMLSpanElement;
     private modelPositionMap: WeakMap<Model, { x: number, y: number }> = new WeakMap();
     private printerParams: PrinterParams;
     private printingParams: PrintingParams;
@@ -80,7 +84,7 @@ export class PrintBedSimulation extends HTMLElement {
     private modelMoving: Model = null;
     private customTracks: CustomTrack[];
     private printPlan: PrintPlan;
-    private viewedLayerPlan: LayerPlan;
+    private viewedLayerPlans: LayerPlan[];
     private viewMode: PrintBedViewMode;
     private currentPrintingTrack: { track: TrackRasterization; moveAxisPosition: number; };
     private currentRasterization: TrackRasterizationPreview[];
@@ -89,6 +93,10 @@ export class PrintBedSimulation extends HTMLElement {
     private stagePos: StagePos;
     private printbedToCamera: { x: number; y: number; z: number; };
     private movementStage: MovementStage;
+    private rangeSlider: RangeSlider;
+    private rasterizationInProgress: HTMLDivElement;
+    private selectEndLayer: HTMLInputElement;
+    maxLayerNum: number;
 
     constructor() {
         super();
@@ -104,8 +112,9 @@ export class PrintBedSimulation extends HTMLElement {
             this.innerHTML = template;
             this.printCanvas = this.querySelector("#print-canvas");
             this.printCanvasInfo = this.querySelector("#print-canvas-info");
-            this.layerDisplay = this.querySelector("#layer-display");
-            this.rangeInput = this.querySelector("#layer-range");
+            this.rangeSlider = this.querySelector("#range-slider");
+            this.rasterizationInProgress = this.querySelector("#rasterization-progress-overlay");
+            this.selectEndLayer = this.querySelector("#select-end-layer");
             this.ctx = this.printCanvas.getContext("2d");
             this.resizeObserver = new ResizeObserver((entries, observer) => this.onResized(entries, observer));
         }
@@ -229,13 +238,32 @@ export class PrintBedSimulation extends HTMLElement {
             this.nextRenderNeedsModelRedraw = true;
             this.render();
         }, this.abortController.signal);
-        abortableEventListener(this.rangeInput, "input", (ev) => {
-            this.layerDisplay.innerText = `${parseInt(this.rangeInput.value) + 1}`;
+        abortableEventListener(this.rangeSlider, "change", (evt: CustomEvent) => {
+            // if (this.rangeSlider.value1 >= this.rangeSlider.value2) {
+            //     this.rangeSlider.value2 = Math.min(parseInt(this.rangeSlider.value1 + "") + 1, parseInt(this.rangeSlider.max + ""));
+            // }
         }, this.abortController.signal);
-        abortableEventListener(this.rangeInput, "change", (ev) => {
+        abortableEventListener(this.rangeSlider, "onMouseUp", (evt: CustomEvent) => {
+            console.log(evt.detail);
             this.store.postAction(new PrintBedViewStateChanged({
-                viewLayer: parseInt(this.rangeInput.value)
+                viewLayerFrom: parseInt(this.rangeSlider.value1 + ""),
+                viewLayerTo: this.rangeSlider.value2 == null ? parseInt(this.rangeSlider.value1 + "") : parseInt(this.rangeSlider.value2 + "")
             }));
+        }, this.abortController.signal);
+        abortableEventListener(this.selectEndLayer, "change", (evt) => {
+            if (this.selectEndLayer.checked) {
+                let from = this.viewLayerFrom == this.maxLayerNum ? this.viewLayerFrom > 0 ? this.viewLayerFrom - 1 : 0 : this.viewLayerFrom;
+                let to = from + 1 > this.maxLayerNum ? this.maxLayerNum : from + 1;
+                this.store.postAction(new PrintBedViewStateChanged({
+                    viewLayerFrom: from,
+                    viewLayerTo: to
+                }));
+            } else {
+                this.store.postAction(new PrintBedViewStateChanged({
+                    viewLayerFrom: this.viewLayerFrom,
+                    viewLayerTo: this.viewLayerFrom
+                }));
+            }
         }, this.abortController.signal);
         this.resizeObserver.observe(this.printCanvas, { box: "device-pixel-content-box" });
     }
@@ -285,10 +313,7 @@ export class PrintBedSimulation extends HTMLElement {
         let maxX = s.printState.printerParams.buildPlate.width - this.store.state.printState.printerParams.printBedToCamera.x;
         let minY = 0;
         let maxY = s.printState.printerParams.buildPlate.height - this.store.state.printState.printerParams.printBedToCamera.y;
-        console.log({ min: [minX, minY], max: [maxX, maxY] });
         return { min: [minX, minY], max: [maxX, maxY] };
-
-
     }
 
     setClickAction(action: PrintBedClickAction) {
@@ -308,30 +333,49 @@ export class PrintBedSimulation extends HTMLElement {
                 let modelParams = s.printState.modelParams[model.id];
                 this.modelPositionMap.set(model, { x: modelParams.position[0], y: modelParams.position[1] });
             }
-            let layerChanged = this.viewLayer != s.printBedViewState.viewLayer;
-            this.viewLayer = s.printBedViewState.viewLayer;
-            this.layerDisplay.innerText = `${1 + this.viewLayer}`;
-            this.rangeInput.value = this.viewLayer.toString();
+            let layerChanged = this.viewLayerFrom != s.printBedViewState.viewLayerFrom || this.viewLayerTo != s.printBedViewState.viewLayerTo;
+            this.viewLayerFrom = s.printBedViewState.viewLayerFrom;
+            this.viewLayerTo = s.printBedViewState.viewLayerTo;
+            this.rangeSlider.setAttribute("value1", this.viewLayerFrom.toString());
+            this.rangeSlider.value1 = this.viewLayerFrom.toString();
+            if (this.viewLayerTo == this.viewLayerFrom) {
+                if (this.rangeSlider.value2 != undefined) {
+                    // this.rangeSlider.value2 = this.viewLayerTo.toString();
+                    this.rangeSlider.removePointer();
+                }
+                this.selectEndLayer.checked = false;
+            } else {
+                if (this.rangeSlider.value2 == undefined) {
+                    this.rangeSlider.addPointer(this.viewLayerTo.toString());
+                }
+                this.rangeSlider.setAttribute("value2", this.viewLayerTo.toString());
+                this.selectEndLayer.checked = true;
+            }
+
+
+
             let maxLayerNum = 0;
             for (let model of this.models) {
-                maxLayerNum = Math.max(maxLayerNum, model.layers.length);
+                maxLayerNum = Math.max(maxLayerNum, model.layers.length - 1);
             }
-            this.rangeInput.max = Math.max(this.viewLayer, (maxLayerNum - 1)).toString();
+            this.maxLayerNum = maxLayerNum;
+            this.rangeSlider.max = Math.max(this.viewLayerTo, (maxLayerNum)).toString();
             this.initialized = true;
             this.printerParams = s.printState.printerParams;
             this.printingParams = s.printState.printingParams;
             this.customTracks = s.printState.customTracks;
             this.currentRasterization = s.printState.slicingState.currentRasterization;
             this.printPlan = s.printState.slicingState.printPlan;
-            this.viewedLayerPlan = this.printPlan ? this.printPlan.layers[this.viewLayer] : null;
+            this.viewedLayerPlans = this.printPlan ? this.printPlan.layers.slice(this.viewLayerFrom, this.viewLayerTo + 1) : [];
             this.viewMode = s.printBedViewState.viewMode;
             this.currentPrintingTrack = s.printState.currentPrintingTrack;
-            if (layerChanged || c.includes("models")) {
+            if (layerChanged || (c && c.includes("models"))) {
                 this.nextRenderNeedsModelRedraw = true;
             }
             this.feasiblePhotoArea = this.getFeasiblePhotoPointArea(s);
             this.stagePos = s.movementStageState.pos;
             this.printbedToCamera = s.printState.printerParams.printBedToCamera;
+            this.rasterizationInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";
             this.render();
         }
     }
@@ -445,7 +489,7 @@ export class PrintBedSimulation extends HTMLElement {
     private drawModel(model: Model, fillColor: string, redraw: boolean) {
         let modelWidth = model.boundingBox.max[0] - model.boundingBox.min[0];
         let modelHeight = model.boundingBox.max[1] - model.boundingBox.min[1];
-        if (model.layers.length <= this.viewLayer) {
+        if (model.layers.length <= this.viewLayerFrom) {
             return;
         }
         if (!this.modelCanvasMap.has(model) || redraw) {
@@ -458,7 +502,7 @@ export class PrintBedSimulation extends HTMLElement {
             let ctx = modelCanvas.getContext("2d");
             ctx.fillStyle = "transparent";
             ctx.fillRect(0, 0, modelCanvas.width, modelCanvas.height);
-            let currentLayer = model.layers[this.viewLayer];
+            let currentLayer = model.layers[this.viewLayerFrom];
 
             for (let polygon of currentLayer.polygons) {
                 let transformed = this.mirrorY(polygon.points, modelHeight);
@@ -491,6 +535,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.mmToDots(modelWidth),
             this.mmToDots(modelHeight)
         );
+        this.ctx.globalCompositeOperation = "source-over";
     }
 
     private drawOrigin() {
@@ -519,6 +564,24 @@ export class PrintBedSimulation extends HTMLElement {
         dotColor: string = "black",
         outlineColor: string = "coral"
     ) {
+        let dotDiameter = 0.120;
+        let nozzleCirleRadius = this.mmToDots(dotDiameter / 2);
+        let offScreenDotCanvas = new OffscreenCanvas(Math.ceil(nozzleCirleRadius * 2), Math.ceil(nozzleCirleRadius * 2));
+        let offScreenBlockedDotCanvas = new OffscreenCanvas(Math.ceil(nozzleCirleRadius * 2), Math.ceil(nozzleCirleRadius * 2));
+
+        let offScreenCtx = offScreenDotCanvas.getContext("2d");
+        offScreenCtx.fillStyle = dotColor;
+        offScreenCtx.beginPath();
+        offScreenCtx.arc(offScreenDotCanvas.width / 2, offScreenDotCanvas.height / 2, nozzleCirleRadius, 0, 2 * Math.PI);
+        offScreenCtx.fill();
+
+        let offScreenBlockedCtx = offScreenBlockedDotCanvas.getContext("2d");
+        offScreenBlockedCtx.fillStyle = "red";
+        offScreenBlockedCtx.beginPath();
+        offScreenBlockedCtx.arc(offScreenBlockedDotCanvas.width / 2, offScreenBlockedDotCanvas.height / 2, nozzleCirleRadius, 0, 2 * Math.PI);
+        offScreenBlockedCtx.fill();
+
+
         let nozzleDistance = getNozzleDistance(printerParams);
         let encoderMMperDot = 25.4 / printerParams.encoder.printAxis.dpi;
         let line = 0;
@@ -542,11 +605,16 @@ export class PrintBedSimulation extends HTMLElement {
                             let nozzleX = baseX + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.x;
                             let nozzleY = baseY + ((printerParams.numNozzles - 1) - nozzle) * nozzleDistance.y;
                             let pos = this.buildPlatePositionToCanvasPosition(nozzleX, nozzleY);
-                            this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
-                            this.ctx.beginPath();
-                            let dotDiameter = 0.120;
-                            this.ctx.arc(pos.x, pos.y, this.mmToDots(dotDiameter/2), 0, 2 * Math.PI);
-                            this.ctx.fill();
+                            // this.ctx.fillStyle = "white";// nozzleBlocked ? "red" : dotColor;
+                            // this.ctx.beginPath();
+                            // this.ctx.arc(pos.x, pos.y, this.mmToDots(dotDiameter / 2), 0, 2 * Math.PI);
+                            // this.ctx.fill();
+                            if (nozzleBlocked) {
+                                this.ctx.drawImage(offScreenBlockedDotCanvas, pos.x - offScreenBlockedDotCanvas.width / 2, pos.y - offScreenBlockedDotCanvas.height / 2);
+                            } else {
+                                this.ctx.drawImage(offScreenDotCanvas, pos.x - offScreenDotCanvas.width / 2, pos.y - offScreenDotCanvas.height / 2);
+                            }
+
                         }
                     }
                 }
@@ -680,30 +748,25 @@ export class PrintBedSimulation extends HTMLElement {
             }
             this.drawOrigin();
             if (this.viewMode.mode == "layerPlan") {
-                if (this.viewedLayerPlan) {
-                    this.drawLayerPlan(this.viewedLayerPlan);
-                    this.drawPhotoPoints(this.viewedLayerPlan);
+                for (let layerPlan of this.viewedLayerPlans) {
+                    this.drawLayerPlan(layerPlan);
+                    this.drawPhotoPoints(layerPlan);
                 }
             } else if (this.viewMode.mode == "rasterization") {
-                if (null != this.viewedLayerPlan && null != this.currentRasterization) {
+                let layers = this.viewLayerTo - this.viewLayerFrom + 1;
+                let alpha = 1 / layers;
+                alpha = Math.round(alpha * 100) / 100;
+                if (null != this.currentRasterization) {
                     let trackNr = 0;
                     for (let r of this.currentRasterization) {
-                        if (this.viewMode.evenOddView && trackNr % 2 != 0) {
-                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(128, 128, 128, 0.8)", "rgba(255, 127, 80, 0.8)");
-                        } else {
-                            this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(0, 0, 0, 0.8)", "rgba(255, 127, 80, 0.8)");
-                        }
+                        this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, `rgba(0, 0, 0, ${alpha})`, "rgba(255, 127, 80, 0.8)");
                         for (let { track, moveAxisPos } of r.result.correctionTracks) {
-                            if (this.viewMode.evenOddView && trackNr % 2 != 0) {
-                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(144, 238, 144, 0.8)", "rgba(0, 128, 0, 0.8)");
-                            } else {
-                                this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(0, 128, 0, 0.8)", "rgba(0, 128, 0, 0.8)");
-                            }
+                            this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, `rgba(0, 128, 0, ${alpha})`, "rgba(0, 128, 0, 0.8)");
                         }
                         trackNr++;
                     }
                 }
-                for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayer)) {
+                for (let { layer, track, moveAxisPos } of this.customTracks.filter(l => l.layer == this.viewLayerFrom)) {
                     this.drawTrack(moveAxisPos, track, this.printerParams, this.printingParams);
                 }
             } else if (this.viewMode.mode == "printingTrack") {

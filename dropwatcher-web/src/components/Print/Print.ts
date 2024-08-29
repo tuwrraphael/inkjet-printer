@@ -2,10 +2,9 @@ import { MovementStage } from "../../movement-stage";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { PrinterUSB } from "../../printer-usb";
-import { PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
+import { PrinterSystemState } from "../../proto/compiled";
 import { ChangePrinterSystemStateRequest } from "../../proto/compiled";
-import { ChangeEncoderModeSettingsRequest, ChangeEncoderPositionRequest } from "../../proto/compiled";
-import { CustomTrack, NewModel, Polygon, PolygonType, SlicingStatus, State, StateChanges } from "../../state/State";
+import { CustomTrack, NewModel, PolygonType, SlicingStatus, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./Print.html";
@@ -15,14 +14,12 @@ import { PrintBedClickAction, PrintBedSimulation, PrintBedSimulationTagName } fr
 import { ModelAdded } from "../../state/actions/ModelAdded";
 import { parseSvgFile } from "../../utils/parseSvgFile";
 import { svgToModel } from "../../utils/svgToModel";
-import { ChangePrintMemoryRequest } from "../../proto/compiled";
-import { PrinterProgram, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
+import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks } from "../../print-tasks/printer-program";
 import "../PrintOptions/PrintOptions";
 import "../ModelList/ModelList";
 import "../ModelParams/ModelParams";
 import "../PrintBedViewStateControl/PrintBedViewStateControl";
 
-import bwipjs from 'bwip-js';
 import { getNozzleDistance } from "../../slicer/getNozzleDistance";
 import { getModelBoundingBox } from "../../utils/getModelBoundingBox";
 import { mirrorY } from "../../utils/mirrorY";
@@ -35,24 +32,30 @@ import { WavefromControlSettings } from "../../proto/compiled";
 import { PrintBedViewStateChanged } from "../../state/actions/PrintBedViewStateChanged";
 import { ModelGroupParamsChanged, ModelParamsChanged } from "../../state/actions/ModelParamsChanged";
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
+import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
+import { getCodeModel } from "../../slicer/getCodeModel";
+import { getSquareModel } from "../../slicer/getSquareModel";
+import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
 
 export class PrintComponent extends HTMLElement {
 
     private rendered = false;
     private abortController: AbortController;
     private store: Store;
-    private programRunnerState: HTMLPreElement;
-    private currentProgram: HTMLPreElement;
     private printerUsb: PrinterUSB;
     private movementStage: MovementStage;
     private printBedSimulation: PrintBedSimulation;
-    private slicingInProgress: HTMLSpanElement;
-    private moveAxisPos: HTMLSpanElement;
+    private startPrintBtn: HTMLButtonElement;
+    private cancelPrintBtn: HTMLButtonElement;
+    private pausePrintBtn: HTMLButtonElement;
+    private taskRunnerSynchronization: TaskRunnerSynchronization;
+    private insertSpecialDialog: HTMLDialogElement;
     constructor() {
         super();
         this.store = Store.getInstance();
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
+        this.taskRunnerSynchronization = TaskRunnerSynchronization.getInstance();
     }
 
     connectedCallback() {
@@ -62,8 +65,10 @@ export class PrintComponent extends HTMLElement {
             this.rendered = true;
             this.innerHTML = template;
             this.printBedSimulation = this.querySelector(PrintBedSimulationTagName);
-            this.slicingInProgress = this.querySelector("#slicing-in-progress");
-            this.moveAxisPos = this.querySelector("#move-axis-pos");
+            this.startPrintBtn = this.querySelector("#start-print");
+            this.cancelPrintBtn = this.querySelector("#cancel-print");
+            this.pausePrintBtn = this.querySelector("#pause-print");
+            this.insertSpecialDialog = this.querySelector("#insert-special-dialog");
         }
         abortableEventListener(this.printBedSimulation, "drop", async (ev) => {
             ev.preventDefault();
@@ -80,36 +85,24 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.printBedSimulation, "dragover", (ev) => {
             ev.preventDefault();
         }, this.abortController.signal);
-        this.programRunnerState = document.querySelector("#program-runner-state");
-        this.currentProgram = document.querySelector("#current-program");
-        abortableEventListener(this.querySelector("#start-print"), "click", async (ev) => {
+        abortableEventListener(this.startPrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            const PrintEncoderProgram: PrinterProgram = {
-                tasks: this.generateEncoderProgramSteps()
-            };
-            TaskRunnerSynchronization.getInstance().startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
+            if (this.store.state.programRunnerState.state === PrinterProgramState.Paused) {
+                this.taskRunnerSynchronization.continueAll();
+            } else {
+                const PrintEncoderProgram: PrinterProgram = {
+                    tasks: this.generateEncoderProgramSteps()
+                };
+                this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
+            }
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#cancel-print"), "click", async (ev) => {
+        abortableEventListener(this.cancelPrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            TaskRunnerSynchronization.getInstance().cancelAll();
+            this.taskRunnerSynchronization.cancelAll();
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#zero-encoder"), "click", async (ev) => {
+        abortableEventListener(this.pausePrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            let changeEncoderPositionRequest = new ChangeEncoderPositionRequest();
-            changeEncoderPositionRequest.position = 0;
-            await this.printerUsb.sendChangeEncoderPositionRequest(changeEncoderPositionRequest);
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#reset-encoder"), "click", async (ev) => {
-            ev.preventDefault();
-            let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
-            let encoderModeSettings = new PrintControlEncoderModeSettings();
-            encoderModeSettings.fireEveryTicks = this.store.state.printState.printingParams.fireEveryTicks;
-            encoderModeSettings.printFirstLineAfterEncoderTick = this.store.state.printState.slicingState.currentRasterization[0].result.track.printFirstLineAfterEncoderTick
-            encoderModeSettings.sequentialFires = this.store.state.printState.printingParams.sequentialFires;
-            encoderModeSettings.startPaused = false;
-            encoderModeSettings.linesToPrint = this.store.state.printState.slicingState.currentRasterization[0].result.track.linesToPrint;
-            changeEncoderModeSettingsRequest.encoderModeSettings = encoderModeSettings;
-            await this.printerUsb.sendChangeEncoderModeSettingsRequest(changeEncoderModeSettingsRequest);
+            this.taskRunnerSynchronization.pauseAll();
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#enter-print"), "click", async (ev) => {
             ev.preventDefault();
@@ -128,29 +121,17 @@ export class PrintComponent extends HTMLElement {
             using movementExecutor = this.movementStage.getMovementExecutor("print");
             await movementExecutor.home();
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#go-start"), "click", async (ev) => {
-            ev.preventDefault();
-            using movementExecutor = this.movementStage.getMovementExecutor("print");
-            await movementExecutor.moveAbsoluteYAndWait(175, 4000);
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#go-end"), "click", async (ev) => {
-            ev.preventDefault();
-            using movementExecutor = this.movementStage.getMovementExecutor("print");
-            await movementExecutor.moveAbsoluteYAndWait(0, 4000);
-        }, this.abortController.signal);
         abortableEventListener(this.querySelector("#slice-first-track"), "click", async (ev) => {
             ev.preventDefault();
             this.store.postAction(new PrintBedViewStateChanged({
                 viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: null,
-                    evenOddView: false,
+                    modelGroup: null
                 } : {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
-                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup
                 }
             }));
         }, this.abortController.signal);
@@ -160,28 +141,14 @@ export class PrintComponent extends HTMLElement {
                 viewMode: this.store.state.printBedViewState.viewMode.mode != "rasterization" ? {
                     mode: "rasterization",
                     trackIncrement: 0,
-                    modelGroup: null,
-                    evenOddView: false,
+                    modelGroup: null
                 } : {
                     mode: "rasterization",
                     trackIncrement: this.store.state.printBedViewState.viewMode.trackIncrement + 1,
-                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup,
-                    evenOddView: this.store.state.printBedViewState.viewMode.evenOddView,
+                    modelGroup: this.store.state.printBedViewState.viewMode.modelGroup
                 }
             }));
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#move-camera-nozzle0"), "click", async (ev) => {
-            ev.preventDefault();
-            let cameraOffset = this.store.state.printState.printerParams.printBedToCamera;
-            let movementRange = this.store.state.printState.printerParams.movementRange;
-            let pos = printBedPositionToMicroscope({ x: 0, y: 0 }, 0, cameraOffset, movementRange);
-            using movementExecutor = this.movementStage.getMovementExecutor("print");
-            await movementExecutor.moveAbsoluteAndWait(pos.microscopePos.x, pos.microscopePos.y, pos.microscopePos.z, 2000);
-        }, this.abortController.signal);
-        // abortableEventListener(this.querySelector("#move-stage-to"), "click", async (ev) => {
-        //     ev.preventDefault();
-        //     await this.movementStage.movementExecutor.moveAbsoluteXAndWait(this.store.state.printState.slicingState.moveAxisPos, 1000);
-        // }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-set-voltage"), "click", async (ev) => {
             ev.preventDefault();
             let request = new ChangeWaveformControlSettingsRequest();
@@ -190,24 +157,6 @@ export class PrintComponent extends HTMLElement {
             settings.voltageMv = 35.6 * 1000;
             settings.clockPeriodNs = 1250;
             await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#write-data"), "click", async (ev) => {
-            ev.preventDefault();
-            if (this.store.state.printState.slicingState.currentRasterization[0].result.track == null) {
-                console.error("No track data to write");
-                return;
-            }
-            let data = this.store.state.printState.slicingState.currentRasterization[0].result.track.data;
-            console.log("Writing track data", data);
-            let chunkSize = 8;
-            for (let i = 0; i < data.length; i += chunkSize) {
-                let chunk = data.slice(i, i + chunkSize);
-                var printMemoryRequest = new ChangePrintMemoryRequest();
-                printMemoryRequest.data = Array.from(chunk);
-                printMemoryRequest.offset = i;
-                await this.printerUsb.sendChangePrintMemoryRequest(printMemoryRequest);
-            }
-            console.log("Done writing track data");
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
             ev.preventDefault();
@@ -391,7 +340,7 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();
-            let moveAxisPos = 10;
+            let moveAxisPos = 50;
             let blockSpacing = 20;
             let spacing = 32;
             let tracks: CustomTrack[] = [];
@@ -525,54 +474,50 @@ export class PrintComponent extends HTMLElement {
             ev.preventDefault();
             (this.querySelector(PrintBedSimulationTagName) as PrintBedSimulation).setClickAction(PrintBedClickAction.MoveCamera);
         }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#test-code"), "click", async (ev) => {
+        abortableEventListener(this.querySelector("#insert-special"), "click", async (ev) => {
             ev.preventDefault();
-            let code: any = bwipjs.raw("qrcode", "30x30 square 50 layers 60°C 28V 144 dpi skip_n 0 offset 3", {});
-            const dotsPerPixel = 16;
-            const dpMM = 1 / getNozzleDistance(this.store.state.printState.printerParams).x;
-            const pixelWidth = Math.sqrt(dotsPerPixel) * 1 / dpMM;
-            let polygons: Polygon[] = [];
-            for (let i = 0; i < code[0].pixx; i++) {
-                for (let j = 0; j < code[0].pixy; j++) {
-                    if (code[0].pixs[j * code[0].pixx + i] == 1) {
-                        polygons.push({
-                            points: [
-                                [i * pixelWidth, j * pixelWidth],
-                                [(i + 1) * pixelWidth, j * pixelWidth],
-                                [(i + 1) * pixelWidth, (j + 1) * pixelWidth],
-                                [i * pixelWidth, (j + 1) * pixelWidth]
-                            ],
-                            type: PolygonType.Contour
-                        });
-                    }
-                }
-            }
-            let model: NewModel = {
-                fileName: "test",
-                layers: [
-                    {
-                        polygons: polygons
-                    }
-                ]
-            };
-            let bb = getModelBoundingBox(model);
-            model.layers = model.layers.map(l => {
-                return {
-                    ...l,
-                    polygons: l.polygons.map(p => {
-                        return {
-                            ...p,
-                            points: mirrorY(p.points, bb)
-                        };
-                    })
-                };
-            });
-            let duplicateLayers = 19;
-            for (let i = 0; i < duplicateLayers; i++) {
-                model.layers = [...model.layers, model.layers[0]];
-            }
-            this.store.postAction(new ModelAdded(model));
+            this.insertSpecialDialog.showModal();
         }, this.abortController.signal);
+        abortableEventListener(this.insertSpecialDialog.querySelector("form"), "submit", async (ev) => {
+            let formData = new FormData(this.insertSpecialDialog.querySelector("form"));
+            let model = formData.get("special-model") as string;
+            switch (model) {
+                case "none":
+                    break;
+                case "test-code":
+                    let model = getCodeModel(this.store.state.printState.printerParams);
+                    this.store.postAction(new ModelAdded(model));
+                    break;
+                case "test-nozzle-pattern2":
+                    let moveAxisPos = 5;
+                    let stride = 32;
+                    let fireEveryTicks = 6;
+                    let numNozzles = 16;
+                    let res = getNozzleTestTracks(
+                        0,
+                        numNozzles,
+                        moveAxisPos,
+                        this.store.state.printState.printerParams,
+                        fireEveryTicks, 3200, stride, 10);
+                    let offsetSecondBlock = this.store.state.printState.printerParams.numNozzles / stride;
+                    let offsetTicks = 70;
+                    let res2 = getNozzleTestTracks(
+                        0 + offsetSecondBlock,
+                        numNozzles,
+                        moveAxisPos + (offsetSecondBlock - 1) * this.store.state.printState.printerParams.printheadSwathePerpendicular / (this.store.state.printState.printerParams.numNozzles - 1),
+                        this.store.state.printState.printerParams,
+                        fireEveryTicks, 3200, stride, 22);
+                    this.store.postAction(new SetCustomTracks(res.customTracks.concat(res2.customTracks)));
+                    break;
+                case "8x8square":
+                    let square = getSquareModel(8, 10);
+                    this.store.postAction(new ModelAdded(square));
+                    break;
+                default:
+                    break;
+            }
+        }, this.abortController.signal);
+
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);
     }
 
@@ -580,11 +525,16 @@ export class PrintComponent extends HTMLElement {
         let height = this.store.state.printState.printingParams.firstLayerHeight;
         let steps: PrinterTasks[] = [
             {
-                type: PrinterTaskType.HeatBed,
-                temperature: this.store.state.printState.printingParams.bedTemperature
+                type: PrinterTaskType.Home,
             },
             {
-                type: PrinterTaskType.Home,
+                type: PrinterTaskType.HeatBed,
+                temperature: this.store.state.printState.printingParams.bedTemperature,
+                primingPosition: {
+                    x: 200,
+                    y: 0,
+                    z: 40
+                }
             },
             {
                 type: PrinterTaskType.Move,
@@ -631,9 +581,9 @@ export class PrintComponent extends HTMLElement {
                     layerPlan: layerPlan,
                     z: height,
                     dryingPosition: {
-                        x: 175,
+                        x: 200,
                         y: 0,
-                        z: 25
+                        z: 40
                     }
                 });
             }
@@ -645,6 +595,9 @@ export class PrintComponent extends HTMLElement {
                     z: height,
                     printingParams: this.store.state.printState.printingParams
                 });
+            }
+            if ((i + 1) % 3 == 0) {
+                steps.push(...getNozzleTestTasks(i));
             }
             // steps.push({
             //     type: PrinterTaskType.Move,
@@ -676,15 +629,12 @@ export class PrintComponent extends HTMLElement {
 
 
     update(s: State, c: StateChanges): void {
-        if (c.includes("programRunnerState")) {
-            this.programRunnerState.textContent = JSON.stringify(s.programRunnerState, null, 2);
-        }
         if (c.includes("currentProgram")) {
             // this.currentProgram.textContent = JSON.stringify(s.currentProgram, null, 2);
-        }
-        if (c.includes("printState")) {
-            this.slicingInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";
-            // this.moveAxisPos.innerText = "" + s.printBedViewState.;
+            this.startPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Running;
+            this.cancelPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Done || s.programRunnerState.state == PrinterProgramState.Canceled;
+            this.pausePrintBtn.disabled = s.programRunnerState.state != PrinterProgramState.Running;
+            this.startPrintBtn.innerText = s.programRunnerState.state == PrinterProgramState.Running ? "Pause" : "Start Print";
         }
     }
 

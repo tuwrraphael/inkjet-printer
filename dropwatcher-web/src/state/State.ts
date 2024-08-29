@@ -17,6 +17,7 @@ export enum PrinterSystemState {
     Dropwatcher = 4,
     Print = 5,
     KeepAlive,
+    PrinterSystemState_PRINT,
 }
 export enum PressureControlDirection {
     Unspecified = 0,
@@ -136,12 +137,13 @@ export interface WaveformControl {
 
 export type PrintBedViewMode = {
     mode: "layerPlan"
-} | { mode: "rasterization", modelGroup: string, trackIncrement: number, evenOddView: boolean }
+} | { mode: "rasterization", modelGroup: string, trackIncrement: number }
     | { mode: "printingTrack", moveAxisPosition: number };
 
 export interface PrintBedViewState {
     selectedModelId: string | null;
-    viewLayer: number;
+    viewLayerFrom: number;
+    viewLayerTo: number;
     viewMode: PrintBedViewMode;
 }
 
@@ -170,9 +172,18 @@ export interface ValveState {
     valve3: ValvePosition;
 }
 
+export enum InspectImageType {
+    NozzleTest,
+    Dropwatcher,
+    PhotoPoint,
+    Unknown
+}
+
 export interface InspectImage {
     file: FileSystemFileHandle,
     metadata: {
+        type: InspectImageType;
+        timestamp: Date;
     }
 }
 
@@ -254,6 +265,18 @@ export interface State {
     },
     printBedViewState: PrintBedViewState;
     inkControlAction: InkControlActionState;
+    nozzlePerformance: {
+        testResults: {
+            timestamp: Date;
+            nozzle: number;
+            analysis: {
+                dropCount: number;
+                sizeAverage: number;
+                sizeStdDev: number;
+            }
+        }[]
+    },
+    currentRoute: string;
 }
 
 export type StateChanges = (keyof State)[];

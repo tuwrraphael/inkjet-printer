@@ -1,5 +1,8 @@
 $roboto-font-path: '../node_modules/roboto-fontface/fonts';
 
+@use "./theme.scss";
+
+
 @import "roboto-fontface/css/roboto/sass/roboto-fontface-regular.scss";
 @import "roboto-fontface/css/roboto/sass/roboto-fontface-regular-italic.scss";
 @import "roboto-fontface/css/roboto/sass/roboto-fontface-bold.scss";
@@ -42,13 +45,15 @@ form:not(.inline) {
 
     max-width: 25em;
 
+    
+
     label {
         display: block;
     }
 
     .input-group {
         display: flex;
-        margin-bottom: 0.5em;
+        align-items: center;
         input,select {
             flex: 1;
         }
@@ -56,4 +61,47 @@ form:not(.inline) {
             margin-left: 0.2em;
         }
     }
+}
+
+button {
+    padding: 0.3em 0.8em;
+    background-color: lighten( theme.$theme-color, 5%);;
+    color: #000;
+    border: none;
+    border-radius: 0.3em;
+    cursor: pointer;
+    margin: 0.5em 0;
+    &:hover {
+        background-color: lighten( theme.$theme-color, 20%);
+    }
+    &:active {
+        background-color: lighten( theme.$theme-color, 40%);
+    }
+    font-size: 1em;
+
+    &.emergency {
+        box-shadow: 0 0 0.15em red;
+        box-sizing: border-box;
+        background-color: #fff;
+        color: red;
+        &:hover {
+            background-color: lighten(red, 20%);
+        }
+        &:active {
+            background-color: lighten(red, 40%);
+        }
+    }
+    &:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+}
+
+input,select {
+    padding: 0.2em;
+    border: 1px solid #ccc;
+    border-radius: 0.3em;
+    margin: 0.2em 0;
+    font-size: 1em;
 }

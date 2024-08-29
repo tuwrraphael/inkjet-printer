@@ -10,13 +10,19 @@ import { TrackRasterizer } from "./TrackRasterizer";
 import { CorrectionTrack } from "./CorrectionTrack";
 import { TrackRasterizationResult } from "./TrackRasterizationResult";
 import { getPrintheadSwathe } from "./getPrintheadSwathe";
-import { PointInPolygonTrackRasterizer } from "./PointInPolygonTrackRasterizer";
-import { is } from "date-fns/locale";
 
 type BlockedNozzleJets = Set<number>;
 
-export class ScanlineTrackRasterizer implements TrackRasterizer {
+interface IntersectionData {
+    intersection: Point;
+    edge: [Point, Point];
+    vectorToNextIntersection: Point;
+    ny: number;
+    startTick: number;
+}
 
+export class ScanlineTrackRasterizer implements TrackRasterizer {
+    private rng: () => number;
     constructor(private map: Map<string, SliceModelInfo>,
         private modelParamsDict: { [id: string]: ModelParams },
         private printerParams: PrinterParams,
@@ -67,26 +73,34 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
         return { min: min, max: max };
     }
 
-    private getIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point {
-        let epsilon = 0.0001;
-        let x1 = p1[0];
-        let y1 = p1[1];
-        let x2 = p2[0];
-        let y2 = p2[1];
-        let x3 = p3[0];
-        let y3 = p3[1];
-        let x4 = p4[0];
-        let y4 = p4[1];
-        let x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) /
-            ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
-        let y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) /
-            ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+    private getIntersection(edge: [Point, Point], scanline: { start: Point, end: Point }): Point {
+        // let epsilon = 0;
+        let x1 = edge[0][0];
+        let y1 = edge[0][1];
+        let x2 = edge[1][0];
+        let y2 = edge[1][1];
+        let x3 = scanline.start[0];
+        let y3 = scanline.start[1];
+        let x4 = scanline.end[0];
+        let y4 = scanline.end[1];
+        const epsilon = 0.0001;
+        const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
+        if (Math.abs(denominator) < epsilon) {
+            // Lines are parallel or coincident, no intersection
+            return null;
+        }
 
-        let isOnLine1 = x >= Math.min(x1, x2) - epsilon && x <= Math.max(x1, x2) + epsilon && y >= Math.min(y1, y2) - epsilon && y <= Math.max(y1, y2) + epsilon;
-        let isOnLine2 = x >= Math.min(x3, x4) - epsilon && x <= Math.max(x3, x4) + epsilon && y >= Math.min(y3, y4) - epsilon && y <= Math.max(y3, y4) + epsilon;
+        const numeratorX = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+        const numeratorY = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
 
-        if (isOnLine1 && isOnLine2) {
+        const x = numeratorX / denominator;
+        const y = numeratorY / denominator;
+
+        const isOnLine1 = x >= Math.min(x1, x2) - epsilon && x <= Math.max(x1, x2) + epsilon && y >= Math.min(y1, y2) - epsilon && y <= Math.max(y1, y2) + epsilon;
+        const isOnLine2 = x >= Math.min(x3, x4) - epsilon && x <= Math.max(x3, x4) + epsilon && y >= Math.min(y3, y4) - epsilon && y <= Math.max(y3, y4) + epsilon;
+
+        if (isOnLine1) {
             return [x, y];
         } else {
             return null;
@@ -100,9 +114,9 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
             let p1 = points[i];
             let p2 = points[(i + 1) % points.length];
             if (p1[1] > p2[1]) {
-                edges.push([p2, p1]);
-            } else {
                 edges.push([p1, p2]);
+            } else {
+                edges.push([p2, p1]);
             }
         }
         // if (points[0][1] > points[points.length - 1][1]) {
@@ -114,55 +128,73 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
     }
 
 
-    private getIntersections(polygon: Point[], moveAxisPos: number, mmPerTick: number) {
+    private *getIntersections(polygon: Point[], moveAxisPos: number, mmPerTick: number) {
         let edges = this.getEdges(polygon).sort((a, b) => b[0][1] - a[0][1]);
-        let intersections = new Map<number, {
-            intersection: Point,
-            edge: [Point, Point],
-            vectorToNextIntersection: Point,
-            ny: number, // anzahl der scanlines, die geschnitten werden
-        }[]>();
+        // let intersections = new Map<number, {
+        //     intersection: Point,
+        //     edge: [Point, Point],
+        //     vectorToNextIntersection: Point,
+        //     ny: number, // anzahl der scanlines, die geschnitten werden
+        // }[]>();
         let swathe = getPrintheadSwathe(this.printerParams);
         let edge: [Point, Point];
         for (edge of edges) {
-            let highestPossibleIntersectionTick = Math.ceil((edge[0][1] + swathe.y) / mmPerTick);
+            let highestPossibleIntersectionTick = 4000; // Math.ceil((edge[0][1] + swathe.y) / mmPerTick);
             let lowestPossibleIntersectionTick = Math.min(0, Math.floor(edge[1][1] / mmPerTick)); // math.max!
             let scanline: { start: Point, end: Point } = { start: [moveAxisPos, highestPossibleIntersectionTick * mmPerTick], end: [moveAxisPos + swathe.x, highestPossibleIntersectionTick * mmPerTick + swathe.y] };
             let tick = highestPossibleIntersectionTick;
             while (scanline.start[1] > lowestPossibleIntersectionTick * mmPerTick) {
 
-                let intersection = this.getIntersection(edge[0], edge[1], scanline.start, scanline.end);
+                let intersection = this.getIntersection(edge, scanline);
                 if (intersection) {
                     let nextScanline: { start: Point, end: Point } = { start: [moveAxisPos, (tick - 1) * mmPerTick], end: [moveAxisPos + swathe.x, (tick - 1) * mmPerTick + swathe.y] };
 
                     let ny = 0;
                     let vectorToNextIntersection: Point = [0, 0];
-                    let nextIntersection = this.getIntersection(edge[0], edge[1], nextScanline.start, nextScanline.end);
+                    let nextIntersection = this.getIntersection(edge, nextScanline);
                     if (nextIntersection) {
                         vectorToNextIntersection = [nextIntersection[0] - intersection[0], nextIntersection[1] - intersection[1]];
                         let nextIsOnEdge = false;
                         ny++;
                         let epsilon = 0.0001;
-                        let next : Point = [nextIntersection[0], nextIntersection[1]];
+                        let next: Point = [nextIntersection[0], nextIntersection[1]];
                         do {
                             ny++;
                             next = [next[0] + vectorToNextIntersection[0], next[1] + vectorToNextIntersection[1]];
                             nextIsOnEdge = next[0] >= Math.min(edge[0][0], edge[1][0]) - epsilon && next[0] <= Math.max(edge[0][0], edge[1][0]) + epsilon && next[1] >= Math.min(edge[0][1], edge[1][1]) - epsilon && next[1] <= Math.max(edge[0][1], edge[1][1]) + epsilon;
                         } while (nextIsOnEdge);
                     }
-                    let add = { intersection: intersection, edge: edge, vectorToNextIntersection: vectorToNextIntersection, ny: ny };
-                    if (!intersections.has(tick)) {
-                        intersections.set(tick, []);
-                    }
-                    intersections.get(tick).push(add);
+                    let add = {
+                        intersection: intersection, edge: edge, vectorToNextIntersection: vectorToNextIntersection, ny: ny,
+                        startTick: tick
+                    };
+                    yield add;
                     break;
                 }
                 tick--;
+
                 scanline.start[1] = tick * mmPerTick;
                 scanline.end[1] = scanline.start[1] + swathe.y;
             }
         }
-        return intersections;
+    }
+
+    private *getPolygonsInPath(moveAxisPos: number, swatheX: number): Iterable<{ order: number, type: PolygonType, transformedCoordinates: Point[] }> {
+        for (let [modelId, sliceModelInfo] of this.map) {
+            let order = 0;
+            for (let i = 0; i < sliceModelInfo.polygons.length; i++) {
+                if (sliceModelInfo.polygons[i].polygon.type === PolygonType.Hole) {
+                    continue;
+                }
+                let contourBoundingBox = sliceModelInfo.contourBoundingBoxes[i];
+                let isInPath = contourBoundingBox.min[0] <= moveAxisPos + swatheX && contourBoundingBox.max[0] >= moveAxisPos;
+                if (isInPath) {
+                    let polygon = sliceModelInfo.polygons[i];
+                    yield { order: order, type: polygon.polygon.type, transformedCoordinates: polygon.transformedCoordinates };
+                    order++;
+                }
+            }
+        }
     }
 
     private *getSpans(moveAxisPos: number): Iterable<{ tick: number, spans: { start: number, end: number }[] }> {
@@ -170,52 +202,214 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
 
         let swathe = getPrintheadSwathe(this.printerParams);
 
-        let intersections = Array.from(this.map.values()).map(sliceModelInfo => {
-            return sliceModelInfo.polygons.map(polygon => {
-                return this.getIntersections(polygon.transformedCoordinates, moveAxisPos, mmPerTick);
-            });
-        }).flat();
+        let polygonsInPath = Array.from(this.getPolygonsInPath(moveAxisPos, swathe.x));
 
+        let polygonIntersections = polygonsInPath.map(polygon => {
+            return {
+                polygon: polygon,
+                intersections: (Array.from(this.getIntersections(polygon.transformedCoordinates, moveAxisPos, mmPerTick))).sort((a, b) => b.startTick - a.startTick)
+            };
+        });
 
-        let tick = this.printerParams.encoder.printAxis.ticks;
-        let activeEdges: {
-            intersection: Point,
-            edge: [Point, Point],
-            vectorToNextIntersection: Point,
-            ny: number, // anzahl der scanlines, die geschnitten werden,
-            insertedTick: number
+        let activeEdgeGroups: {
+            polygon: { order: number, type: PolygonType, transformedCoordinates: Point[] },
+            edges: IntersectionData[],
         }[] = [];
-        while (tick > 0) { // todo lower bound from intersections + ny
-            for (let intersectionMap of intersections) {
-                if (intersectionMap.has(tick)) {
-                    let intersections = intersectionMap.get(tick);
-                    for (let intersection of intersections) {
-                        activeEdges.push({ ...intersection, insertedTick: tick });
+
+        let currentTick = Math.max(...polygonIntersections.map(p => p.intersections[0].startTick));
+
+        while (currentTick > 0) { // TODO lower bound from intersections
+
+
+            // add new edges
+            for (let polygonIntersection of polygonIntersections) {
+                let intersections = polygonIntersection.intersections.filter(intersection => intersection.startTick == currentTick);
+                if (intersections.length > 0) {
+                    let edges = intersections.map(intersection => intersection);
+                    let group = activeEdgeGroups.find(group => group.polygon.order == polygonIntersection.polygon.order);
+                    if (group) {
+                        group.edges.push(...edges);
+                    } else {
+                        activeEdgeGroups.push({ polygon: polygonIntersection.polygon, edges: edges });
                     }
                 }
             }
-            let sorted = activeEdges.sort((a, b) => a.intersection[0] - b.intersection[0]);
-            let spans: { start: number, end: number }[] = [];
-            let currentSpanStart = null;
-            for (let activeEdge of sorted) {
-                let x = activeEdge.intersection[0] + activeEdge.vectorToNextIntersection[0] * (activeEdge.insertedTick - tick);
-                if (currentSpanStart == null) {
-                    currentSpanStart = x;
-                } else {
-                    spans.push({ start: currentSpanStart, end: x });
-                    currentSpanStart = null;
+
+            for (let activeEdgeGroup of activeEdgeGroups) {
+                let nextXCoordinates = activeEdgeGroup.edges.map(activeEdge =>
+                    ({ x: activeEdge.intersection[0] + activeEdge.vectorToNextIntersection[0] * (activeEdge.startTick - currentTick), a: activeEdge }));
+                let sorted = nextXCoordinates.sort((a, b) => a.x - b.x);
+                let spans: { start: number, end: number }[] = [];
+                let currentSpanStart = null;
+
+                let sorted2 = [];
+                for (let i = 0; i < sorted.length; i++) {
+                    let a = sorted[i];
+                    if (i == sorted.length - 1) {
+                        sorted2.push(a);
+                        continue;
+                    }
+                    let b = sorted[i + 1];
+                    if (Math.abs(a.x - b.x) < 0.001) {
+                        let aPoint: Point;
+                        let intersectionY: number = a.a.intersection[1] + a.a.vectorToNextIntersection[1] * (a.a.startTick - currentTick);
+
+                        if (Math.abs(a.a.edge[0][1] - intersectionY) < 0.0001) {
+                            if (Math.abs(a.a.edge[1][1] - intersectionY) < 0.0001) {
+                                if (Math.abs(a.x - a.a.edge[0][0]) < 0.0001) {
+                                    aPoint = a.a.edge[1];
+                                } else {
+                                    aPoint = a.a.edge[0];
+                                }
+                            } else {
+                                aPoint = a.a.edge[1];
+                            }
+                        } else {
+                            aPoint = a.a.edge[0];
+                        }
+
+                        let bPoint: Point;
+                        if (Math.abs(b.a.edge[0][1] - intersectionY) < 0.0001) {
+                            if (Math.abs(b.a.edge[1][1] - intersectionY) < 0.0001) {
+                                if (Math.abs(b.x - b.a.edge[0][0]) < 0.0001) {
+                                    bPoint = b.a.edge[1];
+                                } else {
+                                    bPoint = b.a.edge[0];
+                                }
+                            } else {
+                                bPoint = b.a.edge[1];
+                            }
+                        } else {
+                            bPoint = b.a.edge[0];
+                        }
+
+                        let aIsAbove = Math.abs(aPoint[1] - intersectionY) < 0.001 ? a.x -  aPoint[0] > 0.001 : aPoint[1] - intersectionY > 0.001;
+                        let bIsAbove = Math.abs(bPoint[1] - intersectionY) < 0.001 ? b.x - bPoint[0] > 0.001 : bPoint[1] - intersectionY > 0.001;
+
+                        if (aIsAbove != bIsAbove) {
+                            sorted2.push(a);
+                            i++;
+                            continue;
+                        }
+                    }
+                    sorted2.push(a);
                 }
-                activeEdge.ny--;
+
+                for (let edge of sorted2) {
+                    let x = edge.x;
+
+                    if (currentSpanStart == null) {
+                        currentSpanStart = x;
+                    } else {
+                        // if (Math.abs(x - currentSpanStart) < 0.01) {
+                        //     console.log("close at y=" + currentTick * mmPerTick, x);
+                        // } else {
+                        if (x < currentSpanStart) {
+                            console.error("x < currentSpanStart", x, currentSpanStart);
+                        } else {
+                            if (x < moveAxisPos) {
+                                // console.log("discarding span, ends before print", currentSpanStart, x);
+                            } else if (currentSpanStart > moveAxisPos + swathe.x) {
+                                // console.log("discarding span, starts after print", currentSpanStart, x);
+                            } else {
+                                spans.push({ start: currentSpanStart, end: x });
+                            }
+                        }
+                        // }
+                        currentSpanStart = null;
+                    }
+
+                    edge.a.ny--;
+                }
+                if (currentSpanStart != null) {
+                    console.log("currentSpanStart != null", currentSpanStart, sorted, sorted2, currentTick);
+                    // spans.push({ start: currentSpanStart, end: moveAxisPos + swathe.x });
+                }
+                if (spans.length > 0) {
+                    yield { tick: currentTick, spans: spans };
+                }
+                activeEdgeGroup.edges = activeEdgeGroup.edges.filter(activeEdge => activeEdge.ny > 0);
             }
-            if (currentSpanStart != null) {
-                spans.push({ start: currentSpanStart, end: moveAxisPos + swathe.x });
-            }
-            if (spans.length > 0) {
-                yield { tick: tick, spans: spans };
-            }
-            activeEdges = activeEdges.filter(activeEdge => activeEdge.ny > 0);
-            tick--;
+            activeEdgeGroups = activeEdgeGroups.filter(activeEdgeGroup => activeEdgeGroup.edges.length > 0);
+            currentTick--;
         }
+
+
+
+        // let intersections = Array.from(this.map.values()).map(sliceModelInfo => {
+        //     return sliceModelInfo.polygons.map(polygon => {
+        //         return this.getIntersections(polygon.transformedCoordinates, moveAxisPos, mmPerTick);
+        //     });
+        // }).flat();
+
+        // console.log("intersections", intersections);
+        // let tick = this.printerParams.encoder.printAxis.ticks;
+        // let activeEdges: {
+        //     intersection: Point,
+        //     edge: [Point, Point],
+        //     vectorToNextIntersection: Point,
+        //     ny: number, // anzahl der scanlines, die geschnitten werden,
+        //     insertedTick: number
+        // }[] = [];
+        // while (tick > 0) { // todo lower bound from intersections + ny
+        //     for (let intersectionMap of intersections) {
+        //         if (intersectionMap.has(tick)) {
+        //             let intersections = intersectionMap.get(tick);
+        //             for (let intersection of intersections) {
+        //                 activeEdges.push({ ...intersection, insertedTick: tick });
+        //             }
+        //         }
+        //     }
+        //     let nextXCoordinates = activeEdges.map(activeEdge =>
+        //         ({ x: activeEdge.intersection[0] + activeEdge.vectorToNextIntersection[0] * (activeEdge.insertedTick - tick), a: activeEdge }));
+        //     let sorted = nextXCoordinates.sort((a, b) => a.x - b.x);
+        //     let spans: { start: number, end: number }[] = [];
+        //     let currentSpanStart = null;
+
+        //     for (let i = 0; i < sorted.length - 1; i++) {
+        //         let a = sorted[i];
+        //         let b = sorted[i + 1];
+        //         if (Math.abs(a.x - b.x) < 0.0001) {
+        //             console.log("close", a, b);
+        //         }
+        //     }
+
+        //     for (let activeEdge of sorted) {
+        //         let x = activeEdge.x;
+        //         if (currentSpanStart == null) {
+        //             currentSpanStart = x;
+        //         } else {
+        //             if (Math.abs(x - currentSpanStart) < 0.0001) {
+
+        //             } else {
+        //                 if (x < currentSpanStart) {
+        //                     // console.error("x < currentSpanStart", x, currentSpanStart);
+        //                 } else {
+        //                     if (x < moveAxisPos) {
+        //                         // console.log("discarding span, ends before print", currentSpanStart, x);
+        //                     } else if (currentSpanStart > moveAxisPos + swathe.x) {
+        //                         // console.log("discarding span, starts after print", currentSpanStart, x);
+        //                     } else {
+        //                         spans.push({ start: currentSpanStart, end: x });
+        //                     }
+        //                 }
+        //             }
+        //             currentSpanStart = null;
+        //         }
+
+        //     }
+        //     for (let activeEdge of activeEdges) {
+        //         activeEdge.ny--;
+        //     }
+        //     if (currentSpanStart != null) {
+        //         spans.push({ start: currentSpanStart, end: moveAxisPos + swathe.x });
+        //     }
+        //     if (spans.length > 0) {
+        //         yield { tick: tick, spans: spans };
+        //     }
+        //     activeEdges = activeEdges.filter(activeEdge => activeEdge.ny > 0);
+        //     tick--;
+        // }
     }
 
 
@@ -227,7 +421,8 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
 
     private writeNozzleDataForSpan(data: Uint32Array, line: number, moveAxisPos: number, from: number, to: number) {
         let nozzleDistance = getNozzleDistance(this.printerParams);
-
+        from = Math.max(from, moveAxisPos);
+        to = Math.min(to, moveAxisPos + nozzleDistance.x * (this.printerParams.numNozzles - 1));
         let startNozzle = Math.floor((from - moveAxisPos) / nozzleDistance.x);
         let endNozzle = Math.floor((to - moveAxisPos) / nozzleDistance.x);
         let startReverse = 127 - endNozzle;
@@ -238,7 +433,7 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
     }
 
     private rasterizeArea(moveAxisPos: number, nozzles: null | number[] = null) {
-
+        // this.rng = splitmix32(4211865153);
         let data: Uint32Array;
 
         let printLastLineAfterEncoderTick: number = null;
@@ -373,9 +568,15 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
         let entries = Array.from(correctionMovements.entries()).filter(([movement, nozzles]) => nozzles.length > 0);
         while (entries.length > 0) {
             let bestCandidates = entries.sort(([movementA, b], [movementB, d]) => d.length - b.length);
-            let best = bestCandidates.filter(([movement, nozzles]) => nozzles.length == bestCandidates[0][1].length)
-                .sort(([movementA, b], [movementB, d]) => Math.abs(movementA) - Math.abs(movementB));
-            let selected = best[0];
+
+            let best = bestCandidates.filter(([movement, nozzles]) => nozzles.length == bestCandidates[0][1].length);
+            if (best.length < 0.1 * bestCandidates.length) {
+                best = [...best,
+                ...bestCandidates.filter(([movement, nozzles]) => nozzles.length != bestCandidates[0][1].length)
+                    .slice(0, Math.floor(0.1 * bestCandidates.length) - best.length)
+                ];
+            }
+            let selected = best[Math.floor(this.rng() * best.length)];
             console.log("selected", selected);
             movements.push(selected);
             entries = entries.map(([movement, nozzles]) => {

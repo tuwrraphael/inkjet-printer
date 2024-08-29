@@ -4,7 +4,7 @@ import { Store } from "../state/Store";
 import { ProgramRunnerStateChanged } from "../state/actions/ProgramRunnerStateChanged";
 import { HomeTaskRunner } from "./runners/HomeTaskRunner";
 import { MoveTaskRunner } from "./runners/MoveTaskRunner";
-import { PrinterProgram, PrinterProgramState, PrinterTaskPrintCustomTracksTask, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
+import { PrinterProgram, PrinterProgramState, PrinterTaskType, PrinterTasks, ProgramRunnerState } from "./printer-program";
 import { PrimeNozzleTaskRunner } from "./runners/PrimeNozzleTaskRunner";
 import { SetTargetPressureTaskRunner } from "./runners/SetTargetPressureTaskRunner";
 import { SetNozzleDataTaskRunner } from "./runners/SetNozzleDataTaskRunner";
@@ -17,6 +17,7 @@ import { HeatBedTaskRunner } from "./runners/HeatBedTaskRunner";
 import { PrinterTaskCancellationToken } from "./PrinterTaskCancellationToken";
 import { GCodeRunner } from "../gcode-runner";
 import { AutofocusCache } from "./AutofocusCache";
+import { CheckNozzleTaskRunner } from "./runners/CheckNozzleTaskRunner";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -25,16 +26,24 @@ export class PrintTaskRunner {
     private programRunnerState: ProgramRunnerState;
     private canceled = false;
     private slicerClient: SlicerClient;
+    private autofocusCache: AutofocusCache;
+    private pauseRequested = false;
 
     constructor(public program: PrinterProgram) {
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
         this.store = Store.getInstance();
         this.slicerClient = SlicerClient.getInstance();
+        this.autofocusCache = new AutofocusCache();
+        this.programRunnerState = {
+            state: PrinterProgramState.Initial,
+            currentTaskIndex: 0
+        };
     }
 
-    async isRunning() {
-        return this.programRunnerState.state === PrinterProgramState.Running;
+    async isFinished() {
+        return this.programRunnerState.state === PrinterProgramState.Canceled ||
+            this.programRunnerState.state === PrinterProgramState.Done;
     }
 
     private canContinue() {
@@ -57,26 +66,43 @@ export class PrintTaskRunner {
         return !(this.programRunnerState.currentTaskIndex < this.program.tasks.length);
     }
 
+    isPaused() {
+        return this.programRunnerState.state === PrinterProgramState.Paused;
+    }
+
     async run() {
-        let autofocusCache = new AutofocusCache();
-        using movementExecutor = this.movementStage.getMovementExecutor("print-task-runner");
-        this.programRunnerState = {
-            state: PrinterProgramState.Running,
-            currentTaskIndex: 0
-        };
-        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-        while (this.canContinue() && !this.isDone()) {
-            let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
-            await this.runTask(nextTask, movementExecutor, autofocusCache);
-            this.programRunnerState.currentTaskIndex++;
+        this.pauseRequested = false;
+        try {
+            using movementExecutor = this.movementStage.getMovementExecutor("print-task-runner");
+            this.programRunnerState.state = PrinterProgramState.Running;
+            this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+            while (this.canContinue() && !this.isDone()) {
+                let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
+                await this.runTask(nextTask, movementExecutor, this.autofocusCache);
+                this.programRunnerState.currentTaskIndex++;
+                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+                if (this.pauseRequested) {
+                    this.programRunnerState.state = PrinterProgramState.Paused;
+                    this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+                    return;
+                }
+            }
+            if (!this.isDone()) {
+                this.programRunnerState.state = PrinterProgramState.Canceled;
+            } else {
+                this.programRunnerState.state = PrinterProgramState.Done;
+            }
+            this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+        } catch (e) {
+            console.error(e);
+            if (this.canceled) {
+                this.programRunnerState.state = PrinterProgramState.Canceled;
+            } else {
+                this.programRunnerState.state = PrinterProgramState.Failed;
+
+            }
             this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
         }
-        if (!this.isDone()) {
-            this.programRunnerState.state = PrinterProgramState.Canceled;
-        } else {
-            this.programRunnerState.state = PrinterProgramState.Done;
-        }
-        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
     }
 
     private get cancellationToken(): PrinterTaskCancellationToken {
@@ -126,8 +152,13 @@ export class PrintTaskRunner {
                 await printCustomTracksTaskRunner.run(this.cancellationToken);
                 break;
             case PrinterTaskType.HeatBed:
-                let heatBedTaskRunner = new HeatBedTaskRunner(task, movementExecutor);
+                let heatBedTaskRunner = new HeatBedTaskRunner(task, movementExecutor, this.printerUsb);
                 await heatBedTaskRunner.run();
+                break;
+            case PrinterTaskType.CheckNozzles:
+                let checkNozzleTaskRunner = new CheckNozzleTaskRunner(task, movementExecutor, this.printerUsb, this.store, autofocusCache);
+                await checkNozzleTaskRunner.run(this.cancellationToken);
+                this.pause();
                 break;
             default:
                 throw new Error("Unknown task type");
@@ -136,5 +167,9 @@ export class PrintTaskRunner {
 
     cancel() {
         this.canceled = true;
+    }
+
+    pause() {
+        this.pauseRequested = true;
     }
 }

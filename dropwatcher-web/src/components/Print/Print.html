@@ -1,51 +1,54 @@
-<h1>Print</h1>
 <div class="print-container">
     <div class="app-print__buttons">
         <button id="start-print">Start Print</button>
+        <button id="pause-print">Pause Print</button>
         <button id="cancel-print">Cancel Print</button>
-        <button id="zero-encoder">Zero Encoder</button>
-        <button id="reset-encoder">Reset Encoder</button>
+        <button id="insert-special">Insert Special...</button>
         <button id="enter-print">Enter Print</button>
         <button id="enter-idle">Enter Idle</button>
         <button id="home">Home</button>
-        <button id="go-start">Go Y175</button>
-        <button id="go-end">Go Y0</button>
         <button id="nozzle-priming">Nozzle Priming</button>
-        <button id="test-code">Test Code</button>
         <button id="test-nozzle-pattern">Test Nozzle Pattern</button>
         <button id="generate-voltage-test">Generate Voltage Test!</button>
         <button id="generate-clock-test">Generate Clock Test!</button>
         <button id="test-set-voltage">Set Voltage Max</button>
-        <button id="move-camera-nozzle0">Move Microscope to Nozzle 0</button>
     </div>
-    <h2>Print Options</h2>
-    <div>
-        <print-options></print-options>
-    </div>
-    <h2>Slice Control</h2>
+    <h2>Printbed</h2>
     <print-bed-view-state-control></print-bed-view-state-control>
     <div>
-        <label for="move-axis-pos">X-Axis</label>
-        <span id="move-axis-pos"></span>
-        <span id="slicing-in-progress" style="display: none;">Slicing in progress...</span>
+        
         <button id="slice-first-track">First</button>
         <button id="slice-next-track">Next</button>
-        <button id="write-data">Write Data</button>
         <button id="place-photo-point">Place Photo Point</button>
         <button id="move-camera-to">Move Camera To</button>
     </div>
-    <h2>Printbed</h2>
     <div class="printbed-container">
         <print-bed-simulation></print-bed-simulation>
         <model-list></model-list>
         <model-params></model-params>
     </div>
-    <h2>
-        Runner
-    </h2>
-    <pre id="program-runner-state"></pre>
-    <h2>
-        Program
-    </h2>
-    <pre id="current-program"></pre>
+    <h2>General Print Options</h2>
+    <div>
+        <print-options></print-options>
+    </div>
 </div>
+
+<dialog id="insert-special-dialog">
+    <form method="dialog">
+        <p>
+            <label for="special">Model(s)</label>
+            <select id="special" name="special-model">
+                <option value="none"></option>
+                <option value="8x8square">8x8 Square</option>
+                <option value="test-nozzle-pattern">Test Nozzle Pattern</option>
+                <option value="test-nozzle-pattern2">Test Nozzle Pattern 2</option>
+                <option value="test-code">Test Code</option>
+                <option value="voltage-test">Voltage Test</option>
+                <option value="clock-test">Clock Test</option>
+            </select>
+        </p>
+        <div>
+            <button type="submit">Confirm</button>
+        </div>
+    </form>
+</dialog>

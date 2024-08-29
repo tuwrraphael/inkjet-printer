@@ -42,7 +42,7 @@ export const DefaultState: State =
     printState: {
         printerParams: {
             buildPlate: {
-                width: 175,
+                width: 200,
                 height: 175
             },
             encoder: {
@@ -80,11 +80,36 @@ export const DefaultState: State =
             //     ...Array.from({ length: 63 + 1 - 48 }, (_, i) => i + 48),
             //     30, 29, 28, 26, 24, 22, 20, 18, 16
             // ]
+            // // all but
+            // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
+            //     114,11,12,13,14,24,25,26
+            // ].indexOf(i) === -1),
+            // // all but
+            // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
+            //     16,17,18,114,24,25,26,89,90,91,99,100,11,12,13,14,15
+            // ].indexOf(i) === -1),
+            // // all but
+            // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
+            //     ...Array.from({ length: 7 + 1 - 0 }, (_, i) => i + 0),
+            //     ...Array.from({ length: 15 + 1 - 10 }, (_, i) => i + 10),
+            //     ...Array.from({ length: 111 + 1 - 98 }, (_, i) => i + 98),
+            //     96,
+            //     ...Array.from({ length: 127 + 1 - 122 }, (_, i) => i + 122),
+            //     ...Array.from({ length: 120 + 1 - 112 }, (_, i) => i + 112),
+            //     95,
+            //     ...Array.from({ length: 26 + 1 - 16 }, (_, i) => i + 16),
+            // ].indexOf(i) === -1),
+            // // all but
+            // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
+            //     10,11,12,13,14,15,
+            //     2,
+            //     100,101,102,103,104,105,106,
+            //     16,17,18,19,20,21,22,23
+
+            //  ].indexOf(i) === -1),
             blockedNozzles: [
                 // // all but
-                // ...Array.from({ length: 127 + 1 }, (_, i) => i).filter(i => [
-                //     114,11,12,13,14,24,25,26
-                // ].indexOf(i) === -1),
+
             ],
             printBedToCamera: {
                 x: 149.29 - 9.44 + 8.1,
@@ -105,13 +130,13 @@ export const DefaultState: State =
             bedTemperature: 0,
             dryingTimeSeconds: 0,
             waveform: {
-                voltage: 28,
+                voltage: 34,
                 clockFrequency: 1000
             },
             skipNozzles: 0,
             offsetLayers: {
                 printAxis: {
-                    everyOtherLayerByTicks: 2,
+                    everyOtherLayerByTicks: 0,
                 },
                 moveAxis: {
                     everyOtherLayerByNozzles: 0
@@ -134,7 +159,8 @@ export const DefaultState: State =
     models: [],
     currentFileState: null,
     printBedViewState: {
-        viewLayer: 0,
+        viewLayerFrom: 0,
+        viewLayerTo: 0,
         selectedModelId: null,
         viewMode: {
             mode: "layerPlan"
@@ -151,5 +177,9 @@ export const DefaultState: State =
         selectedImageFileName: null
     },
     cameras: {
-    }
+    },
+    nozzlePerformance: {
+        testResults: []
+    },
+    currentRoute: null,
 };
