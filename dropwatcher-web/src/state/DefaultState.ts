@@ -130,13 +130,13 @@ export const DefaultState: State =
             bedTemperature: 0,
             dryingTimeSeconds: 0,
             waveform: {
-                voltage: 28,
+                voltage: 34,
                 clockFrequency: 1000
             },
             skipNozzles: 0,
             offsetLayers: {
                 printAxis: {
-                    everyOtherLayerByTicks: 2,
+                    everyOtherLayerByTicks: 0,
                 },
                 moveAxis: {
                     everyOtherLayerByNozzles: 0
