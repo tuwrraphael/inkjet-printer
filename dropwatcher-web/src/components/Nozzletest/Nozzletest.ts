@@ -1,6 +1,8 @@
+import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
 import { PrinterProgram, PrinterTasks, PrinterTaskType } from "../../print-tasks/printer-program";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
+import { NozzleBlockStatusChanged } from "../../state/actions/NozzleBlockStatusChanged";
 import { State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
@@ -40,39 +42,20 @@ export class Nozzletest extends HTMLElement {
                 {
                     type: PrinterTaskType.Home,
                 },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 0,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 8,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 16,
-                    safeTravelHeight: 10
-                },
-                {
-                    type: PrinterTaskType.CheckNozzles,
-                    layerNr: -1,
-                    nozzleTestSurfaceHeight: 1,
-                    startNozzle: 24,
-                    safeTravelHeight: 10
-                },
+                ...getNozzleTestTasks(0)
             ];
             let program: PrinterProgram = {
                 tasks: steps
             };
             this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(program));
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#set-all-blocked"), "click", async (ev) => {
+            ev.preventDefault();
+            this.store.postAction(new NozzleBlockStatusChanged(Array.from({ length: 128 }, (_, i) => ({ nozzleId: i, blocked: true }))));
+        }, this.abortController.signal);
+        abortableEventListener(this.querySelector("#set-all-unblocked"), "click", async (ev) => {
+            ev.preventDefault();
+            this.store.postAction(new NozzleBlockStatusChanged(Array.from({ length: 128 }, (_, i) => ({ nozzleId: i, blocked: false }))));
         }, this.abortController.signal);
         this.store.subscribe((s, c) => this.update(s, c));
         this.update(this.store.state, null);

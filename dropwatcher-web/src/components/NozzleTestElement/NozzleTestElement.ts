@@ -1,5 +1,5 @@
 import { NozzleBlockStatusChanged } from "../../state/actions/NozzleBlockStatusChanged";
-import { State, StateChanges } from "../../state/State";
+import { InspectImage, InspectImageType, State, StateChanges } from "../../state/State";
 import { Store } from "../../state/Store";
 import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./NozzleTestElement.html";
@@ -15,7 +15,10 @@ export class NozzleTestElement extends HTMLElement {
     private abortController: AbortController;
     private isBlocked: boolean;
     private blockedText: HTMLSpanElement;
-    img: HTMLImageElement;
+    private canvas: HTMLCanvasElement;
+    private selectedImage: InspectImage;
+    private isEnlarged: boolean;
+    private imgFilename: HTMLSpanElement;
 
     constructor() {
         super();
@@ -30,26 +33,61 @@ export class NozzleTestElement extends HTMLElement {
             this.label = this.querySelector("label");
             this.blocked = this.querySelector("[name=blocked]");
             this.blockedText = this.querySelector(".blocked-text");
-            this.img = this.querySelector("img");
+            this.canvas = this.querySelector("canvas");
+            this.imgFilename = this.querySelector(".img-filename");
 
             this.update();
         }
         this.abortController = new AbortController();
-        this.store.subscribe((s, c) => this.updateStore(s, c));
+        this.store.subscribe((s, c) => this.updateStore(s, c), this.abortController.signal);
         abortableEventListener(this.blocked, "change", (ev) => {
-            this.store.postAction(new NozzleBlockStatusChanged(this.nozzle, this.blocked.checked));
+            this.store.postAction(new NozzleBlockStatusChanged([
+                { nozzleId: this.nozzle, blocked: this.blocked.checked }
+            ]));
         }, this.abortController.signal);
-        abortableEventListener(this.img, "click", (ev) => {
-            this.img.classList.toggle("enlarged");
+        abortableEventListener(this.canvas, "click", (ev) => {
+            this.isEnlarged = !this.isEnlarged;
+            this.canvas.classList.toggle("enlarged", this.isEnlarged);
+            this.renderImage();
         }, this.abortController.signal);
         this.updateStore(this.store.state, null);
     }
     updateStore(s: State, c: StateChanges): void {
-        let keysOfInterest = ["printState"];
-        if (s && (null == c || c.some((change) => keysOfInterest.includes(change)))) {
+        if (s && (null == c || c.some((change) => ["printState"].includes(change)))) {
             this.isBlocked = s.printState.printerParams.blockedNozzles.find(n => n === this.nozzle) !== undefined;
             this.update();
         }
+        if (s && (null == c || c.some((change) => ["inspect"].includes(change)))) {
+            let nozzleImages = s.inspect.images.filter(x => x.metadata.type == InspectImageType.NozzleTest && new RegExp(`nozzletest_-?\\d+_${this.nozzle}[_.]`).test(x.file.name))
+                .sort((a, b) => +b.metadata.timestamp - +a.metadata.timestamp);
+            let selectedImage = nozzleImages.length > 0 ? nozzleImages[0] : null;
+            let selectedImageChanged = selectedImage !== this.selectedImage;
+            this.selectedImage = selectedImage;
+            if (selectedImageChanged) {
+                this.renderImage();
+            }
+
+            this.update();
+        }
+    }
+
+    private renderImage() {
+
+        let ctx = this.canvas.getContext("2d");
+        this.selectedImage?.file.getFile().then(imageFile => {
+            if (imageFile) {
+                let opts: ImageBitmapOptions = this.isEnlarged ? {} : { resizeWidth: 160, resizeQuality: "low" };
+                createImageBitmap(imageFile, opts).then((imageBitmap) => {
+                    requestAnimationFrame(async () => {
+                        this.canvas.width = imageBitmap.width;
+                        this.canvas.height = imageBitmap.height;
+                        ctx.drawImage(imageBitmap, 0, 0);
+                    });
+                });
+            } else {
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+        });
     }
 
     get nozzle(): number | undefined {
@@ -81,6 +119,7 @@ export class NozzleTestElement extends HTMLElement {
         this.blocked.checked = this.isBlocked;
         this.blockedText.innerText = this.isBlocked ? "Blocked" : "Blocked";
         this.label.classList.toggle("blocked-display--blocked", this.isBlocked);
+        this.imgFilename.innerText = this.selectedImage?.file.name || "";
     }
 
     disconnectedCallback() {

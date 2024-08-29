@@ -17,12 +17,14 @@ nozzle-test-element {
 
 .blocked-display {
     display: flex;
-    justify-content: center;   
+    justify-content: center;
     align-items: center;
     width: 100%;
+
     .blocked-text {
         margin-left: 0.5em;
     }
+
     &--blocked {
         background-color: lightcoral;
     }
@@ -37,4 +39,9 @@ nozzle-test-element {
     max-height: 80vh;
     max-width: 80vw;
     transform: translate(-50%, -50%);
+}
+
+.img-filename {
+    font-size: 0.8em;
+    margin: 0.2em;    
 }

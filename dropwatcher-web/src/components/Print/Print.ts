@@ -35,6 +35,7 @@ import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicr
 import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
 import { getCodeModel } from "../../slicer/getCodeModel";
 import { getSquareModel } from "../../slicer/getSquareModel";
+import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
 
 export class PrintComponent extends HTMLElement {
 
@@ -488,22 +489,28 @@ export class PrintComponent extends HTMLElement {
                     this.store.postAction(new ModelAdded(model));
                     break;
                 case "test-nozzle-pattern2":
+                    let moveAxisPos = 5;
+                    let stride = 32;
+                    let fireEveryTicks = 6;
+                    let numNozzles = 16;
                     let res = getNozzleTestTracks(
                         0,
-                        16,
-                        5,
+                        numNozzles,
+                        moveAxisPos,
                         this.store.state.printState.printerParams,
-                        6, 3500, 32);
+                        fireEveryTicks, 3200, stride, 10);
+                    let offsetSecondBlock = this.store.state.printState.printerParams.numNozzles / stride;
+                    let offsetTicks = 70;
                     let res2 = getNozzleTestTracks(
-                        4,
-                        16,
-                        5 + 3 * 0.137,
+                        0 + offsetSecondBlock,
+                        numNozzles,
+                        moveAxisPos + (offsetSecondBlock - 1) * this.store.state.printState.printerParams.printheadSwathePerpendicular / (this.store.state.printState.printerParams.numNozzles - 1),
                         this.store.state.printState.printerParams,
-                        6, 3570, 32);
-                    this.store.postAction(new SetCustomTracks([...res.customTracks, ...res2.customTracks]));
+                        fireEveryTicks, 3200, stride, 22);
+                    this.store.postAction(new SetCustomTracks(res.customTracks.concat(res2.customTracks)));
                     break;
                 case "8x8square":
-                    let square = getSquareModel(8,10);
+                    let square = getSquareModel(8, 10);
                     this.store.postAction(new ModelAdded(square));
                     break;
                 default:
@@ -588,6 +595,9 @@ export class PrintComponent extends HTMLElement {
                     z: height,
                     printingParams: this.store.state.printState.printingParams
                 });
+            }
+            if ((i + 1) % 3 == 0) {
+                steps.push(...getNozzleTestTasks(i));
             }
             // steps.push({
             //     type: PrinterTaskType.Move,

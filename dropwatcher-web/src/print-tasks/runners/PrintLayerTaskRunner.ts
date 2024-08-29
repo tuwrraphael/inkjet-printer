@@ -15,6 +15,7 @@ import { CameraType } from "../../CameraType";
 import { GCodeRunner } from "../../gcode-runner";
 import { AutofocusCache } from "../AutofocusCache";
 import { kHzToNs } from "../../utils/kHzToNs";
+import { InspectImageType } from "../../state/State";
 
 export class PrintLayerTaskRunner {
     constructor(private task: PrintLayerTask,
@@ -84,7 +85,7 @@ export class PrintLayerTaskRunner {
                                 first = false;
                                 let photoTime = new Date();
                                 let driedForMs = +photoTime - +groupPrintingFinished;
-                                await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`);
+                                await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`, InspectImageType.PhotoPoint);
                                 // await new Promise(resolve => setTimeout(resolve, photoInterval - ((+new Date()) - (+photoTime))));
                                 cancellationToken.throwIfCanceled();
                             }
@@ -98,10 +99,11 @@ export class PrintLayerTaskRunner {
                 }
                 await this.movementExecutor.setFanSpeed(0);
             }
-            let cancelPriming = this.nozzlePriming();
-            try {
-                let dryForMs = Math.max(0, (+dryUntil - +new Date()));
-                if (dryForMs > 0) {
+
+            let dryForMs = Math.max(0, (+dryUntil - +new Date()));
+            if (dryForMs > 0) {
+                let cancelPriming = this.nozzlePriming();
+                try {
                     await this.movementExecutor.setFanSpeed(255);
                     await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
                     cancellationToken.throwIfCanceled();
@@ -113,9 +115,9 @@ export class PrintLayerTaskRunner {
                         });
                     }
                     await this.movementExecutor.setFanSpeed(0);
+                } finally {
+                    await cancelPriming();
                 }
-            } finally {
-                await cancelPriming();
             }
         }
         catch (e) {

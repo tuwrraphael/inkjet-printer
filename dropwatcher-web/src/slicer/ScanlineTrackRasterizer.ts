@@ -10,8 +10,6 @@ import { TrackRasterizer } from "./TrackRasterizer";
 import { CorrectionTrack } from "./CorrectionTrack";
 import { TrackRasterizationResult } from "./TrackRasterizationResult";
 import { getPrintheadSwathe } from "./getPrintheadSwathe";
-import { splitmix32 } from "./splitmix32";
-import { start } from "repl";
 
 type BlockedNozzleJets = Set<number>;
 
@@ -435,7 +433,7 @@ export class ScanlineTrackRasterizer implements TrackRasterizer {
     }
 
     private rasterizeArea(moveAxisPos: number, nozzles: null | number[] = null) {
-        this.rng = splitmix32(4211865153);
+        // this.rng = splitmix32(4211865153);
         let data: Uint32Array;
 
         let printLastLineAfterEncoderTick: number = null;

@@ -10,7 +10,8 @@ export function getNozzleTestTracks(p_startNozzle: number,
     printerParams: PrinterParams,
     fireEveryTicks: number,
     startEncoderTick: number,
-    stride: number
+    stride: number,
+    startingLinesSeparation:number
 ): {
     customTracks: CustomTrack[],
     photoPoints: Map<number, { x: number, y: number }>
@@ -23,23 +24,29 @@ export function getNozzleTestTracks(p_startNozzle: number,
     let spacingRows = Math.ceil(spacingMM * printerParams.encoder.printAxis.dpi / (fireEveryTicks * 25.4));
     let groups = p_num_nozzles / (printerParams.numNozzles / stride);
     let endStartNozzle = p_startNozzle + groups;
-    let linesToPrint = groups * (rows + spacingRows);
+    let startingLines = 20;
+    // let startingLinesSeparation = 10;
+    let linesToPrint = groups * (rows + spacingRows) + startingLines + startingLinesSeparation;
     let colSpacing = 0.3;
     let numColumns = 6;
 
     let nozzleDistance = getNozzleDistance(printerParams);
 
-    let currentRow = 0;
+    let currentRow = startingLines-1 + startingLinesSeparation-1;
     let startPos = Math.max(0, startEncoderTick * 25.4 / printerParams.encoder.printAxis.dpi - 2);
+    let mmPerLine = (25.4 / printerParams.encoder.printAxis.dpi) * fireEveryTicks;
     let r: TrackRasterization = {
         data: new Uint32Array(linesToPrint * 4),
         linesToPrint: linesToPrint,
         printFirstLineAfterEncoderTick: startEncoderTick,
-        endPrintAxisPosition: startPos + groups * (boxHeightMM + spacingMM) + 2,
+        endPrintAxisPosition: startPos + groups * (boxHeightMM + spacingMM) + 2 + ((startingLines + startingLinesSeparation) * mmPerLine),
         startPrintAxisPosition: startPos,
         printLastLineAfterEncoderTick: fireEveryTicks * (linesToPrint - 1) + startEncoderTick,
     };
-    r.data.fill(0)
+    r.data.fill(0);
+    for (let i = 0; i < 4*startingLines;i++) {
+        r.data[i] = 0xFFFFFFFF;
+    }
 
     let which = new Map<number, number>();
 

@@ -1,5 +1,6 @@
 import { CameraType } from "./CameraType";
 import { GCodeRunner } from "./gcode-runner";
+import { InspectImageType } from "./state/State";
 import { Store } from "./state/Store";
 import { CameraStateChanged } from "./state/actions/CameraStateChanged";
 import { SaveImage } from "./state/actions/SaveImage";
@@ -162,7 +163,7 @@ export class CameraAccess {
         return this.stream;
     }
 
-    async saveImage(filename: string, folder: string = null) {
+    async saveImage(filename: string, imgType : InspectImageType) {
         if (!this.stream) {
             await this.start();
         }
@@ -180,7 +181,7 @@ export class CameraAccess {
         ctx.drawImage(video, 0, 0);
         let blob = await offscreen.convertToBlob();
 
-        this.store.postAction(new SaveImage(blob, this.type, filename, folder));
+        this.store.postAction(new SaveImage(blob, this.type, filename, imgType));
         return ctx.getImageData(0, 0, offscreen.width, offscreen.height);
     }
 

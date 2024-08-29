@@ -172,9 +172,18 @@ export interface ValveState {
     valve3: ValvePosition;
 }
 
+export enum InspectImageType {
+    NozzleTest,
+    Dropwatcher,
+    PhotoPoint,
+    Unknown
+}
+
 export interface InspectImage {
     file: FileSystemFileHandle,
     metadata: {
+        type: InspectImageType;
+        timestamp: Date;
     }
 }
 

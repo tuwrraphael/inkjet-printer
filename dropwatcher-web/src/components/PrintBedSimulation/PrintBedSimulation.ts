@@ -369,7 +369,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.viewedLayerPlans = this.printPlan ? this.printPlan.layers.slice(this.viewLayerFrom, this.viewLayerTo + 1) : [];
             this.viewMode = s.printBedViewState.viewMode;
             this.currentPrintingTrack = s.printState.currentPrintingTrack;
-            if (layerChanged || c.includes("models")) {
+            if (layerChanged || (c && c.includes("models"))) {
                 this.nextRenderNeedsModelRedraw = true;
             }
             this.feasiblePhotoArea = this.getFeasiblePhotoPointArea(s);
@@ -535,6 +535,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.mmToDots(modelWidth),
             this.mmToDots(modelHeight)
         );
+        this.ctx.globalCompositeOperation = "source-over";
     }
 
     private drawOrigin() {
@@ -566,12 +567,19 @@ export class PrintBedSimulation extends HTMLElement {
         let dotDiameter = 0.120;
         let nozzleCirleRadius = this.mmToDots(dotDiameter / 2);
         let offScreenDotCanvas = new OffscreenCanvas(Math.ceil(nozzleCirleRadius * 2), Math.ceil(nozzleCirleRadius * 2));
+        let offScreenBlockedDotCanvas = new OffscreenCanvas(Math.ceil(nozzleCirleRadius * 2), Math.ceil(nozzleCirleRadius * 2));
 
         let offScreenCtx = offScreenDotCanvas.getContext("2d");
         offScreenCtx.fillStyle = dotColor;
         offScreenCtx.beginPath();
         offScreenCtx.arc(offScreenDotCanvas.width / 2, offScreenDotCanvas.height / 2, nozzleCirleRadius, 0, 2 * Math.PI);
         offScreenCtx.fill();
+
+        let offScreenBlockedCtx = offScreenBlockedDotCanvas.getContext("2d");
+        offScreenBlockedCtx.fillStyle = "red";
+        offScreenBlockedCtx.beginPath();
+        offScreenBlockedCtx.arc(offScreenBlockedDotCanvas.width / 2, offScreenBlockedDotCanvas.height / 2, nozzleCirleRadius, 0, 2 * Math.PI);
+        offScreenBlockedCtx.fill();
 
 
         let nozzleDistance = getNozzleDistance(printerParams);
@@ -601,9 +609,8 @@ export class PrintBedSimulation extends HTMLElement {
                             // this.ctx.beginPath();
                             // this.ctx.arc(pos.x, pos.y, this.mmToDots(dotDiameter / 2), 0, 2 * Math.PI);
                             // this.ctx.fill();
-                            if (offScreenDotCanvas.width == 1) {
-                                this.ctx.fillStyle = nozzleBlocked ? "red" : dotColor;
-                                this.ctx.fillRect(pos.x, pos.y, 1, 1);
+                            if (nozzleBlocked) {
+                                this.ctx.drawImage(offScreenBlockedDotCanvas, pos.x - offScreenBlockedDotCanvas.width / 2, pos.y - offScreenBlockedDotCanvas.height / 2);
                             } else {
                                 this.ctx.drawImage(offScreenDotCanvas, pos.x - offScreenDotCanvas.width / 2, pos.y - offScreenDotCanvas.height / 2);
                             }
@@ -746,12 +753,15 @@ export class PrintBedSimulation extends HTMLElement {
                     this.drawPhotoPoints(layerPlan);
                 }
             } else if (this.viewMode.mode == "rasterization") {
+                let layers = this.viewLayerTo - this.viewLayerFrom + 1;
+                let alpha = 1 / layers;
+                alpha = Math.round(alpha * 100) / 100;
                 if (null != this.currentRasterization) {
                     let trackNr = 0;
                     for (let r of this.currentRasterization) {
-                        this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, "rgba(0, 0, 0, 0.8)", "rgba(255, 127, 80, 0.8)");
+                        this.drawTrack(r.moveAxisPosition, r.result.track, this.printerParams, r.result.printingParams, `rgba(0, 0, 0, ${alpha})`, "rgba(255, 127, 80, 0.8)");
                         for (let { track, moveAxisPos } of r.result.correctionTracks) {
-                            this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, "rgba(0, 128, 0, 0.8)", "rgba(0, 128, 0, 0.8)");
+                            this.drawTrack(moveAxisPos, track, this.printerParams, r.result.printingParams, `rgba(0, 128, 0, ${alpha})`, "rgba(0, 128, 0, 0.8)");
                         }
                         trackNr++;
                     }

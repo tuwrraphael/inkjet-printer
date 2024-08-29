@@ -3,7 +3,7 @@ import { PrinterUSB } from "../../printer-usb";
 import { ChangePrintMemoryRequest, ChangeEncoderModeSettingsRequest, PrintControlEncoderModeSettings, ChangeEncoderModeRequest } from "../../proto/compiled";
 import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
 import { PrintingTrack } from "../../state/actions/PrintingTrack";
-import { CustomTrack } from "../../state/State";
+import { CustomTrack, InspectImageType } from "../../state/State";
 import { Store } from "../../state/Store";
 import { AutofocusCache } from "../AutofocusCache";
 import { CheckNozzlesTask } from "../printer-program";
@@ -51,7 +51,7 @@ export class CheckNozzleTaskRunner {
                     focus = this.store.state.movementStageState.pos.z;
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
-                let imageData = await cameraAccess.saveImage(`nozzletest_${this.task.layerNr}_${nozzle}`, "nozzletest");
+                let imageData = await cameraAccess.saveImage(`nozzletest_${this.task.layerNr}_${nozzle}`, InspectImageType.NozzleTest);
                 let drops = dropDetector.detectDrops(imageData);
                 console.log(`Nozzle ${nozzle} drop count: ${drops.drops.length}, avg diameter: ${dropDetector.averageDropSize(drops.drops)}`, drops.drops);
                 // this.store.postAction(new AddNozzleTestResult(nozzle, drops.drops.map(d => ({
@@ -76,7 +76,7 @@ export class CheckNozzleTaskRunner {
             numNozzles,
             moveAxisPos,
             this.store.state.printState.printerParams,
-            fireEveryTicks, 3500, stride);
+            fireEveryTicks, 3200, stride,10);
         let offsetSecondBlock = this.store.state.printState.printerParams.numNozzles / stride;
         let offsetTicks = 70;
         let res2 = getNozzleTestTracks(
@@ -84,7 +84,7 @@ export class CheckNozzleTaskRunner {
             numNozzles,
             moveAxisPos + (offsetSecondBlock - 1) * this.store.state.printState.printerParams.printheadSwathePerpendicular / (this.store.state.printState.printerParams.numNozzles - 1),
             this.store.state.printState.printerParams,
-            8, 3570, 32);
+            fireEveryTicks, 3200, stride,22);
         return {
             customTracks: res.customTracks.concat(res2.customTracks),
             photoPoints: new Map((Array.from(res.photoPoints.entries()).concat(Array.from(res2.photoPoints.entries()))))
@@ -141,7 +141,7 @@ export class CheckNozzleTaskRunner {
             cancellationToken.throwIfCanceled();
             let changeEncoderModeSettingsRequest = new ChangeEncoderModeSettingsRequest();
             let encoderModeSettings = new PrintControlEncoderModeSettings();
-            encoderModeSettings.fireEveryTicks = 8; // 90 dpi
+            encoderModeSettings.fireEveryTicks = 6; // 90 dpi
             encoderModeSettings.printFirstLineAfterEncoderTick = printTrack.printFirstLineAfterEncoderTick;
             encoderModeSettings.linesToPrint = printTrack.linesToPrint;
             encoderModeSettings.sequentialFires = 1

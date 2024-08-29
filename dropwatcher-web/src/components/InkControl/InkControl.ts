@@ -159,9 +159,6 @@ export class InkControl extends HTMLElement {
         if (currentStep.pumpactions) {
             let actions = currentStep.pumpactions();
             for (let i = 0; i < (actions.repetitions?.count || 1); i++) {
-                if (this.store.state.inkControlAction.actionsRunning == false) {
-                    break;
-                }
                 let changeParametersRequest = new ChangePressureControlParametersRequest();
                 let parameters = new PressureControlParameters();
                 changeParametersRequest.parameters = parameters;
@@ -191,6 +188,9 @@ export class InkControl extends HTMLElement {
                 }
                 if (actions.repetitions?.pause) {
                     await new Promise((resolve) => setTimeout(resolve, actions.repetitions.pause));
+                }
+                if (this.store.state.inkControlAction.actionsRunning == false) {
+                    break;
                 }
             }
         }

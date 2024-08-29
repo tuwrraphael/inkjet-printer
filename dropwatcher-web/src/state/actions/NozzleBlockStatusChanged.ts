@@ -3,6 +3,6 @@ import { ActionType } from "./ActionType";
 
 
 export class NozzleBlockStatusChanged implements Action {
-    constructor(public nozzleId: number, public blocked: boolean) { }
+    constructor(public state: { nozzleId: number, blocked: boolean }[]) { }
     readonly type = ActionType.NozzleBlockStatusChanged;
 }

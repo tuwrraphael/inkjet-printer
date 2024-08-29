@@ -9,8 +9,6 @@ import { getPrintingParams } from "./getPrintingParams";
 import { TrackRasterizer } from "./TrackRasterizer";
 import { CorrectionTrack } from "./CorrectionTrack";
 import { TrackRasterizationResult } from "./TrackRasterizationResult";
-import { splitmix32 } from "./splitmix32";
-
 type BlockedNozzleJets = Set<number>;
 
 export class PointInPolygonTrackRasterizer implements TrackRasterizer {
