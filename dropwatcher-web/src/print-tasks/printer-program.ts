@@ -57,6 +57,7 @@ export interface PrinterTaskHeadBed extends PrinterTask {
         y: number;
         z: number;
     };
+    wait: boolean;
 }
 
 export interface PrintLayerTask extends PrinterTask {

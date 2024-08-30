@@ -41,6 +41,10 @@ export class GCodeRunner implements Disposable {
         await this.movementStage._sendGcode(`M190 S${temperature}`);
     }
 
+    async setBedTemperature(temperature: number) {
+        await this.movementStage._sendGcode(`M140 S${temperature}`);
+    }
+
     async disableAxes() {
         await this.movementStage._sendGcode("M18");
     }

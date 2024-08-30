@@ -22,10 +22,14 @@ export function createPrintProgram(
     let homeTask: PrinterTasks[] = options.home ? [{ type: PrinterTaskType.Home }] : [];
     let nozzleTestBeforeFirstLayerTask: PrinterTasks[] = options.nozzleTestBeforeFirstLayer ? getNozzleTestTasks(0) : [];
     let steps: PrinterTasks[] = [
+        {
+            type: PrinterTaskType.SetTargetPressure,
+            targetPressure: -2
+        },
         ...(homeTask),
-        ...(nozzleTestBeforeFirstLayerTask),
         {
             type: PrinterTaskType.HeatBed,
+            wait:false,
             temperature: printingParams.bedTemperature,
             primingPosition: {
                 x: 200,
@@ -46,7 +50,18 @@ export function createPrintProgram(
         },
         {
             type: PrinterTaskType.ZeroEncoder
-        }
+        },
+        ...(nozzleTestBeforeFirstLayerTask),
+        {
+            type: PrinterTaskType.HeatBed,
+            wait:true,
+            temperature: printingParams.bedTemperature,
+            primingPosition: {
+                x: 200,
+                y: 0,
+                z: 40
+            }
+        },
     ];
     let maxLayersModels = printPlan.layers.length;
     let maxLayersCustomTracks = customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
@@ -60,10 +75,6 @@ export function createPrintProgram(
                 z: height
             },
             feedRate: 10000
-        });
-        steps.push({
-            type: PrinterTaskType.SetTargetPressure,
-            targetPressure: -2
         });
         // steps.push({
         //     type: PrinterTaskType.PrimeNozzle
@@ -91,7 +102,9 @@ export function createPrintProgram(
                 printingParams: printingParams
             });
         }
-        if (i % options.nozzleTestEveryNLayer === 0 && i != options.startAtLayer) {
+        let remainingLayers = maxLayers - i;
+
+        if (i % options.nozzleTestEveryNLayer === 0 && i != options.startAtLayer && remainingLayers > (options.nozzleTestEveryNLayer/2)) {
             steps.push(...getNozzleTestTasks(i));
         }
         // steps.push({

@@ -86,7 +86,7 @@ export class CameraAccess {
         let capabilities = track.getCapabilities();
         console.log(capabilities)
         let canChangeExposure = false;
-        // if (this.type == CameraType.Dropwatcher) {
+        if (this.type == CameraType.Dropwatcher) {
         canChangeExposure = capabilities.exposureMode && capabilities.exposureMode.includes("manual")
             && (<any>capabilities).exposureTime && (<any>capabilities).exposureTime.min && (<any>capabilities).exposureTime.max;
 
@@ -114,7 +114,7 @@ export class CameraAccess {
             console.error(e);
             canChangeExposure = false;
         }
-        // }
+        }
         let settings = track.getSettings();
         this.store.postAction(new CameraStateChanged({
             cameraOn: true,

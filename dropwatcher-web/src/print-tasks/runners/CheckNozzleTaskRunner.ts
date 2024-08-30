@@ -52,8 +52,9 @@ export class CheckNozzleTaskRunner {
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
                 let imageData = await cameraAccess.saveImage(`nozzletest_${this.task.layerNr}_${nozzle}`, InspectImageType.NozzleTest);
-                let drops = dropDetector.detectDrops(imageData);
-                console.log(`Nozzle ${nozzle} drop count: ${drops.drops.length}, avg diameter: ${dropDetector.averageDropSize(drops.drops)}`, drops.drops);
+                // let drops = dropDetector.detectDrops(imageData);
+                // console.log(`Nozzle ${nozzle} drop count: ${drops.drops.length}, avg diameter: ${dropDetector.averageDropSize(drops.drops)}`, drops.drops);
+                cancellationToken.throwIfCanceled();
                 // this.store.postAction(new AddNozzleTestResult(nozzle, drops.drops.map(d => ({
                 //     x: d.x,
                 //     y: d.y,
@@ -64,10 +65,14 @@ export class CheckNozzleTaskRunner {
         finally {
             cancelNozzlePriming();
         }
+        await this.movementExecutor.moveAbsoluteYAndWait(0, 10000);
     }
 
     private generateTracks() {
-        let moveAxisPos = 5;
+        let moveAxisPos = 5 + (Math.random() * 5);
+        moveAxisPos = Math.round(moveAxisPos * 100) / 100;
+        let startEncoderTick = 3200 + (Math.random() * 100);
+        startEncoderTick = Math.round(startEncoderTick);
         let stride = 32;
         let fireEveryTicks = 6;
         let numNozzles = 16;
@@ -76,7 +81,7 @@ export class CheckNozzleTaskRunner {
             numNozzles,
             moveAxisPos,
             this.store.state.printState.printerParams,
-            fireEveryTicks, 3200, stride,10);
+            fireEveryTicks, startEncoderTick, stride,10);
         let offsetSecondBlock = this.store.state.printState.printerParams.numNozzles / stride;
         let offsetTicks = 70;
         let res2 = getNozzleTestTracks(
@@ -84,7 +89,7 @@ export class CheckNozzleTaskRunner {
             numNozzles,
             moveAxisPos + (offsetSecondBlock - 1) * this.store.state.printState.printerParams.printheadSwathePerpendicular / (this.store.state.printState.printerParams.numNozzles - 1),
             this.store.state.printState.printerParams,
-            fireEveryTicks, 3200, stride,22);
+            fireEveryTicks, startEncoderTick, stride,22);
         return {
             customTracks: res.customTracks.concat(res2.customTracks),
             photoPoints: new Map((Array.from(res.photoPoints.entries()).concat(Array.from(res2.photoPoints.entries()))))

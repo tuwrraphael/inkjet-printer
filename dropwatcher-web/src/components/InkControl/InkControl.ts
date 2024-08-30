@@ -140,6 +140,7 @@ export class InkControl extends HTMLElement {
             using executor = this.movementStage.getMovementExecutor("ink-control");
             await executor.home();
             await executor.moveAbsoluteAndWait(100, 100, 0, 400);
+            await executor.disableAxes();
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#btn-undock-capping-station"), "click", async (event) => {
             event.preventDefault();

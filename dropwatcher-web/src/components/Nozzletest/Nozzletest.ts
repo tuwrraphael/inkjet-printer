@@ -44,6 +44,20 @@ export class Nozzletest extends HTMLElement {
                 {
                     type: PrinterTaskType.Home,
                 },
+                {
+                    type: PrinterTaskType.Move,
+                    movement: {
+                        x: 0, y: 0
+                    },
+                    feedRate: 10000
+                },
+                {
+                    type: PrinterTaskType.Wait,
+                    durationMs: 1000
+                },
+                {
+                    type: PrinterTaskType.ZeroEncoder
+                },
                 ...getNozzleTestTasks(0)
             ];
             let program: PrinterProgram = {
