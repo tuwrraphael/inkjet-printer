@@ -37,7 +37,8 @@ export class PrintTaskRunner {
         this.autofocusCache = new AutofocusCache();
         this.programRunnerState = {
             state: PrinterProgramState.Initial,
-            currentTaskIndex: 0
+            currentTaskIndex: 0,
+            message: null
         };
     }
 
@@ -77,6 +78,8 @@ export class PrintTaskRunner {
             this.programRunnerState.state = PrinterProgramState.Running;
             this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
             while (this.canContinue() && !this.isDone()) {
+                this.programRunnerState.message = null;
+                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
                 let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
                 await this.runTask(nextTask, movementExecutor, this.autofocusCache);
                 this.programRunnerState.currentTaskIndex++;
@@ -87,6 +90,7 @@ export class PrintTaskRunner {
                     return;
                 }
             }
+            this.programRunnerState.message = null;
             if (!this.isDone()) {
                 this.programRunnerState.state = PrinterProgramState.Canceled;
             } else {
@@ -98,6 +102,7 @@ export class PrintTaskRunner {
             if (this.canceled) {
                 this.programRunnerState.state = PrinterProgramState.Canceled;
             } else {
+                this.programRunnerState.message = `Failed: ${e.message}`;
                 this.programRunnerState.state = PrinterProgramState.Failed;
 
             }
@@ -158,6 +163,9 @@ export class PrintTaskRunner {
             case PrinterTaskType.CheckNozzles:
                 let checkNozzleTaskRunner = new CheckNozzleTaskRunner(task, movementExecutor, this.printerUsb, this.store, autofocusCache);
                 await checkNozzleTaskRunner.run(this.cancellationToken);
+                break;
+            case PrinterTaskType.Pause:
+                this.programRunnerState.message = task.message;
                 this.pause();
                 break;
             default:

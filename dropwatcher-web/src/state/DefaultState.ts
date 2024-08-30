@@ -28,7 +28,8 @@ export const DefaultState: State =
     currentProgram: null,
     programRunnerState: {
         state: null,
-        currentTaskIndex: null
+        currentTaskIndex: null,
+        message: null
     },
     dropwatcherState: {
         nozzleData: undefined,

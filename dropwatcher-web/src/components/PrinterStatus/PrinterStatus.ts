@@ -1,5 +1,7 @@
 
 import { MovementStage } from "../../movement-stage";
+import { PrinterProgramState } from "../../print-tasks/printer-program";
+import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
 import { PrinterUSB } from "../../printer-usb";
 import { State, StateChanges, PrinterSystemState, PressureControlAlgorithm, PressureControlDirection, PrintControlEncoderMode } from "../../state/State";
 import { Store } from "../../state/Store";
@@ -41,14 +43,22 @@ export class PrinterStatus extends HTMLElement {
     private voltage: HTMLSpanElement;
     private stageTemp: HTMLSpanElement;
     private microscopePosition: HTMLTableCellElement;
-    private projectFile : HTMLTableCellElement;
-    private outputFolder : HTMLTableCellElement;
-    private clock : HTMLSpanElement;
+    private projectFile: HTMLTableCellElement;
+    private outputFolder: HTMLTableCellElement;
+    private clock: HTMLSpanElement;
+    private jobState: HTMLTableCellElement;
+    private jobProgress: HTMLTableCellElement;
+    private jobMessage: HTMLTableCellElement;
+    private pausePrint: HTMLButtonElement;
+    private  resumePrint: HTMLButtonElement;
+    private  cancelPrint: HTMLButtonElement;
+    private taskRunnerSynchronization: TaskRunnerSynchronization;
     constructor() {
         super();
         this.store = Store.getInstance();
         this.printerUSB = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
+        this.taskRunnerSynchronization  = TaskRunnerSynchronization.getInstance();
     }
 
     connectedCallback() {
@@ -82,6 +92,12 @@ export class PrinterStatus extends HTMLElement {
             this.projectFile = this.querySelector("#project-file");
             this.outputFolder = this.querySelector("#output-folder");
             this.clock = this.querySelector("#clock");
+            this.jobState = this.querySelector("#job-state");
+            this.jobProgress = this.querySelector("#job-progress");
+            this.jobMessage = this.querySelector("#job-message");
+            this.pausePrint = this.querySelector("#pause-print");
+            this.resumePrint = this.querySelector("#resume-print");
+            this.cancelPrint = this.querySelector("#cancel-print");
             abortableEventListener(this.connectUsbButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectUsb();
@@ -93,6 +109,18 @@ export class PrinterStatus extends HTMLElement {
             abortableEventListener(this.connectStageButton, "click", async ev => {
                 ev.preventDefault();
                 await this.connectStage();
+            }, this.abortController.signal);
+            abortableEventListener(this.pausePrint, "click", ev => {
+                ev.preventDefault();
+                this.taskRunnerSynchronization.pauseAll();
+            }, this.abortController.signal);
+            abortableEventListener(this.resumePrint, "click", ev => {
+                ev.preventDefault();
+                this.taskRunnerSynchronization.continueAll();
+            }, this.abortController.signal);
+            abortableEventListener(this.cancelPrint, "click", ev => {
+                ev.preventDefault();
+                this.taskRunnerSynchronization.cancelAll();
             }, this.abortController.signal);
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
@@ -167,6 +195,24 @@ export class PrinterStatus extends HTMLElement {
         }
     }
 
+    formatJobState(printerProgramState: PrinterProgramState) {
+        if (null == printerProgramState) return "No Job";
+        switch (printerProgramState) {
+            case PrinterProgramState.Running:
+                return "Running";
+            case PrinterProgramState.Paused:
+                return "Paused";
+            case PrinterProgramState.Done:
+                return "Done";
+            case PrinterProgramState.Failed:
+                return "Failed";
+            case PrinterProgramState.Canceled:
+                return "Canceled";
+            case PrinterProgramState.Initial:
+                return "Initial";
+        }
+    }
+
     formatNumber(n: number) {
         if (isNaN(n) || n == undefined) return "-";
         return numberFormat.format(n);
@@ -220,6 +266,14 @@ export class PrinterStatus extends HTMLElement {
         }
         if (c.includes("inspect")) {
             this.outputFolder.innerText = s.inspect.outputFolder?.name || "-";
+        }
+        if (c.includes("programRunnerState")) {
+            this.jobState.innerText = this.formatJobState(s.programRunnerState.state);
+            this.jobProgress.innerText = `${s.programRunnerState.currentTaskIndex || 0} / ${s.currentProgram?.tasks.length || 0}`;
+            this.pausePrint.disabled = s.programRunnerState.state != PrinterProgramState.Running;
+            this.resumePrint.disabled = s.programRunnerState.state != PrinterProgramState.Paused;
+            this.cancelPrint.disabled = s.programRunnerState.state != PrinterProgramState.Running && s.programRunnerState.state != PrinterProgramState.Paused;
+            this.jobMessage.innerText = s.programRunnerState.message || "-";
         }
     }
 

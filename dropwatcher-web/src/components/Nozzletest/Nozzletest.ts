@@ -1,6 +1,6 @@
 import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
 import { PrintTaskRunner } from "../../print-tasks/print-task-runner";
-import { PrinterProgram, PrinterTasks, PrinterTaskType } from "../../print-tasks/printer-program";
+import { PrinterProgram, PrinterProgramState, PrinterTasks, PrinterTaskType } from "../../print-tasks/printer-program";
 import { TaskRunnerSynchronization } from "../../print-tasks/TaskRunnerSynchronization";
 import { NozzleBlockStatusChanged } from "../../state/actions/NozzleBlockStatusChanged";
 import { State, StateChanges } from "../../state/State";
@@ -19,6 +19,7 @@ export class Nozzletest extends HTMLElement {
     private renderer: ArrayToElementRenderer<{ id: number }, NozzleTestElement, number>;
     private container: HTMLDivElement;
     private taskRunnerSynchronization: TaskRunnerSynchronization;
+    private startNozzleTest: HTMLButtonElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -34,9 +35,10 @@ export class Nozzletest extends HTMLElement {
                 let el: NozzleTestElement = document.createElement(NozzleTestElementTagName) as NozzleTestElement;
                 return el;
             });
+            this.startNozzleTest = this.querySelector("#start-nozzle-test");
         }
         this.abortController = new AbortController();
-        abortableEventListener(this.querySelector("#start-nozzle-test"), "click", async (ev) => {
+        abortableEventListener(this.startNozzleTest, "click", async (ev) => {
             ev.preventDefault();
             let steps: PrinterTasks[] = [
                 {
@@ -61,17 +63,17 @@ export class Nozzletest extends HTMLElement {
         this.update(this.store.state, null);
     }
     update(state: State, stateChanges: StateChanges): void {
-        let keysOfInterest = ["printState"];
-        if (state && (null == stateChanges || stateChanges.some((change) => keysOfInterest.includes(change)))) {
+        if (state && (null == stateChanges || stateChanges.some((change) => ["printState"].includes(change)))) {
             let numNozzles = state.printState.printerParams.numNozzles;
             this.renderer.update(Array.from({ length: numNozzles }, (_, i) => ({ id: i })),
                 (el, m) => {
                     el.setAttribute("nozzle", m.id.toString());
                 });
         }
+        if (state && (null == stateChanges || stateChanges.some((change) => ["programRunnerState"].includes(change)))) {
+            this.startNozzleTest.disabled = state.programRunnerState.state == PrinterProgramState.Paused || state.programRunnerState.state == PrinterProgramState.Running;
+        }
     }
-
-
 
     disconnectedCallback() {
         this.abortController.abort();

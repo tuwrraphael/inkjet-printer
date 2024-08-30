@@ -125,7 +125,13 @@ class GCodeQueue {
     }
 
     private async processItem(item: GCodeQueueItem) {
+        try {
         await this.send(item.gcode);
+        }
+        catch (e) {
+            item.reject(e);
+            return false;
+        }
         this.timeout = createRefreshableTimeout(item.timeout || 5, () => new Error(`Timeout after sending ${item.gcode}`));
         let waitForPromise = new Promise<void>((resolve, reject) => {
             this.waitFor = (data) => {

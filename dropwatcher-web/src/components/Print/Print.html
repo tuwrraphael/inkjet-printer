@@ -1,8 +1,6 @@
 <div class="print-container">
     <div class="app-print__buttons">
         <button id="start-print">Start Print</button>
-        <button id="pause-print">Pause Print</button>
-        <button id="cancel-print">Cancel Print</button>
         <button id="insert-special">Insert Special...</button>
         <button id="enter-print">Enter Print</button>
         <button id="enter-idle">Enter Idle</button>
@@ -16,7 +14,7 @@
     <h2>Printbed</h2>
     <print-bed-view-state-control></print-bed-view-state-control>
     <div>
-        
+
         <button id="slice-first-track">First</button>
         <button id="slice-next-track">Next</button>
         <button id="place-photo-point">Place Photo Point</button>
@@ -35,20 +33,41 @@
 
 <dialog id="insert-special-dialog">
     <form method="dialog">
-        <p>
-            <label for="special">Model(s)</label>
-            <select id="special" name="special-model">
-                <option value="none"></option>
-                <option value="8x8square">8x8 Square</option>
-                <option value="test-nozzle-pattern">Test Nozzle Pattern</option>
-                <option value="test-nozzle-pattern2">Test Nozzle Pattern 2</option>
-                <option value="test-code">Test Code</option>
-                <option value="voltage-test">Voltage Test</option>
-                <option value="clock-test">Clock Test</option>
-            </select>
-        </p>
+        <label for="special">Model(s)</label>
+        <select id="special" name="special-model">
+            <option value="none"></option>
+            <option value="8x8square">8x8 Square</option>
+            <option value="test-nozzle-pattern">Test Nozzle Pattern</option>
+            <option value="test-nozzle-pattern2">Test Nozzle Pattern 2</option>
+            <option value="test-code">Test Code</option>
+            <option value="voltage-test">Voltage Test</option>
+            <option value="clock-test">Clock Test</option>
+        </select>
         <div>
             <button type="submit">Confirm</button>
+        </div>
+    </form>
+</dialog>
+<dialog id="start-print-dialog">
+    <form method="dialog">
+        <label for="nozzle-test-every-layer">Nozzletest after</label>
+        <div class="input-group">
+            <input id="nozzle-test-after-layers" name="nozzle-test-after-layers" value="10" type="number" step="1"
+                min="0" required>
+            <span> layers</span>
+        </div>
+        <label for="start-at-layer">Start at layer</label>
+        <input id="start-at-layer" name="start-at-layer" value="0" type="number" step="1" min="0" required>
+        <div>
+            <input id="home-on-start" name="home-on-start" type="checkbox" checked>
+            <label for="home-on-start">Home</label>
+        </div>
+        <div>
+            <input id="nozzle-test-first-layer" name="nozzle-test-first-layer" type="checkbox">
+            <label for="nozzle-test-first-layer">Nozzletest before first layer</label>
+        </div>
+        <div>
+            <button type="submit">Start</button>
         </div>
     </form>
 </dialog>

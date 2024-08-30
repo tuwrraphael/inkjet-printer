@@ -36,6 +36,8 @@ import { getNozzleTestTracks } from "../../slicer/getNozzleTestTracks";
 import { getCodeModel } from "../../slicer/getCodeModel";
 import { getSquareModel } from "../../slicer/getSquareModel";
 import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
+import { createPrintProgram } from "../../print-tasks/createPrintProgram";
+import { SlicerClient } from "../../slicer/SlicerClient";
 
 export class PrintComponent extends HTMLElement {
 
@@ -46,16 +48,18 @@ export class PrintComponent extends HTMLElement {
     private movementStage: MovementStage;
     private printBedSimulation: PrintBedSimulation;
     private startPrintBtn: HTMLButtonElement;
-    private cancelPrintBtn: HTMLButtonElement;
-    private pausePrintBtn: HTMLButtonElement;
     private taskRunnerSynchronization: TaskRunnerSynchronization;
     private insertSpecialDialog: HTMLDialogElement;
+    private startPrintDialog: HTMLDialogElement;
+    private slicerClient: SlicerClient;
+
     constructor() {
         super();
         this.store = Store.getInstance();
         this.printerUsb = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
         this.taskRunnerSynchronization = TaskRunnerSynchronization.getInstance();
+        this.slicerClient = SlicerClient.getInstance();
     }
 
     connectedCallback() {
@@ -66,9 +70,8 @@ export class PrintComponent extends HTMLElement {
             this.innerHTML = template;
             this.printBedSimulation = this.querySelector(PrintBedSimulationTagName);
             this.startPrintBtn = this.querySelector("#start-print");
-            this.cancelPrintBtn = this.querySelector("#cancel-print");
-            this.pausePrintBtn = this.querySelector("#pause-print");
             this.insertSpecialDialog = this.querySelector("#insert-special-dialog");
+            this.startPrintDialog = this.querySelector("#start-print-dialog");
         }
         abortableEventListener(this.printBedSimulation, "drop", async (ev) => {
             ev.preventDefault();
@@ -87,22 +90,7 @@ export class PrintComponent extends HTMLElement {
         }, this.abortController.signal);
         abortableEventListener(this.startPrintBtn, "click", async (ev) => {
             ev.preventDefault();
-            if (this.store.state.programRunnerState.state === PrinterProgramState.Paused) {
-                this.taskRunnerSynchronization.continueAll();
-            } else {
-                const PrintEncoderProgram: PrinterProgram = {
-                    tasks: this.generateEncoderProgramSteps()
-                };
-                this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(PrintEncoderProgram));
-            }
-        }, this.abortController.signal);
-        abortableEventListener(this.cancelPrintBtn, "click", async (ev) => {
-            ev.preventDefault();
-            this.taskRunnerSynchronization.cancelAll();
-        }, this.abortController.signal);
-        abortableEventListener(this.pausePrintBtn, "click", async (ev) => {
-            ev.preventDefault();
-            this.taskRunnerSynchronization.pauseAll();
+            this.startPrintDialog.showModal();
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#enter-print"), "click", async (ev) => {
             ev.preventDefault();
@@ -517,124 +505,41 @@ export class PrintComponent extends HTMLElement {
                     break;
             }
         }, this.abortController.signal);
+        abortableEventListener(this.startPrintDialog.querySelector("form"), "submit", async (ev) => {
+            if (this.startPrintDialog.querySelector("form").checkValidity()) {
+                let formData = new FormData(this.startPrintDialog.querySelector("form"));
+                let startAtLayer = parseInt(formData.get("start-at-layer") as string);
+                let home = formData.get("home-on-start") == "on";
+                let nozzleTestBeforeFirstLayer = formData.get("nozzle-test-first-layer") == "on";
+                let nozzleTestEveryNLayer = parseInt(formData.get("nozzle-test-after-layers") as string);
+                let printPlan = await this.slicerClient.slicer.getPrintPlan();
+                let program = createPrintProgram(
+                    this.store.state.printState.printingParams,
+                    this.store.state.printState.printerParams,
+                    this.store.state.printState.customTracks,
+                    printPlan,
+                    {
+                        startAtLayer: startAtLayer,
+                        home: home,
+                        nozzleTestBeforeFirstLayer: nozzleTestBeforeFirstLayer,
+                        nozzleTestEveryNLayer: nozzleTestEveryNLayer
+                    }
+                )
+                if (this.store.state.programRunnerState.state !== PrinterProgramState.Paused &&
+                    this.store.state.programRunnerState.state !== PrinterProgramState.Running) {
+                    this.taskRunnerSynchronization.startTaskRunner(new PrintTaskRunner(program));
+                }
+            } else {
+                return;
+            }
+        }, this.abortController.signal);
 
         this.update(this.store.state, Object.keys(this.store.state || {}) as StateChanges);
     }
 
-    private generateEncoderProgramSteps() {
-        let height = this.store.state.printState.printingParams.firstLayerHeight;
-        let steps: PrinterTasks[] = [
-            {
-                type: PrinterTaskType.Home,
-            },
-            {
-                type: PrinterTaskType.HeatBed,
-                temperature: this.store.state.printState.printingParams.bedTemperature,
-                primingPosition: {
-                    x: 200,
-                    y: 0,
-                    z: 40
-                }
-            },
-            {
-                type: PrinterTaskType.Move,
-                movement: {
-                    x: 0, y: 0
-                },
-                feedRate: 10000
-            },
-            {
-                type: PrinterTaskType.Wait,
-                durationMs: 1000
-            },
-            {
-                type: PrinterTaskType.ZeroEncoder
-            }
-        ];
-        let maxLayersModels = this.store.state.models.map(m => m.layers.length).reduce((a, b) => Math.max(a, b), 0);
-        console.log(maxLayersModels);
-        let maxLayersCustomTracks = this.store.state.printState.customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
-        let maxLayers = Math.max(maxLayersModels, maxLayersCustomTracks);
-        let printPlan = this.store.state.printState.slicingState.printPlan;
-        for (let i = 0; i < maxLayers; i++) {
-            steps.push({
-                type: PrinterTaskType.Move,
-                movement: {
-                    x: 0,
-                    y: 0,
-                    z: height
-                },
-                feedRate: 10000
-            });
-            steps.push({
-                type: PrinterTaskType.SetTargetPressure,
-                targetPressure: -2
-            });
-            // steps.push({
-            //     type: PrinterTaskType.PrimeNozzle
-            // });
-            let layerPlan = printPlan?.layers[i];
-            if (null != layerPlan) {
-                steps.push({
-                    type: PrinterTaskType.PrintLayer,
-                    layerNr: i,
-                    layerPlan: layerPlan,
-                    z: height,
-                    dryingPosition: {
-                        x: 200,
-                        y: 0,
-                        z: 40
-                    }
-                });
-            }
-            let layerCustomTracks = this.store.state.printState.customTracks.filter(t => t.layer == i);
-            if (layerCustomTracks.length > 0) {
-                steps.push({
-                    type: PrinterTaskType.PrintCustomTracks,
-                    customTracks: layerCustomTracks,
-                    z: height,
-                    printingParams: this.store.state.printState.printingParams
-                });
-            }
-            if ((i + 1) % 3 == 0) {
-                steps.push(...getNozzleTestTasks(i));
-            }
-            // steps.push({
-            //     type: PrinterTaskType.Move,
-            //     movement: {
-            //         z: 25
-            //     },
-            //     feedRate: 500
-            // });
-        }
-        if (printPlan && printPlan.layers.length > 0) {
-            let x = printPlan.layers[0].modelGroupPlans[0].tracks[0].moveAxisPosition;
-            let y = printPlan.layers[0].modelGroupPlans[0].tracks[0].startPrintAxisPosition;
-            let pos = printBedPositionToMicroscope({ x: x, y: y }, height, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
-            if (pos.feasible) {
-                steps.push({
-                    type: PrinterTaskType.Move,
-                    movement: {
-                        x: pos.microscopePos.x,
-                        y: pos.microscopePos.y,
-                        z: pos.microscopePos.z
-                    },
-                    feedRate: 10000
-                });
-            }
-        }
-        return steps;
-
-    }
-
-
     update(s: State, c: StateChanges): void {
         if (c.includes("currentProgram")) {
-            // this.currentProgram.textContent = JSON.stringify(s.currentProgram, null, 2);
-            this.startPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Running;
-            this.cancelPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Done || s.programRunnerState.state == PrinterProgramState.Canceled;
-            this.pausePrintBtn.disabled = s.programRunnerState.state != PrinterProgramState.Running;
-            this.startPrintBtn.innerText = s.programRunnerState.state == PrinterProgramState.Running ? "Pause" : "Start Print";
+            this.startPrintBtn.disabled = s.programRunnerState.state == PrinterProgramState.Paused || s.programRunnerState.state == PrinterProgramState.Running;
         }
     }
 

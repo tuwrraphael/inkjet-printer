@@ -14,7 +14,8 @@ export const enum PrinterTaskType {
     PrintLayer,
     PrintCustomTracks,
     HeatBed,
-    CheckNozzles
+    CheckNozzles,
+    Pause
 }
 
 export interface PrinterTask {
@@ -73,7 +74,7 @@ export interface PrintLayerTask extends PrinterTask {
 export interface CheckNozzlesTask extends PrinterTask {
     readonly type: PrinterTaskType.CheckNozzles;
     startNozzle: number;
-    layerNr : number;
+    layerNr: number;
     nozzleTestSurfaceHeight: number;
     safeTravelHeight: number;
 }
@@ -95,6 +96,11 @@ export interface PrinterTaskWait extends PrinterTask {
     durationMs: number;
 }
 
+export interface PrinterTaskPause extends PrinterTask {
+    readonly type: PrinterTaskType.Pause;
+    message: string;
+}
+
 export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrimeNozzle
     | PrinterTaskSetTargetPressure
@@ -108,6 +114,7 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrintCustomTracksTask
     | PrinterTaskHeadBed
     | CheckNozzlesTask
+    | PrinterTaskPause
     ;
 
 
@@ -127,4 +134,5 @@ export interface PrinterProgram {
 export interface ProgramRunnerState {
     state: PrinterProgramState;
     currentTaskIndex: number;
+    message: string;
 }

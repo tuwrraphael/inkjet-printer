@@ -51,6 +51,10 @@ form:not(.inline) {
         display: block;
     }
 
+    input[type=checkbox] + label {
+        display: inline;
+    }
+
     .input-group {
         display: flex;
         align-items: center;
