@@ -38,6 +38,8 @@ import { getSquareModel } from "../../slicer/getSquareModel";
 import { getNozzleTestTasks } from "../../print-tasks/NozzleTestTasks";
 import { createPrintProgram } from "../../print-tasks/createPrintProgram";
 import { SlicerClient } from "../../slicer/SlicerClient";
+import { getVoltageTestModels } from "../../slicer/getVoltageTestModel";
+import { getClockTestModels } from "../../slicer/getClockTestModels";
 
 export class PrintComponent extends HTMLElement {
 
@@ -149,182 +151,6 @@ export class PrintComponent extends HTMLElement {
         abortableEventListener(this.querySelector("#nozzle-priming"), "click", async (ev) => {
             ev.preventDefault();
             await this.printerUsb.sendNozzlePrimingRequestAndWait();
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#generate-voltage-test"), "click", async (ev) => {
-            ev.preventDefault();
-            let from = 35.6;
-            let to = 25;
-            let step = 0.5;
-            let position = {
-                x: 2,
-                y: 12
-            };
-            let nr = 0;
-            for (let v = from; v > to; v -= step) {
-                let voltage = Math.round(v * 100) / 100;
-                let swathe = getPrintheadSwathe(this.store.state.printState.printerParams);
-                let modelPosition = {
-                    x: (nr % 3) * 10 + position.x,
-                    y: Math.floor(nr / 3) * 5 + position.y
-                };
-                let purgePosition = {
-                    x: 0,
-                    y: 0
-                };
-                let id = `square-${nr}`;
-                let group = `${voltage}V`;
-                let model: NewModel = {
-                    layers: [{
-                        polygons: [{
-                            type: PolygonType.Contour,
-                            "points": [
-                                [
-                                    3,
-                                    3
-                                ],
-                                [
-                                    0,
-                                    3
-                                ],
-                                [
-                                    0,
-                                    0
-                                ],
-                                [
-                                    3,
-                                    0
-                                ]
-                            ]
-                        }]
-                    }],
-                    fileName: `square-${nr}.svg`,
-                    id: id
-                };
-                let purgeModel: NewModel = {
-                    layers: [{
-                        polygons: [{
-                            type: PolygonType.Contour,
-                            "points": [
-                                [
-                                    2 * swathe.x - 1,
-                                    10
-                                ],
-                                [
-                                    0,
-                                    10
-                                ],
-                                [
-                                    0,
-                                    0
-                                ],
-                                [
-                                    2 * swathe.x - 1,
-                                    0
-                                ]
-                            ]
-                        }]
-                    }],
-                    fileName: `purge-${nr}.svg`,
-                    id: `purge-${nr}V`
-                };
-                let photoPoint = {
-                    x: modelPosition.x + 1.5,
-                    y: modelPosition.y + 1.5
-                };
-                this.store.postAction(new ModelAdded(model));
-                this.store.postAction(new ModelAdded(purgeModel));
-                this.store.postAction(new ModelParamsChanged(id, {
-                    modelGroupId: group,
-                    position: [modelPosition.x, modelPosition.y]
-                }));
-                this.store.postAction(new ModelParamsChanged(purgeModel.id, {
-                    modelGroupId: group,
-                    position: [purgePosition.x, purgePosition.y]
-                }));
-                this.store.postAction(new ModelGroupParamsChanged(group, {
-                    waveform: {
-                        voltage: voltage,
-                        clockFrequency: 1000
-                    },
-                    photoPoints: [photoPoint]
-                }));
-                nr++;
-            }
-        }, this.abortController.signal);
-        abortableEventListener(this.querySelector("#generate-clock-test"), "click", async (ev) => {
-            ev.preventDefault();
-            let from = 1500;
-            let to = 500;
-            let step = 50;
-            let position = {
-                x: 2,
-                y: 12
-            };
-            let nr = 0;
-            for (let v = from; v > to; v -= step) {
-                let frequency = v;
-                let swathe = getPrintheadSwathe(this.store.state.printState.printerParams);
-                let modelPosition = {
-                    x: position.x,
-                    y: position.y
-                };
-                let purgePosition = {
-                    x: 0,
-                    y: 0
-                };
-                let id = `square-${nr}`;
-                let group = `${frequency}kHz`;
-                let model: NewModel = {
-                    layers: [{
-                        polygons: [{
-                            type: PolygonType.Contour,
-                            "points": [
-                                [
-                                    swathe.x,
-                                    swathe.x
-                                ],
-                                [
-                                    0,
-                                    swathe.x
-                                ],
-                                [
-                                    0,
-                                    0
-                                ],
-                                [
-                                    swathe.x,
-                                    0
-                                ]
-                            ]
-                        }]
-                    }],
-                    fileName: `square-${nr}.svg`,
-                    id: id
-                };
-                let photoPoint = {
-                    x: modelPosition.x + 1.5,
-                    y: modelPosition.y + 1.5
-                };
-                this.store.postAction(new ModelAdded(model));
-                // this.store.postAction(new ModelAdded(purgeModel));
-                this.store.postAction(new ModelParamsChanged(id, {
-                    modelGroupId: group,
-                    position: [modelPosition.x, modelPosition.y]
-                }));
-                // this.store.postAction(new ModelParamsChanged(purgeModel.id, {
-                //     modelGroupId: group,
-                //     position: [purgePosition.x, purgePosition.y]
-                // }));
-                this.store.postAction(new ModelGroupParamsChanged(group, {
-                    waveform: {
-                        voltage: 35.6,
-                        clockFrequency: v
-                    },
-                    photoPoints: [photoPoint]
-                }));
-                nr++;
-            }
-
         }, this.abortController.signal);
         abortableEventListener(this.querySelector("#test-nozzle-pattern"), "click", async (ev) => {
             ev.preventDefault();
@@ -500,6 +326,26 @@ export class PrintComponent extends HTMLElement {
                 case "8x8square":
                     let square = getSquareModel(8, 10);
                     this.store.postAction(new ModelAdded(square));
+                    break;
+                case "voltage-test":
+                    let r = getVoltageTestModels(this.store.state.printState.printerParams);
+                    for (let model of r.models) {
+                        this.store.postAction(new ModelAdded(model));
+                        this.store.postAction(new ModelParamsChanged(model.id, r.modelParams[model.id]));
+                    }
+                    for (let group in r.modelGroupParams) {
+                        this.store.postAction(new ModelGroupParamsChanged(group, r.modelGroupParams[group]));
+                    }
+                    break;
+                case "clock-test":
+                    let r2 = getClockTestModels(this.store.state.printState.printerParams);
+                    for (let model of r2.models) {
+                        this.store.postAction(new ModelAdded(model));
+                        this.store.postAction(new ModelParamsChanged(model.id, r2.modelParams[model.id]));
+                    }
+                    for (let group in r2.modelGroupParams) {
+                        this.store.postAction(new ModelGroupParamsChanged(group, r2.modelGroupParams[group]));
+                    }
                     break;
                 default:
                     break;
