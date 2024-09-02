@@ -1,0 +1,19 @@
+<select id="camera-view__select">
+    <option value="">Select Camera</option>
+    <option value="dropwatcher">Dropwatcher</option>
+    <option value="microscope">Microscope</option>
+</select>
+<div class="camera-view__video-container">
+    <video autoplay playsinline></video>
+    <canvas></canvas>
+</div>
+<div>
+    <span style="display: none;" id="videoclickmessage">Click on the video to focus</span>
+</div>
+
+<input type="checkbox" id="show-crosshair" name="show-crosshair">
+<label for="show-crosshair">Show Crosshair</label>
+<div>
+    <button id="autofocus">Autofocus</button>
+    <button id="measure">Measure</button>
+</div>

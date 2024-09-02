@@ -8,7 +8,8 @@ export class WebSerialWrapper<T> extends EventTarget {
         super();
     }
 
-    async connectPort(port: SerialPort) {
+    private async connectPort(port: SerialPort) {
+
         await port.open({ baudRate: 250000 });
         this.reader = this.readPipeline(port.readable).getReader();
         this.writer = port.writable.getWriter();
@@ -18,7 +19,7 @@ export class WebSerialWrapper<T> extends EventTarget {
         console.log("Connected to serial port");
     }
 
-    async disconnect() {
+    private async disconnect() {
         await this.reader.cancel();
         await this.writer.close();
         await this.port.close();
@@ -62,7 +63,7 @@ export class WebSerialWrapper<T> extends EventTarget {
         }
     }
 
-    async findPort() {
+    private async findPort() {
         const ports = await navigator.serial.getPorts();
         if (ports.length == 1) {
             return ports[0];
@@ -112,6 +113,11 @@ export class WebSerialWrapper<T> extends EventTarget {
             console.log("Port already connected");
         } else {
             port = await navigator.serial.requestPort();
+        }
+        try {
+            await this.disconnect();
+        } catch (e) {
+            console.error("Error disconnecting", e);
         }
         await this.connectPort(port);
     }

@@ -9,6 +9,9 @@ import { OpenFile } from "../../state/actions/OpenFile";
 import { SaveToFile } from "../../state/actions/SaveToFile";
 import { SaveToCurrentFile } from "../../state/actions/SaveToCurrentFile";
 import { OutputFolderChanged } from "../../state/actions/OutputFolderChanged";
+import "../CameraView/CameraView";
+import { ToggleCameraView } from "../../state/actions/ToggleCameraView";
+import { CameraViewTagName } from "../CameraView/CameraView";
 
 export class AppComponent extends HTMLElement {
 
@@ -18,6 +21,9 @@ export class AppComponent extends HTMLElement {
     router: AppRouter;
     private saveBtn: HTMLButtonElement;
     private fileStatus: HTMLSpanElement;
+    private cameraViewContainer: HTMLDivElement;
+    private cameraViewBtn: HTMLButtonElement;
+    private cameraViewElement: HTMLElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -37,6 +43,8 @@ export class AppComponent extends HTMLElement {
             });
             this.saveBtn = this.querySelector("#save");
             this.fileStatus = this.querySelector("#file-status");
+            this.cameraViewBtn = this.querySelector("#toggle-camera-view");
+            this.cameraViewContainer = this.querySelector("#camera-view-container");
         }
         this.update(this.store.state, <StateChanges>Object.keys(this.store.state || {}));
         this.router = AppRouter.getInstance();
@@ -97,7 +105,10 @@ export class AppComponent extends HTMLElement {
                 console.error(e);
             }
         }, this.abortController.signal);
-
+        abortableEventListener(this.cameraViewBtn, "click", async (ev) => {
+            ev.preventDefault();
+            this.store.postAction(new ToggleCameraView());
+        }, this.abortController.signal);
     }
 
 
@@ -153,6 +164,17 @@ export class AppComponent extends HTMLElement {
                     e.removeAttribute("aria-current");
                 }
             });
+        }
+        if (s && c.includes("cameraView")) {
+            if (s.cameraView.visible && this.cameraViewElement == null) {
+                this.cameraViewElement = document.createElement(CameraViewTagName);
+                this.cameraViewContainer.appendChild(this.cameraViewElement);
+                this.cameraViewContainer.style.display = "";
+            } else if (!s.cameraView.visible && this.cameraViewElement != null) {
+                this.cameraViewElement.remove();
+                this.cameraViewElement = null;
+                this.cameraViewContainer.style.display = "none";
+            }
         }
     }
 

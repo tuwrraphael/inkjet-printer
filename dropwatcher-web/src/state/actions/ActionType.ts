@@ -33,5 +33,7 @@ export const enum ActionType {
     ImageSelected,
     AddNozzleTestResult,
     RouteChanged,
-    NozzleBlockStatusChanged
+    NozzleBlockStatusChanged,
+    ToggleCameraView,
+    ChangeCameraViewParams
 }

@@ -103,12 +103,12 @@ export class DropwatcherComponent extends HTMLElement {
                 }
             }, this.abortController.signal);
             this.nextVideoClickMessage = this.querySelector("#videoclickmessage");
-            abortableEventListener(this.querySelector("#autofocus"!), "click", (e) => {
+            abortableEventListener(this.querySelector("#autofocus"), "click", (e) => {
                 e.preventDefault();
                 this.nextVideoClick = "autofocus";
                 this.setNextVideoClickMessage();
             }, this.abortController.signal);
-            abortableEventListener(this.querySelector("#measure"!), "click", (e) => {
+            abortableEventListener(this.querySelector("#measure"), "click", (e) => {
                 e.preventDefault();
                 this.nextVideoClick = "measure1";
                 this.setNextVideoClickMessage();

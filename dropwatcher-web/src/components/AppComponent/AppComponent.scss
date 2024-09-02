@@ -2,11 +2,11 @@
 
 .app-container {
     display: grid;
-    grid-template-columns: auto min-content;
+    grid-template-columns: auto min-content min-content;
     grid-template-rows: min-content auto;
     grid-template-areas:
-        "header header"
-        "content status";
+        "header header header"
+        "content camera status";
     height: 100vh;
 }
 
@@ -48,8 +48,23 @@
     align-items: center;
 }
 
+%sidebar {
+    box-shadow: -0.2em 0px 0.2em 0px #ddd;
+    padding: 0.5em;
+    margin-left: 0.5em;
+}
+
 .app-status {
     grid-area: status;
+    @extend %sidebar;
+}
+
+.camera-view {
+    grid-area: camera;
+
+    width: 45em;
+
+    @extend %sidebar;
 }
 
 

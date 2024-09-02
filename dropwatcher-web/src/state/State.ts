@@ -186,6 +186,15 @@ export interface InspectImage {
         timestamp: Date;
     }
 }
+export interface CameraViewState {
+    visible: boolean;
+    selectedCamera: CameraType | null;
+    showCrosshair: boolean;
+    measurements: {
+        start: Point;
+        end: Point;
+    }[];
+}
 
 export interface State {
     printerSystemState: {
@@ -277,6 +286,7 @@ export interface State {
         }[]
     },
     currentRoute: string;
+    cameraView: CameraViewState;
 }
 
 export type StateChanges = (keyof State)[];

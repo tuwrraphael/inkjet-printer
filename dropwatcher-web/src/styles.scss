@@ -75,6 +75,11 @@ button {
     border-radius: 0.3em;
     cursor: pointer;
     margin: 0.5em 0;
+    display: inline-flex;
+    align-items: center;
+    font-size: 1em;
+    height: 1.8em;
+    line-height: 1em;
     &:hover {
         background-color: lighten( theme.$theme-color, 20%);
     }

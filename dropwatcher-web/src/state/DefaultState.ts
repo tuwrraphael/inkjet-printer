@@ -183,4 +183,10 @@ export const DefaultState: State =
         testResults: []
     },
     currentRoute: null,
+    cameraView: {
+        visible: false,
+        showCrosshair: false,
+        selectedCamera: null,
+        measurements: []
+    }
 };

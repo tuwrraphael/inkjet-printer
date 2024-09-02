@@ -779,7 +779,9 @@ export class PrintBedSimulation extends HTMLElement {
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;
             }
-            if (this.printbedClickAction == PrintBedClickAction.PlacePhotoPoint) {
+            if (this.printbedClickAction == PrintBedClickAction.PlacePhotoPoint || 
+                this.printbedClickAction == PrintBedClickAction.MoveCamera
+            ) {
                 this.drawFeasiblePhotoArea();
             }
             if (null != this.stagePos) {

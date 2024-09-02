@@ -48,6 +48,8 @@ import { CameraType } from "../CameraType";
 import { RouteChanged } from "./actions/RouteChanged";
 import { NozzleBlockStatusChanged } from "./actions/NozzleBlockStatusChanged";
 import { timeStamp } from "console";
+import { ToggleCameraView } from "./actions/ToggleCameraView";
+import { ChangeCameraViewParams } from "./actions/ChangeCameraViewParams";
 
 type Actions = PrinterUSBConnectionStateChanged
     | PrinterSystemStateResponseReceived
@@ -80,6 +82,8 @@ type Actions = PrinterUSBConnectionStateChanged
     | ImageSelected
     | RouteChanged
     | NozzleBlockStatusChanged
+    | ToggleCameraView
+    | ChangeCameraViewParams
     ;
 let state: State;
 let initialized = false;
@@ -639,6 +643,22 @@ async function handleMessage(msg: Actions) {
                 }
             });
             await updateSlicerParams();
+            break;
+        case ActionType.ToggleCameraView:
+            updateState(oldState => ({
+                cameraView: {
+                    ...oldState.cameraView,
+                    visible: !oldState.cameraView.visible
+                }
+            }));
+            break;
+        case ActionType.ChangeCameraViewParams:
+            updateState(oldState => ({
+                cameraView: {
+                    ...oldState.cameraView,
+                    ...msg.state
+                }
+            }));
             break;
     }
 }
