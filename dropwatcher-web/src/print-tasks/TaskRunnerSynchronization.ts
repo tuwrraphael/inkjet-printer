@@ -27,10 +27,11 @@ export class TaskRunnerSynchronization {
         }
     }
 
-    continueAll() {
+    continueNext() {
         for (let taskRunner of this.taskRunners) {
-            if (taskRunner.isPaused()) {
+            if (taskRunner.isPaused() || taskRunner.isFailed()) {
                 taskRunner.run().catch(console.error);
+                return;
             }
         }
     }

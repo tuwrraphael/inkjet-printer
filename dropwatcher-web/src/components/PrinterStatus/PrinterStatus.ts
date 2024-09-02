@@ -50,15 +50,15 @@ export class PrinterStatus extends HTMLElement {
     private jobProgress: HTMLTableCellElement;
     private jobMessage: HTMLTableCellElement;
     private pausePrint: HTMLButtonElement;
-    private  resumePrint: HTMLButtonElement;
-    private  cancelPrint: HTMLButtonElement;
+    private resumePrint: HTMLButtonElement;
+    private cancelPrint: HTMLButtonElement;
     private taskRunnerSynchronization: TaskRunnerSynchronization;
     constructor() {
         super();
         this.store = Store.getInstance();
         this.printerUSB = PrinterUSB.getInstance();
         this.movementStage = MovementStage.getInstance();
-        this.taskRunnerSynchronization  = TaskRunnerSynchronization.getInstance();
+        this.taskRunnerSynchronization = TaskRunnerSynchronization.getInstance();
     }
 
     connectedCallback() {
@@ -116,7 +116,7 @@ export class PrinterStatus extends HTMLElement {
             }, this.abortController.signal);
             abortableEventListener(this.resumePrint, "click", ev => {
                 ev.preventDefault();
-                this.taskRunnerSynchronization.continueAll();
+                this.taskRunnerSynchronization.continueNext();
             }, this.abortController.signal);
             abortableEventListener(this.cancelPrint, "click", ev => {
                 ev.preventDefault();
@@ -271,7 +271,7 @@ export class PrinterStatus extends HTMLElement {
             this.jobState.innerText = this.formatJobState(s.programRunnerState.state);
             this.jobProgress.innerText = `${s.programRunnerState.currentTaskIndex || 0} / ${s.currentProgram?.tasks.length || 0}`;
             this.pausePrint.disabled = s.programRunnerState.state != PrinterProgramState.Running;
-            this.resumePrint.disabled = s.programRunnerState.state != PrinterProgramState.Paused;
+            this.resumePrint.disabled = s.programRunnerState.state != PrinterProgramState.Paused && s.programRunnerState.state != PrinterProgramState.Failed;
             this.cancelPrint.disabled = s.programRunnerState.state != PrinterProgramState.Running && s.programRunnerState.state != PrinterProgramState.Paused;
             this.jobMessage.innerText = s.programRunnerState.message || "-";
         }

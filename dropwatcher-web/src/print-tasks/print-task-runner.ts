@@ -71,43 +71,50 @@ export class PrintTaskRunner {
         return this.programRunnerState.state === PrinterProgramState.Paused;
     }
 
+    isFailed() {
+        return this.programRunnerState.state === PrinterProgramState.Failed;
+    }
+
     async run() {
         this.pauseRequested = false;
-        try {
-            using movementExecutor = this.movementStage.getMovementExecutor("print-task-runner");
-            this.programRunnerState.state = PrinterProgramState.Running;
-            this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-            while (this.canContinue() && !this.isDone()) {
-                this.programRunnerState.message = null;
-                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-                let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
-                await this.runTask(nextTask, movementExecutor, this.autofocusCache);
-                this.programRunnerState.currentTaskIndex++;
-                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-                if (this.pauseRequested) {
-                    this.programRunnerState.state = PrinterProgramState.Paused;
-                    this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-                    return;
-                }
-            }
-            this.programRunnerState.message = null;
-            if (!this.isDone()) {
-                this.programRunnerState.state = PrinterProgramState.Canceled;
-            } else {
-                this.programRunnerState.state = PrinterProgramState.Done;
-            }
-            this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
-        } catch (e) {
-            console.error(e);
-            if (this.canceled) {
-                this.programRunnerState.state = PrinterProgramState.Canceled;
-            } else {
-                this.programRunnerState.message = `Failed: ${e.message}`;
-                this.programRunnerState.state = PrinterProgramState.Failed;
 
-            }
+        using movementExecutor = this.movementStage.getMovementExecutor("print-task-runner");
+        this.programRunnerState.state = PrinterProgramState.Running;
+        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+        while (this.canContinue() && !this.isDone()) {
+            this.programRunnerState.message = null;
             this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+            let nextTask = this.program.tasks[this.programRunnerState.currentTaskIndex];
+            try {
+                await this.runTask(nextTask, movementExecutor, this.autofocusCache);
+            } catch (e) {
+                console.error(e);
+                if (this.canceled) {
+                    this.programRunnerState.state = PrinterProgramState.Canceled;
+                } else {
+                    this.programRunnerState.message = `Failed: ${e.message}`;
+                    this.programRunnerState.state = PrinterProgramState.Failed;
+
+                }
+                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+                return;
+            }
+            this.programRunnerState.currentTaskIndex++;
+            this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+            if (this.pauseRequested) {
+                this.programRunnerState.state = PrinterProgramState.Paused;
+                this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+                return;
+            }
         }
+        this.programRunnerState.message = null;
+        if (!this.isDone()) {
+            this.programRunnerState.state = PrinterProgramState.Canceled;
+        } else {
+            this.programRunnerState.state = PrinterProgramState.Done;
+        }
+        this.store.postAction(new ProgramRunnerStateChanged(this.programRunnerState, this.program));
+
     }
 
     private get cancellationToken(): PrinterTaskCancellationToken {
