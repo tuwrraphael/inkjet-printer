@@ -17,6 +17,10 @@ export class GCodeRunner implements Disposable {
         await this.movementStage._sendGcodeAndWaitForMovementFinished(`G91\nG0 X${x} Y${y} Z${z} F${feedrate}\nG90`);
     }
 
+    async setPosition(x: number, y: number) {
+        await this.movementStage._sendGcode(`G92 X${x} Y${y}\nM400\nM114`);
+    }
+
     async moveAbsoluteAndWait(x: number, y: number, z: number, feedrate: number) {
         await this.movementStage._sendGcodeAndWaitForMovementFinished(`G90\nG0 X${x} Y${y} Z${z} F${feedrate}`);
     }
