@@ -593,12 +593,12 @@ static void cmd_test_fire(const struct shell *sh, size_t argc, char **argv)
 	ARG_UNUSED(argc);
 	ARG_UNUSED(argv);
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(printer_fire));
-	if (gpio_pin_get_dt(&comm_enable) != 0)
-	{
-		shell_print(sh, "COMM_ENABLE must be low");
-		return;
-	}
-	printer_fire_request_fire(dev);
+	// if (gpio_pin_get_dt(&comm_enable) != 0)
+	// {
+	// 	shell_print(sh, "COMM_ENABLE must be low");
+	// 	return;
+	// }
+	printer_fire_request_fire(dev, 1000);
 }
 
 static void cmd_enable_printhead_clock(const struct shell *sh, size_t argc, char **argv)
@@ -805,7 +805,7 @@ int main(void)
 		LOG_ERR("Print control initialization failed with error %d", ret);
 		return ret;
 	}
-	
+
 	ret = printer_system_smf();
 	if (ret != 0)
 	{

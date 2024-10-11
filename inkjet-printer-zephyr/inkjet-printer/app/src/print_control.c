@@ -136,7 +136,7 @@ int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init
     {
         printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
         printer_fire_set_trigger_reset(printer_fire, false);
-        printer_fire_request_fire(printer_fire);
+        printer_fire_request_fire(printer_fire, 1);
         encoder_mode = ENCODER_MODE_ON;
     }
     return 0;
@@ -152,9 +152,9 @@ int print_control_start_manual_fire_mode()
     printer_fire_set_trigger_callback(printer_fire, NULL);
     return 0;
 }
-int print_control_request_fire()
+int print_control_request_fire(uint32_t count)
 {
-    int ret = printer_fire_request_fire(printer_fire);
+    int ret = printer_fire_request_fire(printer_fire, count);
     if (ret != 0)
     {
         error_callback(ERROR_PRINTHEAD_FIRE);
@@ -247,7 +247,7 @@ static int priming_cycle(uint32_t *data, uint32_t times, k_timeout_t pause)
         {
             return -ECANCELED;
         }
-        ret = print_control_request_fire();
+        ret = print_control_request_fire(1);
         if (ret != 0)
         {
             failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);
@@ -274,7 +274,7 @@ int print_control_nozzle_priming()
             set_nozzle(i, true, data);
         }
     }
-    ret = priming_cycle(data, 100,K_USEC(235));
+    ret = priming_cycle(data, 100, K_USEC(235));
     if (ret != 0)
     {
         return ret;
@@ -335,7 +335,7 @@ void print_control_resume_encoder_mode()
     }
     printer_fire_set_trigger(printer_fire, PRINTER_FIRE_TRIGGER_ENCODER);
     printer_fire_set_trigger_reset(printer_fire, false);
-    printer_fire_request_fire(printer_fire);
+    printer_fire_request_fire(printer_fire, 1);
 }
 
 #define LOAD_LINE_STACK (512)

@@ -22,7 +22,7 @@ extern "C"
         PRINTER_FIRE_TRIGGER_ENCODER
     } printer_fire_trigger_t;
 
-    typedef int (*printer_fire_request_fire_t)(const struct device *dev);
+    typedef int (*printer_fire_request_fire_t)(const struct device *dev, uint32_t count);
     typedef int (*printer_fire_set_light_timing_t)(const struct device *dev, uint32_t delay, uint32_t duration);
     typedef int (*printer_fire_set_trigger_t)(const struct device *dev, printer_fire_trigger_t trigger);
     typedef int (*printer_fire_set_fire_issued_callback_t)(const struct device *dev, void (*callback)(void));
@@ -45,12 +45,12 @@ extern "C"
         printer_fire_set_timing_t set_timing;
     };
 
-    __syscall int printer_fire_request_fire(const struct device *dev)
+    __syscall int printer_fire_request_fire(const struct device *dev, uint32_t count)
     {
         const struct printer_fire_api *api =
             (const struct printer_fire_api *)dev->api;
 
-        return api->request_fire(dev);
+        return api->request_fire(dev, count);
     }
 
     __syscall int printer_fire_set_light_timing(const struct device *dev, uint32_t delay, uint32_t duration)

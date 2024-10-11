@@ -127,7 +127,7 @@ static int xaar128_set_pixels(const struct device *dev, uint32_t *pixels)
 	return 0;
 }
 
-static int xaar128_request_fire(const struct device *dev)
+static int xaar128_request_fire(const struct device *dev, uint32_t count)
 {
 	const struct xaar128_config *config = dev->config;
 	const struct xaar128_data *data = dev->data;
@@ -135,7 +135,7 @@ static int xaar128_request_fire(const struct device *dev)
 	{
 		return -EBUSY;
 	}
-	return printer_fire_request_fire(config->printer_fire);
+	return printer_fire_request_fire(config->printer_fire, count);
 }
 
 static int xaar128_wait_fired_load_next(const struct device *dev, k_timeout_t timeout)

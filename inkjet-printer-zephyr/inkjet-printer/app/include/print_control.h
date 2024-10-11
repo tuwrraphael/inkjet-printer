@@ -41,7 +41,7 @@ int print_control_start_encoder_mode(print_control_encoder_mode_settings_t *init
 int print_control_start_manual_fire_mode();
 void print_control_pause_encoder_mode();
 void print_control_resume_encoder_mode();
-int print_control_request_fire();
+int print_control_request_fire(uint32_t count);
 void print_control_set_encoder_position(int32_t value);
 void print_control_disable();
 void print_control_set_print_memory(uint32_t offset, uint32_t *data, uint32_t length);

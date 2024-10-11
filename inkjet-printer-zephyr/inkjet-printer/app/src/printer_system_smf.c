@@ -183,7 +183,7 @@ static void printer_system_dropwatcher_run(void *o)
     {
         if (printer_system_state_object.events & PRINTER_SYSTEM_REQUEST_FIRE)
         {
-            int ret = print_control_request_fire();
+            int ret = print_control_request_fire(1);
             if (ret != 0)
             {
                 failure_handling_set_error_state(ERROR_PRINTHEAD_FIRE);

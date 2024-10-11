@@ -11,7 +11,7 @@ extern "C"
 
     typedef int (*printer_clock_enable_t)(const struct device *dev, uint32_t period);
     typedef int (*printer_set_pixels_t)(const struct device *dev, uint32_t *pixels);
-    typedef int (*printer_request_fire_t)(const struct device *dev);
+    typedef int (*printer_request_fire_t)(const struct device *dev, uint32_t count);
     typedef int (*printer_wait_fired_load_next_t)(const struct device *dev, k_timeout_t timeout);
 
     __subsystem struct printer_driver_api
