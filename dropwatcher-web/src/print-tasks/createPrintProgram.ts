@@ -18,13 +18,15 @@ export function createPrintProgram(
         nozzleTestEveryNLayer: number
     }
 ) {
+    let pressure = -0.5;
     let height = printingParams.firstLayerHeight;
     let homeTask: PrinterTasks[] = options.home ? [{ type: PrinterTaskType.Home }] : [];
     let nozzleTestBeforeFirstLayerTask: PrinterTasks[] = options.nozzleTestBeforeFirstLayer ? getNozzleTestTasks(0) : [];
     let steps: PrinterTasks[] = [
         {
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: -2
+            targetPressure: pressure,
+            enable :true
         },
         ...(homeTask),
         {
@@ -62,6 +64,12 @@ export function createPrintProgram(
                 z: 40
             }
         },
+        // {
+        //     type: PrinterTaskType.NozzleWetting,
+        //     pressurePrinting: -0.6,
+        //     pressureWetting: 2,
+        //     wettingWaitTime: 1000
+        // },
     ];
     let maxLayersModels = printPlan.layers.length;
     let maxLayersCustomTracks = customTracks.reduce((a, b) => Math.max(a, b.layer + 1), 0);
@@ -76,9 +84,14 @@ export function createPrintProgram(
             },
             feedRate: 10000
         });
-        // steps.push({
-        //     type: PrinterTaskType.PrimeNozzle
-        // });
+        steps.push({
+            type: PrinterTaskType.PrimeNozzle
+        });
+        steps.push({
+            type: PrinterTaskType.SetTargetPressure,
+            targetPressure: pressure,
+            enable : false
+        });
         let layerPlan = printPlan?.layers[i];
         if (null != layerPlan) {
             steps.push({
@@ -102,6 +115,11 @@ export function createPrintProgram(
                 printingParams: printingParams
             });
         }
+        steps.push({
+            type: PrinterTaskType.SetTargetPressure,
+            targetPressure: pressure,
+            enable : true
+        });
         let remainingLayers = maxLayers - i;
 
         if (i % options.nozzleTestEveryNLayer === 0 && i != options.startAtLayer && remainingLayers > (options.nozzleTestEveryNLayer/2)) {

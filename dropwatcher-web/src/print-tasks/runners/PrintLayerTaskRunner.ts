@@ -67,13 +67,13 @@ export class PrintLayerTaskRunner {
 
                         let focus = null;// this.autofocusCache.get(microscopePos.microscopePos.x, microscopePos.microscopePos.y);
                         let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
-                        let cancelPriming;
+                        // let cancelPriming;
                         if (focus != null) {
                             await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, focus, 15000);
-                            cancelPriming = this.nozzlePriming();
+                            // cancelPriming = this.nozzlePriming();
                         } else {
                             await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, microscopePos.microscopePos.z, 15000);
-                            cancelPriming = this.nozzlePriming();
+                            // cancelPriming = this.nozzlePriming();
                             let res = await cameraAccess.performAutoFocus(0.5, 0.5, this.movementExecutor);
                             this.autofocusCache.set(microscopePos.microscopePos.x, microscopePos.microscopePos.y, this.store.state.movementStageState.pos.z);
                         }
@@ -90,7 +90,7 @@ export class PrintLayerTaskRunner {
                                 cancellationToken.throwIfCanceled();
                             }
                         } finally {
-                            await cancelPriming();
+                            // await cancelPriming();
                         }
                     } else {
                         console.log("Skipping camera move, out of range");
@@ -102,7 +102,7 @@ export class PrintLayerTaskRunner {
 
             let dryForMs = Math.max(0, (+dryUntil - +new Date()));
             if (dryForMs > 0) {
-                let cancelPriming = this.nozzlePriming();
+                // let cancelPriming = this.nozzlePriming();
                 try {
                     await this.movementExecutor.setFanSpeed(255);
                     await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
@@ -116,7 +116,7 @@ export class PrintLayerTaskRunner {
                     }
                     await this.movementExecutor.setFanSpeed(0);
                 } finally {
-                    await cancelPriming();
+                    // await cancelPriming();
                 }
             }
         }

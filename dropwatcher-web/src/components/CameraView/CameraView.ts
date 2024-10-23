@@ -9,6 +9,7 @@ import { abortableEventListener } from "../../utils/abortableEventListener";
 import template from "./CameraView.html";
 import "./CameraView.scss";
 import *as cv from "@techstark/opencv-js";
+import "../MovementControlPanel/MovementControlPanel";
 
 export class CameraView extends HTMLElement {
 
@@ -258,7 +259,7 @@ export class CameraView extends HTMLElement {
         await movementExecutor.home();
         const y = 28.2;
         let x = 149.45;
-        await movementExecutor.moveAbsoluteAndWait(x, y, 14.88, 1000);
+        await movementExecutor.moveAbsoluteAndWait(x, y, 16.53, 1000);
         let cameraAccess = CameraAccess.getInstance(this.store.state.cameraView.selectedCamera);
         await cameraAccess.performAutoFocus(0.5, 0.5, movementExecutor);
         await movementExecutor.disableAxes();
@@ -342,38 +343,51 @@ export class CameraView extends HTMLElement {
                     this.drawCrosshair();
                 }
             }
-            if (circles.length == 3) {
+            if (circles.length > 1) {
                 let p1 = circles[0];
                 let p2 = circles[1];
-                let p3 = circles[2];
-                this.center = { x: (p1.x + p2.x + p3.x) / 3, y: (p1.y + p2.y + p3.y) / 3 };
+                if (circles.length > 2) {
+                    let p3 = circles[2];
+                    this.center = { x: (p1.x + p2.x + p3.x) / 3, y: (p1.y + p2.y + p3.y) / 3 };
+                } else {
+                    // Estimate the missing point assuming an equilateral triangle
+                    let missingPoint = {
+                        x: p1.x + (p2.x - p1.x) / 2,
+                        y: p1.y + (p2.y - p1.y) / 2 - Math.sqrt(3) * (p2.x - p1.x) / 2
+                    };
+
+                    this.center = { x: (p1.x + p2.x + missingPoint.x) / 3, y: (p1.y + p2.y + missingPoint.y) / 3 };
+                }
                 console.log("Center", this.center);
                 ctx.beginPath();
                 ctx.arc(this.center.x, this.center.y, 5, 0, 2 * Math.PI, false);
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = 'green';
                 ctx.stroke();
+
+                // await new Promise((resolve) => setTimeout(resolve, 3000));
                 let movementX = -(this.center.x - this.canvas.width / 2) * pxToMm;
                 let movementY = (this.center.y - this.canvas.height / 2) * pxToMm;
                 console.log("Movement", movementX, movementY);
 
                 let minimumStep = 6 * 0.016;
+                let okDist = 3*0.016;
 
-                if (Math.abs(movementX) < 0.016) {
+                if (Math.abs(movementX) < okDist) {
                     movementX = 0;
                 }
-                if (Math.abs(movementY) < 0.016) {
+                if (Math.abs(movementY) < okDist) {
                     movementY = 0;
                 }
                 lastMovement = { x: movementX, y: movementY };
-                if (movementX == 0 && movementY == 0) {
+                if (movementX == 0 && movementY == 0 && circles.length == 3) {
                     console.log("Centered", i);
                     await movementExecutor.setPosition(x, y);
                     break;
                 }
                 // await movementExecutor.moveRelativeAndWait(10, 10, 0, 1000);
                 await movementExecutor.moveRelativeAndWait(minimumStep, minimumStep, 0, 1000);
-                await movementExecutor.moveRelativeAndWait(-movementX - minimumStep, -movementY - minimumStep, 0, 1000);
+                await movementExecutor.moveRelativeAndWait(-movementX*0.9 - minimumStep, -movementY*0.9 - minimumStep, 0, 1000);
             }
         }
         if (Math.abs(lastMovement.x) < 0.05 && Math.abs(lastMovement.y) < 0.05) {

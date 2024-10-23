@@ -266,42 +266,42 @@ int print_control_nozzle_priming()
         LOG_ERR("Failed to start manual fire mode.");
         return ret;
     }
-    uint32_t data[4] = {0};
-    for (uint32_t i = 0; i < 128; i++)
-    {
-        if (i % 2 == 0)
-        {
-            set_nozzle(i, true, data);
-        }
-    }
-    ret = priming_cycle(data, 100,K_USEC(235));
+    uint32_t data[4] = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
+    // for (uint32_t i = 0; i < 128; i++)
+    // {
+    //     if (i % 2 == 0)
+    //     {
+    //         set_nozzle(i, true, data);
+    //     }
+    // }
+    ret = priming_cycle(data, 300,K_USEC(235));
     if (ret != 0)
     {
         return ret;
     }
-    memset(data, 0, sizeof(data));
-    for (uint32_t i = 0; i < 128; i++)
-    {
-        if (i % 2 == 1)
-        {
-            set_nozzle(i, true, data);
-        }
-    }
-    ret = priming_cycle(data, 100, K_USEC(235));
-    if (ret != 0)
-    {
-        return ret;
-    }
-    for (uint32_t i = 0; i < 128; i++)
-    {
-        memset(data, 0, sizeof(data));
-        set_nozzle(i, true, data);
-        ret = priming_cycle(data, 10, K_MSEC(2));
-        if (ret != 0)
-        {
-            return ret;
-        }
-    }
+    // memset(data, 0, sizeof(data));
+    // for (uint32_t i = 0; i < 128; i++)
+    // {
+    //     if (i % 2 == 1)
+    //     {
+    //         set_nozzle(i, true, data);
+    //     }
+    // }
+    // ret = priming_cycle(data, 100, K_USEC(235));
+    // if (ret != 0)
+    // {
+    //     return ret;
+    // }
+    // for (uint32_t i = 0; i < 128; i++)
+    // {
+    //     memset(data, 0, sizeof(data));
+    //     set_nozzle(i, true, data);
+    //     ret = priming_cycle(data, 10, K_MSEC(2));
+    //     if (ret != 0)
+    //     {
+    //         return ret;
+    //     }
+    // }
     nozzle_priming_active = false;
     return 0;
 }

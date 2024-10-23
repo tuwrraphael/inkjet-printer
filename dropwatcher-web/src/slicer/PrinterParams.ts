@@ -1,3 +1,4 @@
+import { PrintbedAnchor } from "./PrintbedAnchor";
 
 export interface PrinterParams {
     numNozzles: number;
@@ -23,5 +24,6 @@ export interface PrinterParams {
         x: number;
         y: number;
         z: number;
-    }
+    },
+    anchors: PrintbedAnchor[];
 }

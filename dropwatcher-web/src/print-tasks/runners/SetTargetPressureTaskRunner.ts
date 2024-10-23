@@ -21,9 +21,13 @@ export class SetTargetPressureTaskRunner {
         await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
         parameters = new PressureControlParameters();
         changeParametersRequest.parameters = parameters;
-        parameters.inkPump = inkPumpParameters;        
-        parameters.enable = true;
-        await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
+        parameters.inkPump = inkPumpParameters;
+        if (this.task.enable) {
+            parameters.enable = true;
+            await this.printerUSB.sendChangePressureControlParametersRequestAndWait(changeParametersRequest);
+        } else {
+            await this.printerUSB.sendChangePressureControlParametersRequest(changeParametersRequest);
+        }
         // parameters = new PressureControlParameters();
         // changeParametersRequest.parameters = parameters;
         // parameters.enable = false;

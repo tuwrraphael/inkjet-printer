@@ -11,7 +11,8 @@ export const HomeProgram: PrinterProgram = {
         },
         {
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: -5
+            targetPressure: -5,
+            enable: true
         }
         // new PrinterTaskSetTargetPressure(0),
         // {

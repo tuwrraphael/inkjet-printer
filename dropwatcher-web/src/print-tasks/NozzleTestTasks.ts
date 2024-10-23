@@ -2,6 +2,12 @@ import { PrinterTasks, PrinterTaskType } from "./printer-program";
 
 export function getNozzleTestTasks(layer: number): PrinterTasks[] {
     return [
+        // {
+        //     type: PrinterTaskType.NozzleWetting,
+        //     pressureWetting: 3,
+        //     pressurePrinting: -0.6,
+        //     wettingWaitTime: 3000
+        // },
         {
             type: PrinterTaskType.CheckNozzles,
             layerNr: layer,
@@ -13,6 +19,12 @@ export function getNozzleTestTasks(layer: number): PrinterTasks[] {
             type: PrinterTaskType.Pause,
             message: "Nozzletest 1/4 completed, wipe the build plate and resume",
         },
+        // {
+        //     type: PrinterTaskType.NozzleWetting,
+        //     pressureWetting: 3,
+        //     pressurePrinting: -0.6,
+        //     wettingWaitTime: 3000
+        // },
         {
             type: PrinterTaskType.CheckNozzles,
             layerNr: layer,
@@ -24,6 +36,12 @@ export function getNozzleTestTasks(layer: number): PrinterTasks[] {
             type: PrinterTaskType.Pause,
             message: "Nozzletest 2/4 completed, wipe the build plate and resume",
         },
+        // {
+        //     type: PrinterTaskType.NozzleWetting,
+        //     pressureWetting: 3,
+        //     pressurePrinting: -0.6,
+        //     wettingWaitTime: 3000
+        // },
         {
             type: PrinterTaskType.CheckNozzles,
             layerNr: layer,
@@ -35,6 +53,12 @@ export function getNozzleTestTasks(layer: number): PrinterTasks[] {
             type: PrinterTaskType.Pause,
             message: "Nozzletest 3/4 completed, wipe the build plate and resume",
         },
+        // {
+        //     type: PrinterTaskType.NozzleWetting,
+        //     pressureWetting: 3,
+        //     pressurePrinting: -0.6,
+        //     wettingWaitTime: 2000
+        // },
         {
             type: PrinterTaskType.CheckNozzles,
             layerNr: layer,

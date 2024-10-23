@@ -31,7 +31,7 @@ export class CheckNozzleTaskRunner {
         let firstPhotoPoint = tracks.photoPoints.values().next().value;
         let firstPhotoPointMicroscope = printBedPositionToMicroscope(firstPhotoPoint, this.task.nozzleTestSurfaceHeight, this.store.state.printState.printerParams.printBedToCamera, this.store.state.printState.printerParams.movementRange);
         await this.movementExecutor.moveAbsoluteAndWait(firstPhotoPointMicroscope.microscopePos.x, firstPhotoPointMicroscope.microscopePos.y, firstPhotoPointMicroscope.microscopePos.z, 10000);
-        let cancelNozzlePriming = this.nozzlePriming();
+        // let cancelNozzlePriming = this.nozzlePriming();
         let focus = null;// this.autofocusCache.get(microscopePos.microscopePos.x, microscopePos.microscopePos.y);
         try {
             for (let photoPointEntry of tracks.photoPoints.entries()) {
@@ -63,7 +63,7 @@ export class CheckNozzleTaskRunner {
             }
         }
         finally {
-            cancelNozzlePriming();
+            // cancelNozzlePriming();
         }
         await this.movementExecutor.moveAbsoluteYAndWait(0, 10000);
     }

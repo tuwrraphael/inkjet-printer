@@ -15,7 +15,8 @@ export const enum PrinterTaskType {
     PrintCustomTracks,
     HeatBed,
     CheckNozzles,
-    Pause
+    Pause,
+    NozzleWetting
 }
 
 export interface PrinterTask {
@@ -33,6 +34,7 @@ export interface PrinterTaskPrimeNozzle extends PrinterTask {
 export interface PrinterTaskSetTargetPressure extends PrinterTask {
     readonly type: PrinterTaskType.SetTargetPressure;
     targetPressure: number;
+    enable : boolean;
 }
 export interface PrinterTaskSetNozzleData extends PrinterTask {
     readonly type: PrinterTaskType.SetNozzleData;
@@ -102,6 +104,13 @@ export interface PrinterTaskPause extends PrinterTask {
     message: string;
 }
 
+export interface PrinterTaskNozzleWetting extends PrinterTask {
+    readonly type: PrinterTaskType.NozzleWetting;
+    pressureWetting: number;
+    wettingWaitTime: number;
+    pressurePrinting: number;
+}
+
 export type PrinterTasks = PrinterTaskHome
     | PrinterTaskPrimeNozzle
     | PrinterTaskSetTargetPressure
@@ -116,6 +125,7 @@ export type PrinterTasks = PrinterTaskHome
     | PrinterTaskHeadBed
     | CheckNozzlesTask
     | PrinterTaskPause
+    | PrinterTaskNozzleWetting
     ;
 
 

@@ -18,6 +18,7 @@ import { PrinterTaskCancellationToken } from "./PrinterTaskCancellationToken";
 import { GCodeRunner } from "../gcode-runner";
 import { AutofocusCache } from "./AutofocusCache";
 import { CheckNozzleTaskRunner } from "./runners/CheckNozzleTaskRunner";
+import { NozzleWettingTaskRunner } from "./runners/NozzleWettingTaskRunner";
 
 export class PrintTaskRunner {
     private printerUsb: PrinterUSB;
@@ -174,6 +175,10 @@ export class PrintTaskRunner {
             case PrinterTaskType.Pause:
                 this.programRunnerState.message = task.message;
                 this.pause();
+                break;
+            case PrinterTaskType.NozzleWetting:
+                let nozzleWettingTaskRunner = new NozzleWettingTaskRunner(task, this.printerUsb, movementExecutor);
+                await nozzleWettingTaskRunner.run(this.cancellationToken);
                 break;
             default:
                 throw new Error("Unknown task type");

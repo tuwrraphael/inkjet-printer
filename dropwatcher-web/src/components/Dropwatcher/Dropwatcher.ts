@@ -44,11 +44,12 @@ export class DropwatcherComponent extends HTMLElement {
     private moveToForm: HTMLFormElement;
     private waveformForm: HTMLFormElement;
     measurementPoint1: { x: number; y: number; };
+    private delayInput: HTMLInputElement;
     constructor() {
         super();
         this.printerUsb = PrinterUSB.getInstance();
         this.store = Store.getInstance();
-        this.cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
+        this.cameraAccess = CameraAccess.getInstance(CameraType.Dropwatcher);
         this.movementStage = MovementStage.getInstance();
     }
 
@@ -87,8 +88,16 @@ export class DropwatcherComponent extends HTMLElement {
             this.videoElement = this.querySelector("#video-element");
             this.exposureInput = this.querySelector("#exposure-ms");
             this.exposureTimeDisplay = this.querySelector("#exposure-time");
+            this.delayInput = this.querySelector("#delay");
             abortableEventListener(this.exposureInput, "change", (e) => {
                 this.cameraAccess.setExposureTime(parseFloat(this.exposureInput.value)).catch(console.error);
+            }, this.abortController.signal);
+            abortableEventListener(this.querySelector("#delay"), "input", async (e) => {
+                let request = new ChangeDropwatcherParametersRequest();
+                request.delayNanos = parseFloat(this.delayInput.value) * 1000;
+                request.flashOnTimeNanos = 2 * 1000;
+                await this.printerUsb.sendChangeDropwatcherParametersRequest(request).catch(console.error);
+                (this.querySelector("#delay-display") as HTMLSpanElement).innerText = this.delayInput.value;
             }, this.abortController.signal);
             this.canvas = this.querySelector("#canvas");
             abortableEventListener(this.querySelector("#capture-single-frame"), "click", (e) => {
@@ -226,7 +235,7 @@ export class DropwatcherComponent extends HTMLElement {
     }
 
     private async toggleCamera() {
-        if (this.store.state.cameras[CameraType.Microscope]?.cameraOn) {
+        if (this.store.state.cameras[CameraType.Dropwatcher]?.cameraOn) {
             await this.cameraAccess.stop();
         } else {
             await this.cameraAccess.start();
@@ -298,7 +307,7 @@ export class DropwatcherComponent extends HTMLElement {
                 }
             }
 
-            let cameraState = state.cameras[CameraType.Microscope];
+            let cameraState = state.cameras[CameraType.Dropwatcher];
 
             let cameraOn = cameraState?.cameraOn;
 
@@ -442,9 +451,21 @@ export class DropwatcherComponent extends HTMLElement {
 
         // }
 
-        let callback = () => {
+        let currentDelay = 0;
+        let maxDelay = 300;
+
+        let callback = async () => {
             performance.mark("end");
-            this.printerUsb.sendFireRequest().catch(console.error);
+            let request = new ChangeDropwatcherParametersRequest();
+            if (currentDelay > maxDelay) {
+                currentDelay = 0;
+            }
+            // currentDelay += 10;
+            // request.delayNanos = currentDelay * 1000;
+            // request.flashOnTimeNanos = 2 * 1000;
+            // await this.printerUsb.sendChangeDropwatcherParametersRequest(request);
+            await this.printerUsb.sendFireRequest();
+
             var duration = performance.measure("frame", "start", "end").duration;
             performance.mark("start");
             this.doCaptureContiniuous && !this.abortController.signal.aborted && this.videoElement.requestVideoFrameCallback(callback);
@@ -474,9 +495,11 @@ export class DropwatcherComponent extends HTMLElement {
     }
 
     private async captureClockSweep() {
-        let from = 1500;
-        let to = 500;
-        let step = 50;
+        let from = 1200;
+        let to = 950;
+        let step = 10;
+
+        let delay = parseInt(this.delayInput.value) * 1000;
 
 
         this.doCaptureContiniuous = false;
@@ -502,7 +525,7 @@ export class DropwatcherComponent extends HTMLElement {
             // set timings
 
             let flashRequest = new ChangeDropwatcherParametersRequest();
-            flashRequest.delayNanos = 270 * 1000;
+            flashRequest.delayNanos = delay;
             flashRequest.flashOnTimeNanos = 2 * 1000;
             await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
 
@@ -516,7 +539,7 @@ export class DropwatcherComponent extends HTMLElement {
 
             await this.waitForNextVideoFrame();
             await this.printerUsb.sendFireRequest();
-            await this.cameraAccess.saveImage(`clocksweep-${i}-kHz`, InspectImageType.Dropwatcher);
+            await this.cameraAccess.saveImage(`clocksweep-${i}-kHz-${delay}-ns`, InspectImageType.Dropwatcher);
 
             // wait for frame
             // await this.waitForNextVideoFrame();
@@ -528,9 +551,10 @@ export class DropwatcherComponent extends HTMLElement {
 
     private async captureVoltageSweep() {
         let from = 35.6;
-        let to = 15;
+        let to = 25;
         let step = 0.3;
 
+        let delay = parseInt(this.delayInput.value) * 1000;
 
         this.doCaptureContiniuous = false;
         for (let i = from; i >= to; i -= step) {
@@ -543,9 +567,9 @@ export class DropwatcherComponent extends HTMLElement {
             let request = new ChangeWaveformControlSettingsRequest();
             request.settings = new WavefromControlSettings();
             request.settings.voltageMv = Math.round(i * 1000);
-            request.settings.clockPeriodNs = kHzToNs(1000);
+            request.settings.clockPeriodNs = kHzToNs(1080);
             await this.printerUsb.sendChangeWaveformControlSettingsRequestAndWait(request);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 8000));
 
             // go to dropwatcher
             systemStateRequest = new ChangePrinterSystemStateRequest();
@@ -555,7 +579,7 @@ export class DropwatcherComponent extends HTMLElement {
             // set timings
 
             let flashRequest = new ChangeDropwatcherParametersRequest();
-            flashRequest.delayNanos = 270 * 1000;
+            flashRequest.delayNanos =delay;
             flashRequest.flashOnTimeNanos = 2 * 1000;
             await this.printerUsb.sendChangeDropwatcherParametersRequest(flashRequest);
 
@@ -569,7 +593,7 @@ export class DropwatcherComponent extends HTMLElement {
 
             await this.waitForNextVideoFrame();
             await this.printerUsb.sendFireRequest();
-            await this.cameraAccess.saveImage(`voltagesweep-${numberFormat.format(i)}-V`, InspectImageType.Dropwatcher);
+            await this.cameraAccess.saveImage(`voltagesweep-${numberFormat.format(i)}-V-${delay}-ns`, InspectImageType.Dropwatcher);
 
             // wait for frame
             // await this.waitForNextVideoFrame();
@@ -581,9 +605,9 @@ export class DropwatcherComponent extends HTMLElement {
 
     private captureTimelapse() {
         let photo = 0;
-        let numphotos = 30;
-        let delay = 1;
-        let enddelay = 1000;
+        let numphotos = 200;
+        let delay = 2;
+        let enddelay = 400;
 
         let frames: ImageBitmap[] = [];
 
@@ -631,24 +655,26 @@ export class DropwatcherComponent extends HTMLElement {
                 request.flashOnTimeNanos = 2 * 1000;
                 return this.printerUsb.sendChangeDropwatcherParametersRequest(request).then(() => {
                     return this.printerUsb.sendFireRequest().then(() => {
-                        if (photo < numphotos) {
-                            this.videoElement.requestVideoFrameCallback(callback);
-                        } else {
-                            // for (let i = 0; i < frames.length; i++) {
-                            //     let frame = frames[i];
-                            //     ctx.drawImage(frame, 0, 0);
-                            //     var link = document.createElement('a');
-                            //     link.download = `photo${i}.png`;
-                            //     link.href = this.canvas.toDataURL()
-                            //     link.click();
-                            // }
+                        return this.cameraAccess.saveImage(`timelapse-${photo}-V`, InspectImageType.Dropwatcher).then(() => {
+                            if (photo < numphotos) {
+                                this.videoElement.requestVideoFrameCallback(callback);
+                            } else {
+                                // for (let i = 0; i < frames.length; i++) {
+                                //     let frame = frames[i];
+                                //     ctx.drawImage(frame, 0, 0);
+                                //     var link = document.createElement('a');
+                                //     link.download = `photo${i}.png`;
+                                //     link.href = this.canvas.toDataURL()
+                                //     link.click();
+                                // }
 
 
-                            // mediaRecorder.stop();
+                                // mediaRecorder.stop();
 
 
 
-                        }
+                            }
+                        });
                     });
                 });
             }).catch(console.error);

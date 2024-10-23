@@ -46,6 +46,57 @@ export const DefaultState: State =
                 width: 200,
                 height: 175
             },
+            anchors: [{
+                x: 13.72,
+                y: 44.83,
+                width: 10,
+                height: 10
+            }, {
+                x: 13.84,
+                y: 29.89,
+                width: 10,
+                height: 10
+            }, {
+                x: 13.78,
+                y: 15.64,
+                width: 10,
+                height: 10
+            },
+            {
+                x: 40.62,
+                y: 41.96,
+                width: 10,
+                height: 10
+            },
+            {
+                x: 40.56,
+                y: 25.74,
+                width: 10,
+                height: 10
+            },
+            {
+                x: 40.59,
+                y: 9.69,
+                width: 10,
+                height: 10
+            },
+            {
+                x: 5.96,
+                y: 87.59,
+                width: 10,
+                height: 10
+            }, {
+                x: 22.21,
+                y: 87.25,
+                width: 10,
+                height: 10
+            },
+            {
+                x: 38.42,
+                y: 87.22,
+                width: 10,
+                height: 10
+            }],
             encoder: {
                 printAxis: {
                     dpi: 720,
@@ -54,7 +105,7 @@ export const DefaultState: State =
             },
             numNozzles: 128,
             printheadSwathePerpendicular: 17.417,
-            printheadAngleRads: deg2Rad(90 - 63.75),
+            printheadAngleRads: deg2Rad(90 - 67.21),
             //[2, 7, 8, 118, 119, 120, 121, 122, 123, 124, 125, 126, 55, 56]
             // [0, 1, 2, 3, 5, 6, 7, 8, 9, 33, 34, 35, 36, 37, 98, 99, 100, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 85, 86, 87, 55, 56]
             //[
@@ -113,8 +164,8 @@ export const DefaultState: State =
 
             ],
             printBedToCamera: {
-                x: 149.29 - 9.44 + 8.1,
-                y: 8.26 - 10.56 + 9.63,
+                x: 164.26 - 15.21,
+                y: 130.08 - 125.29 - 0.43,
                 z: 15.19,
             },
             movementRange: {

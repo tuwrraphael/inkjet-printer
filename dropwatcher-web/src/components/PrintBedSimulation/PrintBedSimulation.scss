@@ -45,3 +45,9 @@ print-bed-simulation {
         }
     }
 }
+
+#microscope-video {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.9;
+}

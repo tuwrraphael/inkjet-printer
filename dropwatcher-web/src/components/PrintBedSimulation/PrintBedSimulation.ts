@@ -20,6 +20,9 @@ import 'toolcool-range-slider/dist/plugins/tcrs-generated-labels.min.js';
 import 'toolcool-range-slider';
 import { RangeSlider } from "toolcool-range-slider";
 import { off } from "process";
+import { CameraAccess } from "../../camera-access";
+import { CameraType } from "../../CameraType";
+import { PrintbedAnchor } from "../../slicer/PrintbedAnchor";
 
 
 let maxCanvasSize = 4096;
@@ -97,6 +100,9 @@ export class PrintBedSimulation extends HTMLElement {
     private rasterizationInProgress: HTMLDivElement;
     private selectEndLayer: HTMLInputElement;
     maxLayerNum: number;
+    private videoActive: boolean = false;
+    private video: HTMLVideoElement;
+    private anchors: PrintbedAnchor[];
 
     constructor() {
         super();
@@ -116,6 +122,7 @@ export class PrintBedSimulation extends HTMLElement {
             this.rasterizationInProgress = this.querySelector("#rasterization-progress-overlay");
             this.selectEndLayer = this.querySelector("#select-end-layer");
             this.ctx = this.printCanvas.getContext("2d");
+            this.video = this.querySelector("video");
             this.resizeObserver = new ResizeObserver((entries, observer) => this.onResized(entries, observer));
         }
         this.abortController = new AbortController();
@@ -161,12 +168,29 @@ export class PrintBedSimulation extends HTMLElement {
                 }
                 let mouseMove = (ev: MouseEvent) => {
                     if (this.modelMoving && !middleButton) {
-                        let snapToGrid = ev.shiftKey;
+                        let snapTo = ev.shiftKey;
                         let movedPos = this.bedPositionFromMouseEvent(ev);
                         let newModelPos = { x: modelOrigin.x + (movedPos.x - mouseDownBedPos.x), y: modelOrigin.y + (movedPos.y - mouseDownBedPos.y) };
-                        if (snapToGrid) {
-                            newModelPos.x = Math.round(newModelPos.x);
-                            newModelPos.y = Math.round(newModelPos.y);
+                        if (snapTo) {
+                            let snapToMm = true;
+                            for (let anchor of this.anchors) {
+                                let insideAnchor = movedPos.x >= anchor.x &&
+                                movedPos.x <= anchor.x + anchor.width &&
+                                movedPos.y >= anchor.y &&
+                                movedPos.y <= anchor.y + anchor.height;
+                                if (insideAnchor) {
+                                    let anchorCenter = { x: anchor.x + anchor.width / 2, y: anchor.y + anchor.height / 2 };
+                                    let modelCenterVector = { x: model.boundingBox.min[0] + model.boundingBox.max[0] / 2, y: model.boundingBox.min[1] + model.boundingBox.max[1] / 2 };
+                                    newModelPos.x = anchorCenter.x - modelCenterVector.x;
+                                    newModelPos.y = anchorCenter.y - modelCenterVector.y;
+                                    snapToMm = false;
+                                    break;
+                                }
+                            }
+                            if (snapToMm) {
+                                newModelPos.x = Math.round(newModelPos.x);
+                                newModelPos.y = Math.round(newModelPos.y);
+                            }
                         }
                         this.modelPositionMap.set(model, newModelPos);
                         this.render();
@@ -322,7 +346,7 @@ export class PrintBedSimulation extends HTMLElement {
     }
 
     private update(s: State, c: StateChanges) {
-        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState", "movementStageState"];
+        let keysOfInterest: (keyof State)[] = ["models", "printState", "printBedViewState", "movementStageState", "cameras"];
         if (s && (null == c || keysOfInterest.some(k => c.includes(k)))) {
             this.bedWidth = s.printState.printerParams.buildPlate.width;
             this.bedHeight = s.printState.printerParams.buildPlate.height;
@@ -377,6 +401,24 @@ export class PrintBedSimulation extends HTMLElement {
             this.printbedToCamera = s.printState.printerParams.printBedToCamera;
             this.rasterizationInProgress.style.display = s.printState.slicingState.slicingStatus == SlicingStatus.InProgress ? "" : "none";
             this.render();
+
+            let cameraState = s.cameras[CameraType.Microscope];
+
+            let cameraOn = cameraState?.cameraOn && this.stagePos;
+
+            if (!this.videoActive && cameraOn) {
+                let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
+                let stream = cameraAccess.getStream();
+                this.video.srcObject = stream;
+                this.videoActive = true;
+                this.video.style.display = "";
+            } else if (this.videoActive && !cameraOn) {
+                this.video.srcObject = null;
+                this.videoActive = false;
+                this.video.style.display = "none";
+            }
+
+            this.anchors = s.printState.printerParams.anchors;
         }
     }
 
@@ -716,7 +758,6 @@ export class PrintBedSimulation extends HTMLElement {
 
     private drawCamera() {
         let pos = getMicroscopePosition(this.stagePos, this.printbedToCamera);
-        console.log(pos);
         let center = this.buildPlatePositionToCanvasPosition(pos.x, pos.y);
         let width = 2.975780963;
         let height = 1080 / 1920 * width;
@@ -725,6 +766,29 @@ export class PrintBedSimulation extends HTMLElement {
         this.ctx.strokeStyle = "blue";
         this.ctx.lineWidth = this.mmToDots(0.1);
         this.ctx.strokeRect(x, y, this.mmToDots(width), this.mmToDots(height));
+
+        this.video.style.left = x + "px";
+        this.video.style.top = y + "px";
+        this.video.style.width = this.mmToDots(width) + "px";
+        this.video.style.height = this.mmToDots(height) + "px";
+    }
+
+    private drawAnchors() {
+        this.ctx.setLineDash([this.mmToDots(0.2), this.mmToDots(0.2)]);
+        for (let anchor of this.anchors) {
+            let pos = this.buildPlatePositionToCanvasPosition(anchor.x, anchor.y);
+
+            this.ctx.strokeStyle = "blue";
+            let lineWidth = this.mmToDots(0.1);
+            this.ctx.lineWidth = lineWidth;
+
+
+            this.ctx.beginPath();
+            this.ctx.rect(pos.x - lineWidth / 2, pos.y + lineWidth / 2, this.mmToDots(anchor.width) + lineWidth / 2, -this.mmToDots(anchor.height) - lineWidth / 2);
+            this.ctx.stroke();
+
+        }
+        this.ctx.setLineDash([]);
     }
 
 
@@ -752,6 +816,7 @@ export class PrintBedSimulation extends HTMLElement {
                     this.drawLayerPlan(layerPlan);
                     this.drawPhotoPoints(layerPlan);
                 }
+                this.drawAnchors();
             } else if (this.viewMode.mode == "rasterization") {
                 let layers = this.viewLayerTo - this.viewLayerFrom + 1;
                 let alpha = 1 / layers;
@@ -779,7 +844,7 @@ export class PrintBedSimulation extends HTMLElement {
             if (redrawModels) {
                 this.nextRenderNeedsModelRedraw = false;
             }
-            if (this.printbedClickAction == PrintBedClickAction.PlacePhotoPoint || 
+            if (this.printbedClickAction == PrintBedClickAction.PlacePhotoPoint ||
                 this.printbedClickAction == PrintBedClickAction.MoveCamera
             ) {
                 this.drawFeasiblePhotoArea();
