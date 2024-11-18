@@ -5782,7 +5782,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "DMN2075U"
+		(property "Value" "DMN5L06K-7"
 			(at 93.98 100.33 0)
 			(effects
 				(font
@@ -8357,7 +8357,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "DMN2075U"
+		(property "Value" "DMN5L06K-7"
 			(at 93.98 158.75 0)
 			(effects
 				(font
