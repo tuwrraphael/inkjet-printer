@@ -23,7 +23,8 @@ export const DefaultState: State =
         connected: false,
         pos: null,
         e: undefined,
-        bedTemperature: undefined
+        bedTemperature: undefined,
+        dryerTemperature: undefined
     },
     currentProgram: null,
     programRunnerState: {

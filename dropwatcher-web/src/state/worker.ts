@@ -371,7 +371,8 @@ async function handleMessage(msg: Actions) {
             updateState(oldState => ({
                 movementStageState: {
                     ...oldState.movementStageState,
-                    bedTemperature: msg.temps
+                    bedTemperature: msg.temps.bed,
+                    dryerTemperature: msg.temps.dryer
                 }
             }));
             break;

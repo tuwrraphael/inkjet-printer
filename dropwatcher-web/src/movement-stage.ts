@@ -216,7 +216,7 @@ export class MovementStage {
     }
 
     private async enableAutoTemperatureReporting() {
-        await this._sendGcode("M155 S3");
+        await this._sendGcode("M155 S1");
     }
 
     private parsePositionMessage(msg: string, res: (pos: { x: number, y: number, z: number, e: number }) => void): boolean {
@@ -234,14 +234,17 @@ export class MovementStage {
         return false;
     }
 
-    private parseTemperatureMessage(msg: string, res: (temps: { current: number, target: number }) => void): boolean {
+    private parseTemperatureMessage(msg: string, res: (temps: { bed: { current: number, target: number }, dryer: { current: number, target: number } }) => void): boolean {
         let regex = /T:([0-9.]+) \/([0-9.]+) B:([0-9.]+) \/([0-9.]+)/;
         let match = regex.exec(msg);
         if (match) {
-            res({
+            res({bed:{
                 current: parseFloat(match[3]),
                 target: parseFloat(match[4])
-            });
+            }, dryer: {
+                current: parseFloat(match[1]),
+                target: parseFloat(match[2])
+            }});
             return true;
         }
         return false;

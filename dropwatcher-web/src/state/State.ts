@@ -216,6 +216,10 @@ export interface State {
             current: number;
             target: number;
         };
+        dryerTemperature: {
+            current: number;
+            target: number;
+        };
     }
     currentProgram: PrinterProgram,
     programRunnerState: ProgramRunnerState,

@@ -53,6 +53,7 @@ export class PrinterStatus extends HTMLElement {
     private resumePrint: HTMLButtonElement;
     private cancelPrint: HTMLButtonElement;
     private taskRunnerSynchronization: TaskRunnerSynchronization;
+    private dryerTemp : HTMLSpanElement;
     constructor() {
         super();
         this.store = Store.getInstance();
@@ -88,6 +89,7 @@ export class PrinterStatus extends HTMLElement {
             this.lostLinesBySlowData = this.querySelector("#lost-lines-by-slow-data");
             this.voltage = this.querySelector("#voltage");
             this.stageTemp = this.querySelector("#stage-temp");
+            this.dryerTemp = this.querySelector("#dryer-temp");
             this.microscopePosition = this.querySelector("#microscope-position");
             this.projectFile = this.querySelector("#project-file");
             this.outputFolder = this.querySelector("#output-folder");
@@ -244,11 +246,6 @@ export class PrinterStatus extends HTMLElement {
             this.voltage.innerText = `${actualVoltage} / ${setVoltage}`;
             let clockFrequencykHz = s.printerSystemState.waveformControl?.clockPeriodNs ? this.formatNumber(1 / (s.printerSystemState.waveformControl?.clockPeriodNs * 1e-9) / 1e3) : "-";
             this.clock.innerText = `${clockFrequencykHz} kHz`;
-
-            let setTemp = s.movementStageState.bedTemperature?.target ? this.formatNumber(s.movementStageState.bedTemperature?.target) : "-";
-            let currentTemp = s.movementStageState.bedTemperature?.current ? this.formatNumber(s.movementStageState.bedTemperature?.current) : "-";
-
-            this.stageTemp.innerText = `${currentTemp} / ${setTemp}`;
         }
         if (c.includes("movementStageState")) {
 
@@ -259,6 +256,14 @@ export class PrinterStatus extends HTMLElement {
                 || { x: NaN, y: NaN, z: NaN }
                 , s.printState.printerParams.printBedToCamera);
             this.microscopePosition.innerText = this.formatStagePosition(microscopePosition);
+
+            let setTemp = s.movementStageState.bedTemperature?.target ? this.formatNumber(s.movementStageState.bedTemperature?.target) : "-";
+            let currentTemp = s.movementStageState.bedTemperature?.current ? this.formatNumber(s.movementStageState.bedTemperature?.current) : "-";
+            this.stageTemp.innerText = `${currentTemp} / ${setTemp}`;
+
+            let setDryerTemp = s.movementStageState.dryerTemperature?.target ? this.formatNumber(s.movementStageState.dryerTemperature?.target) : "-";
+            let currentDryerTemp = s.movementStageState.dryerTemperature?.current ? this.formatNumber(s.movementStageState.dryerTemperature?.current) : "-";
+            this.dryerTemp.innerText = `${currentDryerTemp} / ${setDryerTemp}`;
         }
 
         if (c.includes("currentFileState")) {
