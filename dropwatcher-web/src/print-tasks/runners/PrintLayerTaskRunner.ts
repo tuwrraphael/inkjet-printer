@@ -1,4 +1,3 @@
-import { MovementStage } from "../../movement-stage";
 import { PrinterUSB } from "../../printer-usb";
 import { ChangeEncoderModeRequest, ChangeEncoderModeSettingsRequest, ChangePrinterSystemStateRequest, ChangePrintMemoryRequest, ChangeWaveformControlSettingsRequest, PrintControlEncoderModeSettings, PrinterSystemState } from "../../proto/compiled";
 import { SlicerClient } from "../../slicer/SlicerClient";
@@ -7,7 +6,6 @@ import { Store } from "../../state/Store";
 import { PrintingTrack } from "../../state/actions/PrintingTrack";
 import { PrinterTaskPrintCustomTracksTask, PrintLayerTask } from "../printer-program";
 import { CanceledError, PrinterTaskCancellationToken } from "../PrinterTaskCancellationToken";
-import { add } from "date-fns";
 import { WavefromControlSettings } from "../../proto/compiled";
 import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicroscope";
 import { CameraAccess } from "../../camera-access";
@@ -28,7 +26,6 @@ export class PrintLayerTaskRunner {
     async run(cancellationToken: PrinterTaskCancellationToken) {
         try {
             cancellationToken.throwIfCanceled();
-            let dryUntil: Date = new Date();
             let setVoltage = this.store.state.printerSystemState.waveformControl.setVoltageMv;
 
             let orderedGroups = this.task.layerPlan.modelGroupPlans.slice().sort((a, b) => {
@@ -40,7 +37,7 @@ export class PrintLayerTaskRunner {
                 if (distA > distB) {
                     return 1;
                 }
-                return a.printingParams.dryingTimeSeconds - b.printingParams.dryingTimeSeconds;
+                return 0;
             });
 
             for (let group of orderedGroups) {
@@ -53,10 +50,6 @@ export class PrintLayerTaskRunner {
                 }
                 await this.movementExecutor.setFanSpeed(255);
                 let groupPrintingFinished = new Date();
-                let dryGroupUntil = add(groupPrintingFinished, { seconds: group.printingParams.dryingTimeSeconds });
-                if (dryGroupUntil > dryUntil) {
-                    dryUntil = dryGroupUntil;
-                }
 
                 if (group.printingParams.photoPoints.length > 0) {
 
@@ -67,10 +60,8 @@ export class PrintLayerTaskRunner {
 
                         let focus = null;// this.autofocusCache.get(microscopePos.microscopePos.x, microscopePos.microscopePos.y);
                         let cameraAccess = CameraAccess.getInstance(CameraType.Microscope);
-                        // let cancelPriming;
                         if (focus != null) {
                             await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, focus, 15000);
-                            // cancelPriming = this.nozzlePriming();
                         } else {
                             await this.movementExecutor.moveAbsoluteAndWait(microscopePos.microscopePos.x, microscopePos.microscopePos.y, microscopePos.microscopePos.z, 15000);
                             // cancelPriming = this.nozzlePriming();
@@ -78,20 +69,10 @@ export class PrintLayerTaskRunner {
                             this.autofocusCache.set(microscopePos.microscopePos.x, microscopePos.microscopePos.y, this.store.state.movementStageState.pos.z);
                         }
                         await new Promise(resolve => setTimeout(resolve, 500));
-                        let first = true;
-                        let photoInterval = 3000;
-                        try {
-                            while (first) {
-                                first = false;
-                                let photoTime = new Date();
-                                let driedForMs = +photoTime - +groupPrintingFinished;
-                                await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`, InspectImageType.PhotoPoint);
-                                // await new Promise(resolve => setTimeout(resolve, photoInterval - ((+new Date()) - (+photoTime))));
-                                cancellationToken.throwIfCanceled();
-                            }
-                        } finally {
-                            // await cancelPriming();
-                        }
+                        let photoTime = new Date();
+                        let driedForMs = +photoTime - +groupPrintingFinished;
+                        await cameraAccess.saveImage(`${group.modelGroupId || 'no-group'}_layer${this.task.layerNr}_${driedForMs}ms`, InspectImageType.PhotoPoint);
+                        cancellationToken.throwIfCanceled();
                     } else {
                         console.log("Skipping camera move, out of range");
                     }
@@ -100,23 +81,29 @@ export class PrintLayerTaskRunner {
                 await this.movementExecutor.setFanSpeed(0);
             }
 
-            let dryForMs = Math.max(0, (+dryUntil - +new Date()));
+            let dryForMs = this.task.layerPlan.modelGroupPlans[0].printingParams.dryingTimeSeconds * 1000;
             if (dryForMs > 0) {
-                // let cancelPriming = this.nozzlePriming();
+                let dryingPosition = {
+                    x: this.store.state.printState.printerParams.dryingPosition.x,
+                    y: this.store.state.printState.printerParams.dryingPosition.y
+                };
+                await this.movementExecutor.setFanSpeed(255);
+                await this.movementExecutor.moveAbsoluteXYAndWait(dryingPosition.x, dryingPosition.y, 15000);
                 try {
-                    await this.movementExecutor.setFanSpeed(255);
-                    await this.movementExecutor.moveAbsoluteAndWait(this.task.dryingPosition.x, this.task.dryingPosition.y, this.task.dryingPosition.z, 15000);
+                    await this.movementExecutor.setDryingTemperatureAndWait(this.task.layerPlan.modelGroupPlans[0].printingParams.dryingTemperature);
                     cancellationToken.throwIfCanceled();
-                    dryForMs = Math.max(0, (+dryUntil - +new Date()));
-                    if (dryForMs > 0) {
-                        console.log("Drying for " + dryForMs + "ms");
+
+                    for (let driedForMs = 0; driedForMs < dryForMs; driedForMs += 1000) {
                         await new Promise((resolve) => {
-                            setTimeout(resolve, dryForMs);
+                            setTimeout(resolve, 1000);
                         });
+                        cancellationToken.throwIfCanceled();
                     }
                     await this.movementExecutor.setFanSpeed(0);
                 } finally {
-                    // await cancelPriming();
+                    this.movementExecutor.setDryingTemperature(0).catch((e) => {
+                        console.error("Failed to set drying temperature to 0", e);
+                    });
                 }
             }
         }
@@ -127,36 +114,6 @@ export class PrintLayerTaskRunner {
             }
             throw e;
         }
-    }
-
-    private nozzlePriming(): () => Promise<void> {
-        let canceled: () => void;
-        let timeoutToken: NodeJS.Timeout;
-        let loopStarted = false;
-        let primingLoop = () => {
-            loopStarted = true;
-            this.printerUSB.sendNozzlePrimingRequestAndWait().then(() => {
-                loopStarted = false;
-                if (!canceled) {
-                    timeoutToken = setTimeout(() => {
-                        primingLoop();
-                    }, 5000);
-                } else {
-                    canceled();
-                }
-            });
-        }
-        primingLoop();
-        return () => {
-            clearTimeout(timeoutToken);
-            return new Promise<void>((resolve, reject) => {
-                if (loopStarted) {
-                    canceled = resolve;
-                } else {
-                    resolve();
-                }
-            });
-        };
     }
 
     private async changeWaveformIfNeeded(voltage: number, frequency: number, cancellationToken: PrinterTaskCancellationToken) {

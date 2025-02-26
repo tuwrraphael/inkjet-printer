@@ -47,6 +47,10 @@ export const DefaultState: State =
                 width: 200,
                 height: 175
             },
+            dryingPosition: {
+                x: 200,
+                y: 160
+            },
             anchors: [{
                 x: 13.72,
                 y: 44.83,
@@ -181,7 +185,9 @@ export const DefaultState: State =
             firstLayerHeight: 1.5,
             encoderMargin: 2,
             bedTemperature: 0,
-            dryingTimeSeconds: 0,
+            dryingTimeSeconds: 10,
+            dryingTemperature: 80,
+            inkPressure: -0.5,
             waveform: {
                 voltage: 34,
                 clockFrequency: 1000

@@ -26,4 +26,8 @@ export interface PrinterParams {
         z: number;
     },
     anchors: PrintbedAnchor[];
+    dryingPosition: {
+        x: number;
+        y: number;
+    }
 }
