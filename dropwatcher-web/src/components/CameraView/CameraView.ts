@@ -204,6 +204,7 @@ export class CameraView extends HTMLElement {
         ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2 - crossHeight / 2);
         ctx.lineTo(this.canvas.width / 2, this.canvas.height / 2 + crossHeight / 2);
         ctx.stroke();
+        ctx.setLineDash([]);
     }
 
     drawMeasurementLine() {
@@ -256,10 +257,11 @@ export class CameraView extends HTMLElement {
 
     private async detectHomingFiducial() {
         using movementExecutor = this.movementStage.getMovementExecutor("cameraview");
+        let resizedWidth = 300;
         await movementExecutor.home();
-        const y = 28.2;
-        let x = 149.45;
-        await movementExecutor.moveAbsoluteAndWait(x, y, 16.53, 1000);
+        const y = 30.25;
+        let x = 147.58;
+        await movementExecutor.moveAbsoluteAndWait(x, y, 5.74, 1000);
         let cameraAccess = CameraAccess.getInstance(this.store.state.cameraView.selectedCamera);
         await cameraAccess.performAutoFocus(0.5, 0.5, movementExecutor);
         await movementExecutor.disableAxes();
@@ -268,47 +270,37 @@ export class CameraView extends HTMLElement {
         let lastMovement = { x: Infinity, y: Infinity };
         for (let i = 0; i < maxSteps; i++) {
             // get image data from video
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             let ctx = this.canvas.getContext("2d");
             ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             let imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
             ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             let src = cv.matFromImageData(imageData);
+            // let resized = new cv.Mat();
+            let resizedHeight = this.canvas.height * resizedWidth / this.canvas.width;
+            let drawScale = this.canvas.width/resizedWidth;
+            cv.resize(src, src, new cv.Size(resizedWidth, resizedHeight), 0, 0, cv.INTER_AREA);
             let grayscale = new cv.Mat(src.rows, src.cols, cv.CV_8UC3);
 
-            let dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
             cv.cvtColor(src, grayscale, cv.COLOR_RGBA2GRAY, 0);
 
             cv.GaussianBlur(grayscale, src, { width: 5, height: 5 }, 2, 2, cv.BORDER_DEFAULT);
-
-            cv.threshold(src, src, 150, 255, cv.THRESH_BINARY);
+            let adaptiveWindow = (0.25 * resizedWidth) | 1;
+            cv.adaptiveThreshold(src, src, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, adaptiveWindow,2);
             // cv.imshow(this.canvas, src);
+            
             let contours = new cv.MatVector();
             let hierarchy = new cv.Mat();
             cv.findContours(src, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-            // let drops: {
-            //     x: number, y: number, diameter: number
-            //     pixel_x: number, pixel_y: number, pixel_diameter: number
-            // }[] = [];
-            // let dropMask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
-
-            // let enclosingCircles: {
-            //     x: number,
-            //     y: number,
-            //     radius: number
-            // }[] = [];
-            // let ellipses: {
-            //     center: { x: number, y: number },
-            //     size: { width: number, height: number },
-            //     angle: number
-            // }[] = [];
-            let pxToMm = 2.975780963 / this.canvas.width;
+            let pxToMm = 2.975780963 / resizedWidth;
             let circles: { x: number, y: number }[] = [];
+            
             for (let i = 0; i < contours.size(); ++i) {
                 let cnt = contours.get(i);
 
                 let enclosingCircle = cv.minEnclosingCircle(cnt);
 
+                
 
 
                 let radius = enclosingCircle.radius * pxToMm;
@@ -334,7 +326,7 @@ export class CameraView extends HTMLElement {
 
                     console.log("Found circle", radius);
                     ctx.beginPath();
-                    ctx.arc(enclosingCircle.center.x, enclosingCircle.center.y, enclosingCircle.radius, 0, 2 * Math.PI, false);
+                    ctx.arc(enclosingCircle.center.x*drawScale, enclosingCircle.center.y*drawScale, enclosingCircle.radius*drawScale, 0, 2 * Math.PI, false);
                     ctx.lineWidth = 2;
                     ctx.strokeStyle = 'red';
                     ctx.stroke();
@@ -360,18 +352,18 @@ export class CameraView extends HTMLElement {
                 }
                 console.log("Center", this.center);
                 ctx.beginPath();
-                ctx.arc(this.center.x, this.center.y, 5, 0, 2 * Math.PI, false);
+                ctx.arc(this.center.x * drawScale, this.center.y * drawScale, 5, 0, 2 * Math.PI, false);
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = 'green';
                 ctx.stroke();
 
                 // await new Promise((resolve) => setTimeout(resolve, 3000));
-                let movementX = -(this.center.x - this.canvas.width / 2) * pxToMm;
-                let movementY = (this.center.y - this.canvas.height / 2) * pxToMm;
+                let movementX = -(this.center.x - resizedWidth / 2) * pxToMm;
+                let movementY = (this.center.y - resizedHeight / 2) * pxToMm;
                 console.log("Movement", movementX, movementY);
 
                 let minimumStep = 6 * 0.016;
-                let okDist = 3*0.016;
+                let okDist = 2 * 0.016;
 
                 if (Math.abs(movementX) < okDist) {
                     movementX = 0;
@@ -387,7 +379,7 @@ export class CameraView extends HTMLElement {
                 }
                 // await movementExecutor.moveRelativeAndWait(10, 10, 0, 1000);
                 await movementExecutor.moveRelativeAndWait(minimumStep, minimumStep, 0, 1000);
-                await movementExecutor.moveRelativeAndWait(-movementX*0.9 - minimumStep, -movementY*0.9 - minimumStep, 0, 1000);
+                await movementExecutor.moveRelativeAndWait(-movementX * 0.9 - minimumStep, -movementY * 0.9 - minimumStep, 0, 1000);
             }
         }
         if (Math.abs(lastMovement.x) < 0.05 && Math.abs(lastMovement.y) < 0.05) {
