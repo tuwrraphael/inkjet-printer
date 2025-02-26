@@ -13,6 +13,8 @@ export class PrintOptions extends HTMLElement {
     private abortController: AbortController;
     private firstLayerHeight: HTMLInputElement;
     private bedTemperature: HTMLInputElement;
+    private dryingTemperature : HTMLInputElement;
+    private inkPressure : HTMLInputElement;
     private voltage: HTMLInputElement;
     private dryingTime: HTMLInputElement;
     private skipNozzles: HTMLInputElement;
@@ -38,6 +40,8 @@ export class PrintOptions extends HTMLElement {
             this.offsetEveryOtherLayerByTicks = this.querySelector("#offset-every-other-layer-by-ticks");
             this.offsetEveryOtherLayerByNozzles = this.querySelector("#offset-every-other-layer-by-nozzles");
             this.form = this.querySelector("#print-options-form");
+            this.inkPressure = this.querySelector("#inkpressure");
+            this.dryingTemperature = this.querySelector("#drying-temperature");
         }
         this.abortController = new AbortController();
         this.store = Store.getInstance();
@@ -54,6 +58,8 @@ export class PrintOptions extends HTMLElement {
                 let bedTemperature = parseInt(formData.get("bed-temperature") as string);
                 let voltage = parseFloat(formData.get("voltage") as string);
                 let clock = parseInt(formData.get("clock") as string);
+                let dryingTemperature = parseInt(formData.get("drying-temperature") as string);
+                let inkPressure = parseFloat(formData.get("inkpressure") as string);
                 this.store.postAction(new PrintingParamsChanged({
                     fireEveryTicks: fireEvery,
                     firstLayerHeight: firstLayerHeight,
@@ -62,7 +68,9 @@ export class PrintOptions extends HTMLElement {
                         voltage: voltage,
                         clockFrequency: clock
                     },
+                    inkPressure: inkPressure,
                     dryingTimeSeconds: parseInt(formData.get("drying-time") as string),
+                    dryingTemperature: dryingTemperature,
                     skipNozzles: parseInt(formData.get("skip-nozzles") as string),
                     offsetLayers: {
                         printAxis: {
@@ -94,6 +102,8 @@ export class PrintOptions extends HTMLElement {
             this.offsetEveryOtherLayerByTicks.value = s.printState.printingParams.offsetLayers?.printAxis?.everyOtherLayerByTicks.toString();
             this.offsetEveryOtherLayerByNozzles.value = s.printState.printingParams.offsetLayers?.moveAxis?.everyOtherLayerByNozzles.toString();
             this.clock.value = s.printState.printingParams.waveform.clockFrequency.toString();
+            this.inkPressure.value = s.printState.printingParams.inkPressure.toString();
+            this.dryingTemperature.value = s.printState.printingParams.dryingTemperature.toString();
         }
     }
 

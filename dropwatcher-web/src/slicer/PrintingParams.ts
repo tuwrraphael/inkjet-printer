@@ -4,11 +4,13 @@ export interface PrintingParams {
     firstLayerHeight: number;
     encoderMargin: number;
     bedTemperature: number;
+    dryingTemperature: number;
     dryingTimeSeconds: number;
     waveform: {
         voltage: number;
         clockFrequency: number;
     };
+    inkPressure: number;
     skipNozzles: number;
     offsetLayers: {
         printAxis: {

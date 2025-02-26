@@ -18,14 +18,13 @@ export function createPrintProgram(
         nozzleTestEveryNLayer: number
     }
 ) {
-    let pressure = -0.5;
     let height = printingParams.firstLayerHeight;
     let homeTask: PrinterTasks[] = options.home ? [{ type: PrinterTaskType.Home }] : [];
     let nozzleTestBeforeFirstLayerTask: PrinterTasks[] = options.nozzleTestBeforeFirstLayer ? getNozzleTestTasks(0) : [];
     let steps: PrinterTasks[] = [
         {
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: pressure,
+            targetPressure: printingParams.inkPressure,
             enable :true
         },
         ...(homeTask),
@@ -89,7 +88,7 @@ export function createPrintProgram(
         });
         steps.push({
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: pressure,
+            targetPressure: printingParams.inkPressure,
             enable : false
         });
         let layerPlan = printPlan?.layers[i];
@@ -98,12 +97,7 @@ export function createPrintProgram(
                 type: PrinterTaskType.PrintLayer,
                 layerNr: i,
                 layerPlan: layerPlan,
-                z: height,
-                dryingPosition: {
-                    x: 200,
-                    y: 0,
-                    z: 40
-                }
+                z: height
             });
         }
         let layerCustomTracks = customTracks
@@ -117,7 +111,7 @@ export function createPrintProgram(
         }
         steps.push({
             type: PrinterTaskType.SetTargetPressure,
-            targetPressure: pressure,
+            targetPressure: printingParams.inkPressure,
             enable : true
         });
         let remainingLayers = maxLayers - i;
