@@ -1,0 +1,53 @@
+#canvas-container {
+    width: 100%;
+    border: 1px solid black;
+    display: flex;
+    box-sizing: border-box;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+#rasterization-progress-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.rasterization-progress-overlay {
+    &__content {
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 1em;
+        right: 0;
+    }
+}
+
+#print-canvas {
+    flex-grow: 1;
+}
+
+print-bed-simulation {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.print-bed-simulation {
+    &__controls {
+        display: flex;
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+    }
+}
+
+#microscope-video {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.9;
+}

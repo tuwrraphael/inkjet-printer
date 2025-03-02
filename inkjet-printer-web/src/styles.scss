@@ -1,0 +1,116 @@
+$roboto-font-path: '../node_modules/roboto-fontface/fonts';
+
+@use "./theme.scss";
+
+
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular-italic.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold.scss";
+@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold-italic.scss";
+
+body,
+button,
+input,
+ul,
+ol {
+    font-family: 'Roboto', sans-serif;
+}
+
+h1 {
+    font-size: 1.5em;
+}
+
+h2 {
+    font-size: 1.2em;
+}
+
+h3 {
+    font-size: 1em;
+}
+
+p {
+    margin-bottom: 0.5em;
+    margin-top: 0;
+}
+
+body {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    margin: 0;
+}
+
+form:not(.inline) {
+
+    max-width: 25em;
+
+    
+
+    label {
+        display: block;
+    }
+
+    input[type=checkbox] + label {
+        display: inline;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+        input,select {
+            flex: 1;
+        }
+        input + span {
+            margin-left: 0.2em;
+        }
+    }
+}
+
+button {
+    padding: 0.3em 0.8em;
+    background-color: lighten( theme.$theme-color, 5%);;
+    color: #000;
+    border: none;
+    border-radius: 0.3em;
+    cursor: pointer;
+    margin: 0.5em 0;
+    display: inline-flex;
+    align-items: center;
+    font-size: 1em;
+    height: 1.8em;
+    line-height: 1em;
+    &:hover {
+        background-color: lighten( theme.$theme-color, 20%);
+    }
+    &:active {
+        background-color: lighten( theme.$theme-color, 40%);
+    }
+    font-size: 1em;
+
+    &.emergency {
+        box-shadow: 0 0 0.15em red;
+        box-sizing: border-box;
+        background-color: #fff;
+        color: red;
+        &:hover {
+            background-color: lighten(red, 20%);
+        }
+        &:active {
+            background-color: lighten(red, 40%);
+        }
+    }
+    &:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+}
+
+input,select {
+    padding: 0.2em;
+    border: 1px solid #ccc;
+    border-radius: 0.3em;
+    margin: 0.2em 0;
+    font-size: 1em;
+}

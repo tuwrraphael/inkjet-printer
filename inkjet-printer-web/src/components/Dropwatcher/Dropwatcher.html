@@ -1,0 +1,77 @@
+<h2>Live Camera</h2>
+<button id="camera-start-stop">Toggle Camera</button>
+<button id="autofocus">Autofocus</button>
+<button id="measure">Measure</button>
+<span style="display: none;" id="videoclickmessage">Click on the video to focus</span>
+<div class="video-container">
+    <video id="video-element" autoplay playsinline class="video-element"></video>
+</div>
+<movement-control-panel></movement-control-panel>
+<div>
+    Exposure Time: <span id="exposure-time"></span> ms
+    <input type="range" id="exposure-ms">
+</div>
+<div>
+    <label for="delay">Delay: <span id="delay-display"></span> us</label>
+    <input type="range" id="delay" min="0" max="500" step="1">
+</div>
+<h2>Capture Frame</h2>
+<button id="capture-single-frame">Capture Frame</button>
+<button id="capture-clock-sweep">Capture Clock Sweep</button>
+<button id="capture-voltage-sweep">Capture Voltage Sweep</button>
+<div class="frame-container">
+    <canvas id="canvas" class="canvas"></canvas>
+</div>
+<div>
+    <input type="checkbox" id="capture-continuous-frames" name="capture-continuous-frames">
+    <label for="capture-continuous-frames">Fire continiously</label>
+</div>
+<h2>State</h2>
+<div>
+    <button id="toggle-dropwatcher">Toggle Dropwatcher Mode</button>
+</div>
+<h2>Nozzles</h2>
+<form id="nozzle-form">
+    <button id="set-all-nozzles">Activate All</button>
+    <button id="clear-all-nozzles">Deactivate All</button>
+    <div class="nozzle-select">
+    </div>
+    <button id="set-nozzles">Send to Printer</button>
+</form>
+<button id="set-last-nozzle-pos">Current Position Nozzle 128</button>
+<button id="set-first-nozzle-pos">Current Position Nozzle 1</button>
+<form id="move-to-form">
+    <div>
+        <label for="nozzle-pos">Nozzle Position</label>
+        <input type="number" name="nozzle-pos" required="required" id="nozzle-pos" value="1" min="1" max="128">
+    </div>
+    <button id="move-to">Move</button>
+</form>
+<h2>
+    Flashlight
+</h2>
+<form id="flash-form">
+    <div>
+        <label for="delay-us">Delay</label>
+        <input type="number" name="delay-us" required="required" id="delay-us" value="0.125" min="0.0625" step="0.0625">
+        us
+    </div>
+    <div>
+        <label for="flash-on-time-us">Flash On-Time</label>
+        <input type="number" name="flash-on-time-us" required="required" id="flash-on-time-us" value="0.125" min="0.125"
+            step="0.0625" max="4095.875"> us
+    </div>
+    <button id="set-light">Send to Printer</button>
+</form>
+<h2>Waveform</h2>
+<form id="waveform-form">
+    <label for="voltage">Waveform Voltage</label>
+    <div class="input-group">
+        <input type="number" id="voltage" name="voltage" min="15.5" max="35.6" step="0.01"> <span>V</span>
+    </div>
+    <label for="clock">Waveform Clock</label>
+    <div class="input-group">
+        <input type="number" id="clock" name="clock" min="500" max="1500" step="1"> <span>kHz</span>
+    </div>
+    <button>Send to Printer</button>
+</form>

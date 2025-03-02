@@ -1,0 +1,27 @@
+print-container {
+    display: grid;
+}
+.printbed-container {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-areas:
+        "content modellist"
+        "content modelparams";
+    gap: 1em;
+    height: 75vh;
+
+    print-bed-simulation {
+        grid-area: content;
+    }
+
+    model-list {
+        grid-area: modellist;
+        overflow-y: auto;
+    }
+
+    model-params {
+        grid-area: modelparams;
+        overflow-y: auto;
+    }
+}

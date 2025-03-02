@@ -1,0 +1,24 @@
+<div class="app-container">
+    <div class="app-header">
+        <nav class="app-navigation">
+            <a class="button" href="ink-control">💧 Ink Supply</a>
+            <a class="button" href="print">🖨 Project</a>
+            <a class="button" href="nozzletest"> 🔘 Nozzletest</a>
+            <a class="button" href="dropwatcher"> 📷 Dropwatcher</a>
+            <a class="button" href="inspect"> 🔍 Inspection</a>
+            <a class="button" href="utils"> 🛠 Utils</a>
+        </nav>
+        <div>
+            <button id="toggle-camera-view"> 📷 Camera View</button>
+            <span id="file-status"></span>
+            <button id="open-file">Open</button>
+            <button id="save-as">Save As</button>
+            <button id="save">Save</button>
+            <button id="select-output-folder">Select Output Folder</button>
+        </div>
+    </div>
+    <div class="content" style="overflow-x: hidden;"></div>
+    <div class="camera-view" id="camera-view-container" style="display: none;">
+    </div>
+    <printer-status class="app-status"></printer-status>
+</div>

@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "lib": [
+      "es2017",
+      "dom",
+      "WebWorker",
+      "DOM.Iterable",
+      "DOM"
+    ],
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "module": "ES2022",
+    "target": "es2017",
+    "allowJs": true,
+    "moduleResolution": "Bundler",
+    "sourceMap": true,
+    "types": [
+      "@types/node",
+      "@types/webpack-env",
+      "@types/w3c-image-capture",
+      "@types/w3c-web-usb",
+      "@types/w3c-web-serial",
+      "@types/dom-mediacapture-transform",
+      "@types/wicg-file-system-access"
+    ],
+    "allowSyntheticDefaultImports": true
+  },
+}
