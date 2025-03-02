@@ -19,7 +19,6 @@ import { printBedPositionToMicroscope } from "../../utils/printBedPositionToMicr
 import 'toolcool-range-slider/dist/plugins/tcrs-generated-labels.min.js';
 import 'toolcool-range-slider';
 import { RangeSlider } from "toolcool-range-slider";
-import { off } from "process";
 import { CameraAccess } from "../../camera-access";
 import { CameraType } from "../../CameraType";
 import { PrintbedAnchor } from "../../slicer/PrintbedAnchor";

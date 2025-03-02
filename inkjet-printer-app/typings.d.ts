@@ -8,3 +8,4 @@ declare module "*.svg" {
 }
 declare const __ENVIRONMENT : "local"|"gh-pages";
 declare const __CACHENAME : string;
+declare const __BUILD_DATE : string;

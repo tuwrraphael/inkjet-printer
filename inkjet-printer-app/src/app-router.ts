@@ -11,6 +11,7 @@ import { NozzletestTagName } from "./components/Nozzletest/Nozzletest";
 import { UtilsTagName } from "./components/Utils/Utils";
 import { Store } from "./state/Store";
 import { RouteChanged } from "./state/actions/RouteChanged";
+import { InfoTagName } from "./components/Info/Info";
 
 class ContainerRouteRenderer implements RouteRenderer<HTMLElement> {
     private currentComponent: HTMLElement = null;
@@ -60,6 +61,8 @@ export class AppRouter {
                     return document.createElement(NozzletestTagName);
                 } else if (/^utils$/.test(currentRoute)) {
                     return document.createElement(UtilsTagName);
+                } else if (/^info$/.test(currentRoute)) {
+                    return document.createElement(InfoTagName);
                 }
                 store.postAction(new RouteChanged("print"));
                 return document.createElement(PrintTagName);

@@ -10,6 +10,7 @@ import { resolve as _resolve } from 'path';
 import * as sass from "sass";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import LicensePlugin from "webpack-license-plugin";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -46,7 +47,7 @@ export default (env, argv) => {
                 "@babel/preset-env",
                 {
                     "useBuiltIns": "usage",
-                    "corejs": "3.8"
+                    "corejs": "3"
                 },
             ],
         ]
@@ -61,6 +62,7 @@ export default (env, argv) => {
                 implementation: sass,
                 sassOptions: {
                     includePaths: ["node_modules"],
+                    quietDeps: true
                 },
             }
         }
@@ -78,7 +80,7 @@ export default (env, argv) => {
             rules: [
                 {
                     test: /\.m?js$/,
-                    exclude: /node_modules(\/|\\)(\bwebpack\b|\bcore-js\b)/,
+                    exclude: /node_modules/,
                     use: {
                         loader: 'babel-loader',
                         options: { ...babelConfig, sourceType: "unambiguous" },
@@ -145,9 +147,9 @@ export default (env, argv) => {
                     test: /\.(svg)$/,
                     type: 'asset/source',
                     generator: {
-                      filename: 'img/[hash][ext]'
+                        filename: 'img/[hash][ext]'
                     }
-                  }
+                }
             ],
         },
         resolve: {
@@ -172,17 +174,32 @@ export default (env, argv) => {
                 title: "inkjet-printer",
                 template: 'src/index.html'
             }),
-            // new LicenseCheckerWebpackPlugin({
-            //     outputFilename: "licenses.txt",
-            //     allow: "(Apache-2.0 OR BSD-2-Clause OR BSD-3-Clause OR MIT OR ISC)"
-            // }),
+            new LicensePlugin({
+                replenishDefaultLicenseTexts: true,
+                additionalFiles: {
+                    'oss-summary.json': (packages) => {
+                        return JSON.stringify(
+                            packages.reduce(
+                                (prev, { license }) => ({
+                                    ...prev,
+                                    [license]: prev[license] ? prev[license] + 1 : 1,
+                                }),
+                                {}
+                            ),
+                            null,
+                            2
+                        )
+                    },
+                },
+            }),
             new MiniCssExtractPlugin({
                 filename: '[name].[contenthash].css'
             }),
             new CleanWebpackPlugin(),
             new DefinePlugin({
                 __ENVIRONMENT: `"${environment}"`,
-                __CACHENAME: `"${cacheName}"`
+                __CACHENAME: `"${cacheName}"`,
+                __BUILD_DATE: `"${new Date().toISOString()}"`
             }),
             new CopyPlugin({
                 patterns: [

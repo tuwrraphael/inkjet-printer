@@ -1,12 +1,12 @@
-$roboto-font-path: '../node_modules/roboto-fontface/fonts';
+$font-path: '../node_modules/roboto-fontface/fonts';
 
 @use "./theme.scss";
+@use "sass:color";
 
-
-@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular.scss";
-@import "roboto-fontface/css/roboto/sass/roboto-fontface-regular-italic.scss";
-@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold.scss";
-@import "roboto-fontface/css/roboto/sass/roboto-fontface-bold-italic.scss";
+@use "roboto-fontface/css/roboto/sass/roboto-fontface-regular.scss" as * with($roboto-font-path: $font-path);
+@use "roboto-fontface/css/roboto/sass/roboto-fontface-regular-italic.scss" as * with($roboto-font-path: $font-path);
+@use "roboto-fontface/css/roboto/sass/roboto-fontface-bold.scss" as * with($roboto-font-path: $font-path);
+@use "roboto-fontface/css/roboto/sass/roboto-fontface-bold-italic.scss" as * with($roboto-font-path: $font-path);
 
 body,
 button,
@@ -45,23 +45,26 @@ form:not(.inline) {
 
     max-width: 25em;
 
-    
+
 
     label {
         display: block;
     }
 
-    input[type=checkbox] + label {
+    input[type=checkbox]+label {
         display: inline;
     }
 
     .input-group {
         display: flex;
         align-items: center;
-        input,select {
+
+        input,
+        select {
             flex: 1;
         }
-        input + span {
+
+        input+span {
             margin-left: 0.2em;
         }
     }
@@ -69,7 +72,7 @@ form:not(.inline) {
 
 button {
     padding: 0.3em 0.8em;
-    background-color: lighten( theme.$theme-color, 5%);;
+    background-color: color.scale(theme.$theme-color, $lightness: 5%);
     color: #000;
     border: none;
     border-radius: 0.3em;
@@ -80,12 +83,15 @@ button {
     font-size: 1em;
     height: 1.8em;
     line-height: 1em;
+
     &:hover {
-        background-color: lighten( theme.$theme-color, 20%);
+        background-color: color.scale(theme.$theme-color, $lightness: 20%);
     }
+
     &:active {
-        background-color: lighten( theme.$theme-color, 40%);
+        background-color: color.scale(theme.$theme-color, $lightness: 40%);
     }
+
     font-size: 1em;
 
     &.emergency {
@@ -93,13 +99,16 @@ button {
         box-sizing: border-box;
         background-color: #fff;
         color: red;
+
         &:hover {
-            background-color: lighten(red, 20%);
+            background-color: color.scale(red, $lightness: 20%);
         }
+
         &:active {
-            background-color: lighten(red, 40%);
+            background-color: color.scale(red, $lightness: 40%);
         }
     }
+
     &:disabled {
         background-color: #ccc;
         color: #666;
@@ -107,7 +116,8 @@ button {
     }
 }
 
-input,select {
+input,
+select {
     padding: 0.2em;
     border: 1px solid #ccc;
     border-radius: 0.3em;
