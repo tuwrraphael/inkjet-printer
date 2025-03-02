@@ -1,4 +1,0 @@
-(fp_lib_table
-  (version 7)
-  (lib (name "RS_PRO")(type "KiCad")(uri "${KIPRJMOD}/../footprints/RS_PRO.pretty")(options "")(descr ""))
-)
