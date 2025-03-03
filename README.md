@@ -10,11 +10,10 @@ See a preview of the control software: [https://tuwrraphael.github.io/inkjet-pri
 Details about the printer, challenges and design decisions, its application and evaluation can be found in the thesis.
 
 Repository structure:
-* [inkjet-priner-app](inkjet-printer-app): A web app that controls the printer, is used for planning print jobs, print monitoring & evaluation, calibration and maintenance. Runs in a browser using WebUSB and WebSerial for communicating with the hardware. A deployed version to test an be found [here](https://tuwrraphael.github.io/inkjet-printer/).
+* [inkjet-printer-app](inkjet-printer-app): A web app that controls the printer, is used for planning print jobs, print monitoring & evaluation, calibration and maintenance. Runs in a browser using WebUSB and WebSerial for communicating with the hardware. A deployed version to test an be found [here](https://tuwrraphael.github.io/inkjet-printer/).
 * [inkjet-printer-zephyr](inkjet-printer-zephyr): The Zephyr based firmware of the printhead drive electronics.
 * [pcbs/Xaar128-Driver](pcbs/Xaar128-Driver): The main PBC design of the printhead drive electronics.
 * [cad](cad): Various CAD files of attachments added to the printer.
-[cad](cad)
 
 ## Cite this work
 The main purpose of publishing this repository is to provide insights into the development of a custom inkjet printer. If you got inspired or found parts of this project useful, please cite the thesis.
