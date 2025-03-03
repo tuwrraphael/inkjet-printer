@@ -3,9 +3,16 @@ This repository contains the code, PCB, and CAD of the custom-designed inkjet pr
 
 See a preview of the control software: [https://tuwrraphael.github.io/inkjet-printer/](https://tuwrraphael.github.io/inkjet-printer/).
 
-<p align="center">
-  <img src="./doc/printer_gesamt.jpg" width="50%" alt="An overview image of the implemented inkjet printer." />
-</p>
+<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; max-width:60%; margin: 0 auto;">
+  <div style="flex: 2; text-align: center; margin: 4em;">
+    <img src="./doc/printer_gesamt.jpg" alt="An overview image of the implemented inkjet printer."/>
+    <p>An overview image of the implemented inkjet printer.</p>
+  </div>
+  <div style="flex: 1; text-align: center;  margin: 4em;">
+    <img src="./doc/000125.jpg" alt="A microscope image of a printed TU Wien logo."/>
+    <p>A microscope image of a printed TU Wien logo on a 10mm x 10mm substrate.</p>
+  </div>
+</div>
 
 Details about the printer, challenges and design decisions, its application and evaluation can be found in the thesis.
 
