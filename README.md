@@ -2,7 +2,7 @@
 
 <img src="./doc/000125.jpg" height="150" alt="A microscope image of a printed TU Wien logo on a 10mm x 10mm substrate." align="right"/>
 
-This repository contains the code, PCB, and CAD of the custom-designed inkjet printer for printing ceramics, which was created as part of the master thesis [Development of an Inkjet Printer for Electrolyte Layers of Oxygen Ion Batteries](https://doi.org/10.34726/hss.2024.116604).
+This repository contains the code, PCB, and CAD of the custom-designed inkjet printer for printing ceramic thin films, which was created as part of the master thesis [Development of an Inkjet Printer for Electrolyte Layers of Oxygen Ion Batteries](https://doi.org/10.34726/hss.2024.116604).
 <br clear="right"/>
 
 ---
