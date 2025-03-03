@@ -22,11 +22,11 @@ const MiniCssExtractPluginLoader = MiniCssExtractPlugin.loader;
 
 const allowedChars = /[^a-zA-Z0-9/-]/g;
 function getRevision() {
-    const rev = readFileSync('.git/HEAD').toString();
+    const rev = readFileSync('../.git/HEAD').toString();
     if (rev.indexOf(':') === -1) {
         return rev;
     } else {
-        return readFileSync('.git/' + rev.substring(5).replace(allowedChars, "")).toString()
+        return readFileSync('../.git/' + rev.substring(5).replace(allowedChars, "")).toString()
             .replace(allowedChars, "");
     }
 }
@@ -37,7 +37,7 @@ export default (env, argv) => {
     const analyze = env && env.analyze;
 
     const base = {
-        "gh-pages": "/",
+        "gh-pages": "/inkjet-printer/",
         "local": "/"
     }[environment];
 

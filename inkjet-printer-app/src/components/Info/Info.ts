@@ -1,4 +1,4 @@
-import template from "./info.html";
+import template from "./Info.html";
 
 export class Info extends HTMLElement {
     private buildDateLabel: HTMLSpanElement;

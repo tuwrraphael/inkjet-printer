@@ -1,0 +1,50 @@
+name: Build and Deploy
+
+env:
+  NODE_VERSION: '22'
+
+on:
+  push:
+
+jobs:
+      
+  build:
+    name: Build Webapp
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ./inkjet-printer-app
+    - name: Build webapp
+      run: npm run build -- --mode="production" --env environment="gh-pages"
+      working-directory: ./inkjet-printer-app
+    - name: Copy index.html to 404.html
+      run: cp dist/index.html dist/404.html
+      working-directory: ./inkjet-printer-app
+    - name: Upload static files as artifact
+      id: deployment
+      uses: actions/upload-pages-artifact@v3
+      with:
+          path: ./inkjet-printer-app/dist
+
+  deploy:
+    name: Deploy to gh pages
+    needs: build
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    if: github.ref == 'refs/heads/master'
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
