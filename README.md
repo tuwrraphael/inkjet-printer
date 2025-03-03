@@ -16,7 +16,7 @@ See a preview of the control software: [https://tuwrraphael.github.io/inkjet-pri
 </p>
 
 
-Details about the printer, challenges and design decisions, its application and evaluation can be found in the thesis.
+Details about the printer, challenges and design decisions, its application and evaluation can be found in the [thesis](https://repositum.tuwien.at/bitstream/20.500.12708/208972/1/Hauk%20Raphael%20-%202024%20-%20Development%20of%20an%20Inkjet%20Printer%20for%20Electrolyte%20Layers%20of...pdf).
 
 Repository structure:
 * [inkjet-printer-app](inkjet-printer-app): A web app that controls the printer, is used for planning print jobs, print monitoring & evaluation, calibration and maintenance. Runs in a browser using WebUSB and WebSerial for communicating with the hardware. A deployed version to test an be found [here](https://tuwrraphael.github.io/inkjet-printer/).
